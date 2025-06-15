@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Plus, Clock, Apple, Dumbbell, Coffee } from "lucide-react";
+import { Camera, Plus, Clock, Apple, Dumbbell, Coffee, UtensilsCrossed } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
@@ -70,7 +71,7 @@ const Logs = () => {
   const getLogIcon = (type: string) => {
     switch (type) {
       case 'meal':
-        return <Apple className="w-5 h-5 text-green-500" />;
+        return <UtensilsCrossed className="w-5 h-5 text-green-500" />;
       case 'exercise':
         return <Dumbbell className="w-5 h-5 text-blue-500" />;
       case 'snack':
@@ -120,21 +121,21 @@ const Logs = () => {
                 onClick={() => addLog('meal')}
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
-                <Apple className="w-4 h-4 mr-2" />
+                <UtensilsCrossed />
                 Meal
               </Button>
               <Button
                 onClick={() => addLog('exercise')}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
-                <Dumbbell className="w-4 h-4 mr-2" />
+                <Dumbbell />
                 Exercise
               </Button>
               <Button
                 onClick={() => addLog('snack')}
                 className="bg-orange-500 hover:bg-orange-600 text-white"
               >
-                <Apple className="w-4 h-4 mr-2" />
+                <Apple />
                 Snack
               </Button>
             </div>
@@ -144,7 +145,7 @@ const Logs = () => {
               variant="outline"
               className="w-full border-blue-200 hover:bg-blue-50"
             >
-              <Camera className="w-4 h-4 mr-2" />
+              <Camera />
               Take Photo
             </Button>
           </CardContent>
