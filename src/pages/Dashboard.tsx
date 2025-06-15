@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -84,7 +83,7 @@ const Dashboard = () => {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-500">dex.</h1>
+          <img src="/lovable-uploads/db00049f-c25d-44f0-af01-f9d23b4a024c.png" alt="Logo" className="h-10" />
           <div className="flex items-center space-x-2">
             <Bluetooth className={`w-5 h-5 ${isConnected ? 'text-blue-500' : 'text-gray-400'}`} />
             <Badge variant={isConnected ? "default" : "secondary"}>
