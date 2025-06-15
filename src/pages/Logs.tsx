@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Plus, Clock, Apple, Dumbbell, Coffee } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
-import { getLogs, addLog as addLogToStore, type LogEntry } from "@/lib/logStore";
+import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 
 // This interface is now for documentation, the source of truth is in logStore.ts
 export interface LogEntry {
