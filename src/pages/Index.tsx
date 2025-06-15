@@ -21,21 +21,17 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="text-center mb-6 animate-fade-in">
-          <div className="mb-4">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-              <Activity className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              GlucoSense
-            </h1>
-            <p className="text-lg text-gray-600">
-              Your AI-powered wellness companion
-            </p>
-          </div>
+        <div className="text-center mb-4 animate-fade-in">
+          <img src="/lovable-uploads/dfd89829-7ba8-47a8-9247-a552f80c02b5.png" alt="App Logo" className="w-20 h-20 mx-auto mb-2" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
+            GlucoSense
+          </h1>
+          <p className="text-base text-gray-600">
+            Your AI-powered wellness companion
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6 w-full max-w-lg">
+        <div className="grid grid-cols-2 gap-3 mb-4 w-full max-w-lg">
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-4 text-center">
               <Heart className="w-8 h-8 text-red-500 mx-auto mb-3" />
@@ -71,7 +67,7 @@ const Index = () => {
 
         <Button 
           onClick={() => navigate("/dashboard")} 
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-base font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
         >
           Get Started
         </Button>
