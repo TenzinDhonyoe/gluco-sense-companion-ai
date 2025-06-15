@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import GlucoseTrendChart, { type GlucoseReading } from "./GlucoseTrendChart";
+import QuickAddDrawer from "./QuickAddDrawer";
 
 interface GlucoseTrendCardProps {
   trend: 'low' | 'normal' | 'high';
@@ -51,7 +52,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
 
   return (
     <Card className="bg-transparent border-0 shadow-none p-0">
-      <CardHeader className="p-0 pb-6 flex flex-row justify-center">
+      <CardHeader className="p-0 pb-6 flex flex-row justify-center items-center space-x-4">
         <div className="flex items-center bg-white border-2 border-gray-200 rounded-full p-2 space-x-3 shadow-sm">
           <div className="text-center pl-4">
             <p className="text-4xl font-bold text-gray-800">{latestValue ?? '...'}</p>
@@ -63,6 +64,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
             </div>
           )}
         </div>
+        <QuickAddDrawer />
       </CardHeader>
       <CardContent className="space-y-4 p-0">
         <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white">

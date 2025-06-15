@@ -4,7 +4,6 @@ import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
 import HbA1cCard from "@/components/HbA1cCard";
-import QuickAddDrawer from "@/components/QuickAddDrawer";
 import RewardsCard from "@/components/RewardsCard";
 import { Bluetooth } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -117,9 +116,6 @@ const Dashboard = () => {
               trendDirection={trendDirection}
               glucoseData={last24HoursData}
             />
-            <div className="absolute top-16 right-6">
-              <QuickAddDrawer />
-            </div>
           </div>
         )}
 
