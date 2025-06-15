@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Lightbulb, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
@@ -16,29 +15,18 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [tempApiKey, setTempApiKey] =useState("");
+  // NOTE: Storing API keys in frontend code is not secure.
+  // This is for demonstration purposes only.
+  const apiKey = "AIzaSyArfchp6gp_d33mKf3k0KsOfs5w9GheeQs";
 
   useEffect(() => {
-    const storedKey = localStorage.getItem("googleApiKey");
-    if (storedKey) {
-      setApiKey(storedKey);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (apiKey && glucoseData.length > 0) {
+    // Fetch suggestions only once when data is available.
+    // Subsequent fetches are manual via refresh button.
+    if (apiKey && glucoseData.length > 0 && suggestions.length === 0) {
       fetchSuggestions();
     }
-  }, [apiKey, glucoseData]);
-
-  const handleSaveKey = () => {
-    if (tempApiKey) {
-      localStorage.setItem("googleApiKey", tempApiKey);
-      setApiKey(tempApiKey);
-      toast({ title: "API Key Saved", description: "Your Google AI API key has been saved." });
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glucoseData]); // Reruns when glucoseData is populated.
 
   const fetchSuggestions = async () => {
     if (!apiKey) return;
@@ -87,10 +75,8 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
     } catch (error) {
       console.error("Error fetching suggestions:", error);
       let description = "Failed to fetch suggestions. Please try again.";
-      if (error instanceof Error && error.message.includes('API key not valid')) {
-        description = "Your API key seems invalid. Please check and save it again.";
-        localStorage.removeItem("googleApiKey");
-        setApiKey(null);
+      if (error instanceof Error && (error.message.includes('API key not valid') || error.message.includes('quota'))) {
+        description = "There was an issue with the AI service. Please try again later.";
       }
       toast({ title: "Error", description, variant: "destructive" });
     } finally {
@@ -124,22 +110,7 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
               <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
             ))}
           </div>
-        ) : !apiKey ? (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">Enter your Google AI API key to get personalized suggestions.</p>
-            <div className="flex space-x-2">
-              <Input 
-                type="password"
-                placeholder="Your Google AI API Key"
-                value={tempApiKey}
-                onChange={(e) => setTempApiKey(e.target.value)}
-                className="bg-white"
-              />
-              <Button onClick={handleSaveKey}>Save</Button>
-            </div>
-            <p className="text-xs text-gray-500">Your key is stored only in your browser's local storage.</p>
-          </div>
-        ) : (
+        ) : suggestions.length > 0 ? (
           suggestions.map((suggestion, index) => (
             <div
               key={index}
@@ -148,6 +119,8 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
               <p className="text-sm text-gray-700">{suggestion}</p>
             </div>
           ))
+        ) : (
+          <p className="text-sm text-gray-600">Could not load AI suggestions. Please try refreshing.</p>
         )}
       </CardContent>
     </Card>
