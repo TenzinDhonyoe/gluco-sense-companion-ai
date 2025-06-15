@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface GlucoseReading {
   time: string;
@@ -126,6 +127,19 @@ const GlucoseTrendChart = () => {
     isLatest: index === data.length - 1
   }));
 
+  // Calculate trend for the arrow
+  let trendDirection: 'up' | 'down' | 'flat' = 'flat';
+  if (data.length >= 2) {
+    const lastValue = data[data.length - 1].value;
+    const secondLastValue = data[data.length - 2].value;
+    const diff = lastValue - secondLastValue;
+    if (diff > 2) { // Threshold to avoid showing arrows for tiny fluctuations
+      trendDirection = 'up';
+    } else if (diff < -2) {
+      trendDirection = 'down';
+    }
+  }
+
   return (
     <div className="h-80 w-full relative">
       {/* Range shading background */}
@@ -143,7 +157,7 @@ const GlucoseTrendChart = () => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 20, right: 24, left: 24, bottom: 40 }}
+            margin={{ top: 20, right: 30, left: 24, bottom: 40 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
             
@@ -203,16 +217,41 @@ const GlucoseTrendChart = () => {
               activeDot={{ r: 4, fill: "#002D3A", strokeWidth: 0 }}
             />
             
-            {/* Latest point highlight */}
+            {/* Latest point highlight with trend arrow */}
             <Line 
               type="monotone" 
               dataKey="value"
               stroke="transparent"
               strokeWidth={0}
               dot={(props) => {
-                const { payload } = props;
+                const { cx, cy, payload } = props;
                 if (payload?.isLatest) {
-                  return <circle cx={props.cx} cy={props.cy} r={6} fill="#00B7AE" />;
+                  let TrendIcon;
+                  let iconColor;
+                  
+                  switch (trendDirection) {
+                    case 'up':
+                      TrendIcon = TrendingUp;
+                      iconColor = "#ef4444"; // red-500
+                      break;
+                    case 'down':
+                      TrendIcon = TrendingDown;
+                      iconColor = "#f59e0b"; // amber-500
+                      break;
+                    default:
+                      TrendIcon = Minus;
+                      iconColor = "#6b7280"; // gray-500
+                  }
+
+                  return (
+                    <g>
+                      <circle cx={cx} cy={cy} r={6} fill="#00B7AE" />
+                      {/* Using foreignObject to reliably render React components inside SVG */}
+                      <foreignObject x={cx + 8} y={cy - 12} width={24} height={24}>
+                        <TrendIcon color={iconColor} className="w-6 h-6 animate-pulse" />
+                      </foreignObject>
+                    </g>
+                  );
                 }
                 return null;
               }}
