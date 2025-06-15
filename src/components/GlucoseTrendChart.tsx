@@ -1,6 +1,8 @@
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 
 export interface GlucoseReading {
   time: string;
@@ -37,7 +39,7 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
     },
   };
 
-  // Empty state if not enough data
+  // Empty state if not enough data for a meaningful trend
   if (data.length < 4) {
     return (
       <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg">
@@ -49,23 +51,37 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
     );
   }
 
+  // DATA PIPELINE: Decimate and smooth data for cleaner rendering
+  const MAX_VISIBLE_POINTS = 24;
+  
+  // 1. Map data to include x and y for the downsampling algorithm
+  const points = data.map(d => ({ ...d, x: d.timestamp, y: d.value }));
+
+  // 2. Decimate if we have more points than our visible limit
+  const decimatedData = points.length > MAX_VISIBLE_POINTS
+    ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
+    : points;
+
+  // 3. Smooth the data with a 3-point moving average
+  const finalData = movingAverage(decimatedData, 3);
+
   // Add isLatest flag to data for highlighting
-  const dataWithLatestFlag = data.map((item, index) => ({
+  const dataWithLatestFlag = finalData.map((item, index) => ({
     ...item,
-    isLatest: index === data.length - 1
+    isLatest: index === finalData.length - 1
   }));
 
   const yAxisDomain = [50, 200];
   const yAxisRange = yAxisDomain[1] - yAxisDomain[0];
 
-  const xTicks = data.filter((_, index) => index % 12 === 0).map(d => d.time);
+  const xTicks = finalData.filter((_, index) => index % 6 === 0).map(d => d.time);
 
   return (
-    <div className="h-72 w-full relative">
+    <div className="h-80 w-full relative">
       {/* Range shading background */}
       <div
         className="absolute pointer-events-none"
-        style={{ top: 10, right: 20, bottom: 30, left: 74 }}
+        style={{ top: 25, right: 35, bottom: 30, left: 74 }}
       >
         {/* High (Red) Zone: > 140 */}
         <div
@@ -97,7 +113,7 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 10, right: 20, left: 24, bottom: 30 }}
+            margin={{ top: 25, right: 35, left: 24, bottom: 30 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
             
