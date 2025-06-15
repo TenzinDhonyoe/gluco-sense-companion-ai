@@ -68,7 +68,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
         <QuickAddDrawer />
       </CardHeader>
       <CardContent className="space-y-4 p-0">
-        <Link to="/insights/full" state={{ glucoseData }}>
+        <Link to="/insights/full" state={{ glucoseData, trendDirection }}>
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
                 <GlucoseTrendChart data={glucoseData} trendDirection={trendDirection} />
             </div>
@@ -80,7 +80,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
               Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
             </p>
             <span className="text-gray-400">&middot;</span>
-            <Link to="/insights/full" state={{ glucoseData }} className="flex items-center text-blue-600 hover:underline font-medium">
+            <Link to="/insights/full" state={{ glucoseData, trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
               See full history
               <ArrowRight className="w-3 h-3 ml-0.5" />
             </Link>
