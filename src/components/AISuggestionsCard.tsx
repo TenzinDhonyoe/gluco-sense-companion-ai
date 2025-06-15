@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -110,7 +110,7 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Lightbulb className="w-5 h-5 text-yellow-500" />
+            <Sparkles className="w-5 h-5 bg-gradient-to-br from-green-600 to-yellow-500 bg-clip-text text-transparent" strokeWidth={0} fill="currentColor" />
             <span className="text-gray-900">AI Suggestions</span>
           </div>
           <Button
