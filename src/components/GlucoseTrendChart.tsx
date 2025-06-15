@@ -61,18 +61,21 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
   return (
     <div className="h-80 w-full relative">
       {/* Range shading background */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div
+        className="absolute pointer-events-none"
+        style={{ top: 20, right: 30, bottom: 40, left: 74 }}
+      >
         {/* High (Red) Zone: > 140 */}
         <div
-          className="absolute left-16 right-8 bg-red-100 opacity-50"
+          className="absolute left-0 right-0 bg-red-100 opacity-50"
           style={{
             top: 0,
             height: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
           }}
         />
         {/* In-Range (Green) Zone: 70-140 */}
-        <div 
-          className="absolute left-16 right-8 bg-emerald-50 opacity-40"
+        <div
+          className="absolute left-0 right-0 bg-emerald-50 opacity-40"
           style={{
             top: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
             height: `${((140 - 70) / yAxisRange) * 100}%`,
@@ -80,7 +83,7 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
         />
         {/* Low (Yellow) Zone: < 70 */}
         <div
-          className="absolute left-16 right-8 bg-yellow-100 opacity-50"
+          className="absolute left-0 right-0 bg-yellow-100 opacity-50"
           style={{
             top: `${((yAxisDomain[1] - 70) / yAxisRange) * 100}%`,
             height: `${((70 - yAxisDomain[0]) / yAxisRange) * 100}%`,
