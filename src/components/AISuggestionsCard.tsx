@@ -84,15 +84,6 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
   });
 
   useEffect(() => {
-    if (isSuccess && suggestions) {
-        toast({
-            title: "AI Suggestions Updated",
-            description: "New personalized recommendations are ready!",
-        });
-    }
-  }, [isSuccess, suggestions, toast]);
-  
-  useEffect(() => {
     if (isError) {
         console.error("Error fetching suggestions:", error);
         let description = "Failed to fetch suggestions. Please try again.";

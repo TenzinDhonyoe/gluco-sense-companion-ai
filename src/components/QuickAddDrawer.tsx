@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Camera, Dumbbell, Coffee, Apple, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addLog } from "@/lib/logStore";
+import { toast as sonnerToast } from "sonner";
 
 type LogType = 'exercise' | 'snack' | 'beverage';
 
@@ -19,36 +20,8 @@ const QuickAddDrawer = () => {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
-  const [showSuccessAnimation, setShowSuccessAnimation] = React.useState(false);
   const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
-
-  const handleLog = (type: LogType, description: string, points: number) => {
-    addLog({ type, description, points });
-    let title = "";
-    let toastDescription = "";
-
-    switch (type) {
-      case 'exercise':
-        title = "Workout Logged";
-        toastDescription = `${description} added to your activity log! (+${points} points)`;
-        break;
-      case 'snack':
-        title = "Snack Logged";
-        toastDescription = `${description} added to your food log! (+${points} points)`;
-        break;
-      case 'beverage':
-        title = "Beverage Logged";
-        toastDescription = `${description} added to your log! (+${points} points)`;
-        break;
-    }
-
-    toast({
-      title,
-      description: toastDescription,
-    });
-    setOpen(false);
-  };
 
   const handleMealPhoto = () => {
     toast({
@@ -62,7 +35,6 @@ const QuickAddDrawer = () => {
       setLoggingStep(0);
       setCurrentLog(null);
       setDescription("");
-      setShowSuccessAnimation(false);
   };
 
   const logOptions = [
@@ -114,10 +86,19 @@ const QuickAddDrawer = () => {
           });
           return;
       }
-      setShowSuccessAnimation(true);
-      setTimeout(() => {
-        handleLog(currentLog.type, description, currentLog.points);
-      }, 1500);
+      addLog({ type: currentLog.type, description, points: currentLog.points });
+      setOpen(false);
+      
+      sonnerToast.custom((t) => (
+        <div className="flex flex-col items-center justify-center bg-background p-6 rounded-xl shadow-lg border w-full max-w-md mx-auto">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+                <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
+            </div>
+            <p className="mt-4 text-xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
+        </div>
+      ), {
+        duration: 2000,
+      });
   };
 
   return (
@@ -133,14 +114,7 @@ const QuickAddDrawer = () => {
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        {showSuccessAnimation ? (
-            <div className="flex flex-col items-center justify-center p-8 space-y-4 min-h-[250px]">
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
-                    <Check className="w-16 h-16 text-green-600" strokeWidth={3} />
-                </div>
-                <p className="text-2xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
-            </div>
-        ) : loggingStep === 0 ? (
+        {loggingStep === 0 ? (
           <>
             <DrawerHeader className="text-left">
               <DrawerTitle>Quick Add</DrawerTitle>
