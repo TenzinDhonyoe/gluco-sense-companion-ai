@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
 import HbA1cCard from "@/components/HbA1cCard";
-import QuickActionsCard from "@/components/QuickActionsCard";
+import QuickAddDrawer from "@/components/QuickAddDrawer";
 import RewardsCard from "@/components/RewardsCard";
 import { Bluetooth } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -109,13 +109,18 @@ const Dashboard = () => {
 
         {/* Main Glucose Trend */}
         {glucoseData.length > 0 && (
-          <GlucoseTrendCard 
-            trend={glucoseTrend} 
-            lastReading={lastReadingTime}
-            latestValue={latestReading?.value}
-            trendDirection={trendDirection}
-            glucoseData={last24HoursData}
-          />
+          <div className="relative">
+            <GlucoseTrendCard 
+              trend={glucoseTrend} 
+              lastReading={lastReadingTime}
+              latestValue={latestReading?.value}
+              trendDirection={trendDirection}
+              glucoseData={last24HoursData}
+            />
+            <div className="absolute top-6 right-6">
+              <QuickAddDrawer />
+            </div>
+          </div>
         )}
 
         {/* AI Suggestions */}
@@ -123,9 +128,6 @@ const Dashboard = () => {
 
         {/* HbA1c Estimate */}
         <HbA1cCard />
-
-        {/* Quick Actions */}
-        <QuickActionsCard />
 
         {/* Rewards */}
         <RewardsCard />
