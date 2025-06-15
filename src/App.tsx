@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Logs from "./pages/Logs";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import FullScreenInsights from "./pages/FullScreenInsights";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/insights/full" element={<FullScreenInsights />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

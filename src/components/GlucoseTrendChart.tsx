@@ -1,8 +1,10 @@
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 import { useMemo, useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 export interface GlucoseReading {
   time: string;
@@ -14,9 +16,10 @@ export interface GlucoseReading {
 interface GlucoseTrendChartProps {
   data: GlucoseReading[];
   trendDirection: 'up' | 'down' | 'flat';
+  containerClassName?: string;
 }
 
-const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
+const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps) => {
   const [timeRange, setTimeRange] = useState('3'); // default 3 hours
 
   const filteredData = useMemo(() => {
@@ -116,7 +119,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
   };
   
   return (
-    <div className="h-60 w-full relative">
+    <div className={cn("h-60 w-full relative", containerClassName)}>
       <div className="absolute top-3 right-3 z-10">
         <ToggleGroup 
           type="single" 

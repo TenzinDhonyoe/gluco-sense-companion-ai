@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import GlucoseTrendChart, { type GlucoseReading } from "./GlucoseTrendChart";
 import QuickAddDrawer from "./QuickAddDrawer";
+import { Link } from "react-router-dom";
 
 interface GlucoseTrendCardProps {
   trend: 'low' | 'normal' | 'high';
@@ -67,14 +68,23 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
         <QuickAddDrawer />
       </CardHeader>
       <CardContent className="space-y-4 p-0">
-        <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white">
-          <GlucoseTrendChart data={glucoseData} trendDirection={trendDirection} />
-        </div>
+        <Link to="/insights/full" state={{ glucoseData }}>
+            <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
+                <GlucoseTrendChart data={glucoseData} trendDirection={trendDirection} />
+            </div>
+        </Link>
         <div className="text-center pt-2">
           <p className="text-sm text-gray-600 mb-1">{trendInfo.description}</p>
-          <p className="text-xs text-gray-500">
-            Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
-          </p>
+          <div className="flex items-center justify-center space-x-1.5 text-xs">
+            <p className="text-gray-500">
+              Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
+            </p>
+            <span className="text-gray-400">&middot;</span>
+            <Link to="/insights/full" state={{ glucoseData }} className="flex items-center text-blue-600 hover:underline font-medium">
+              See full history
+              <ArrowRight className="w-3 h-3 ml-0.5" />
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>
