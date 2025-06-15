@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Camera, Dumbbell, Coffee, Apple } from "lucide-react";
+import { Plus, Camera, Dumbbell, Coffee, Apple, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addLog } from "@/lib/logStore";
 
@@ -19,6 +19,7 @@ const QuickAddDrawer = () => {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
+  const [showSuccessAnimation, setShowSuccessAnimation] = React.useState(false);
   const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
 
@@ -61,6 +62,7 @@ const QuickAddDrawer = () => {
       setLoggingStep(0);
       setCurrentLog(null);
       setDescription("");
+      setShowSuccessAnimation(false);
   };
 
   const logOptions = [
@@ -112,7 +114,10 @@ const QuickAddDrawer = () => {
           });
           return;
       }
-      handleLog(currentLog.type, description, currentLog.points);
+      setShowSuccessAnimation(true);
+      setTimeout(() => {
+        handleLog(currentLog.type, description, currentLog.points);
+      }, 1500);
   };
 
   return (
@@ -128,7 +133,14 @@ const QuickAddDrawer = () => {
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        {loggingStep === 0 ? (
+        {showSuccessAnimation ? (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4 min-h-[250px]">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+                    <Check className="w-16 h-16 text-green-600" strokeWidth={3} />
+                </div>
+                <p className="text-2xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
+            </div>
+        ) : loggingStep === 0 ? (
           <>
             <DrawerHeader className="text-left">
               <DrawerTitle>Quick Add</DrawerTitle>
