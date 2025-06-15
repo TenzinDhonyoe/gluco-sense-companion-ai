@@ -1,5 +1,5 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 import { useMemo } from "react";
@@ -111,7 +111,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 5, right: 35, left: 5, bottom: 5 }}
+            margin={{ top: 5, right: 15, left: 20, bottom: 20 }}
           >
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-gray-200/50" />
             
@@ -124,31 +124,38 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
               axisLine={false}
               tickLine={false}
               padding={{ left: 10, right: 10 }}
-              height={30}
-            />
+              height={45}
+            >
+              <Label value="Time" position="insideBottom" offset={-10} style={{ fill: '#6B7280', fontSize: 12 }} />
+            </XAxis>
             
             <YAxis 
-              yAxisId="right"
-              orientation="right"
+              orientation="left"
               domain={yAxisDomain}
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={false}
               tickLine={false}
               tickCount={6}
-              width={30}
-              tickFormatter={(value) => `– ${value}`}
-            />
+              width={40}
+              tickFormatter={(value) => `${value}`}
+            >
+              <Label
+                value="mg/dL"
+                angle={-90}
+                position="insideLeft"
+                style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12 }}
+                offset={-5}
+              />
+            </YAxis>
             
-            <ReferenceArea y1={70} y2={180} fill="#E5E7EB" fillOpacity={0.3} yAxisId="right" />
+            <ReferenceArea y1={70} y2={180} fill="#E5E7EB" fillOpacity={0.3} />
 
             <ReferenceLine 
-              yAxisId="right"
               y={70} 
               stroke="#ef4444"
               strokeWidth={1}
             />
             <ReferenceLine 
-              yAxisId="right"
               y={250} 
               stroke="#f59e0b"
               strokeWidth={1}
@@ -157,7 +164,6 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
             
             <Line 
-              yAxisId="right"
               type="monotone" 
               dataKey="value" 
               stroke="#002D3A"
@@ -167,7 +173,6 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
             />
             
             <Line 
-              yAxisId="right"
               type="monotone" 
               dataKey="value"
               stroke="transparent"
