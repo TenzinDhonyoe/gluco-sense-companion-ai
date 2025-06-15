@@ -115,24 +115,24 @@ const Logs = () => {
               className="border-gray-200"
             />
             
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 onClick={() => addLog('meal')}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                className="bg-green-500 hover:bg-green-600 text-white"
               >
                 <Apple className="w-4 h-4 mr-2" />
                 Meal
               </Button>
               <Button
                 onClick={() => addLog('exercise')}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 <Dumbbell className="w-4 h-4 mr-2" />
                 Exercise
               </Button>
               <Button
                 onClick={() => addLog('snack')}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 <Apple className="w-4 h-4 mr-2" />
                 Snack
