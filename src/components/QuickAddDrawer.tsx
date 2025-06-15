@@ -90,7 +90,7 @@ const QuickAddDrawer = () => {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button size="icon" className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full shadow-lg transition hover:scale-105">
+        <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
           <Plus className="h-5 w-5" />
         </Button>
       </DrawerTrigger>
