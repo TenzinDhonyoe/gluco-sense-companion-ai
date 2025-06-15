@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import {
   Drawer,
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Camera, Dumbbell, Coffee, Apple, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addLog } from "@/lib/logStore";
+import { toast as sonnerToast } from "sonner";
 
 type LogType = 'exercise' | 'snack' | 'beverage';
 
@@ -20,7 +22,6 @@ const QuickAddDrawer = () => {
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
   const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
-  const [showLoggedAnimation, setShowLoggedAnimation] = React.useState(false);
 
   const handleMealPhoto = () => {
     toast({
@@ -88,58 +89,63 @@ const QuickAddDrawer = () => {
       addLog({ type: currentLog.type, description, points: currentLog.points });
       setOpen(false);
       
-      setShowLoggedAnimation(true);
-      setTimeout(() => {
-        setShowLoggedAnimation(false);
-      }, 1500);
+      sonnerToast.custom((t) => (
+        <div className="flex flex-col items-center justify-center bg-background p-6 rounded-xl shadow-lg border w-full max-w-md mx-auto">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+                <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
+            </div>
+            <p className="mt-4 text-xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
+        </div>
+      ), {
+        duration: 2000,
+      });
   };
 
   return (
-    <>
-      <Drawer open={open} onOpenChange={(isOpen) => {
-          setOpen(isOpen);
-          if (!isOpen) {
-              handleCancelLogging();
-          }
-      }}>
-        <DrawerTrigger asChild>
-          <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
-            <Plus className="h-5 w-5" />
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent>
-          {loggingStep === 0 ? (
-            <>
-              <DrawerHeader className="text-left">
-                <DrawerTitle>Quick Add</DrawerTitle>
-              </DrawerHeader>
-              <div className="grid grid-cols-2 gap-3 p-4">
-                <Button
-                  key="Log Meal"
-                  onClick={handleMealPhoto}
-                  variant="outline"
-                  className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
-                >
-                  <Camera className="w-6 h-6 text-blue-500" />
-                  <span className="text-sm font-medium text-gray-800">Log Meal</span>
-                </Button>
-                {logOptions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <Button
-                      key={action.label}
-                      onClick={() => handleStartLogging(action)}
-                      variant="outline"
-                      className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
-                    >
-                      <Icon className={`w-6 h-6 ${action.color}`} />
-                      <span className="text-sm font-medium text-gray-800">{action.label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </>
-          ) : currentLog && (
+    <Drawer open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+            handleCancelLogging();
+        }
+    }}>
+      <DrawerTrigger asChild>
+        <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
+          <Plus className="h-5 w-5" />
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        {loggingStep === 0 ? (
+          <>
+            <DrawerHeader className="text-left">
+              <DrawerTitle>Quick Add</DrawerTitle>
+            </DrawerHeader>
+            <div className="grid grid-cols-2 gap-3 p-4">
+              <Button
+                key="Log Meal"
+                onClick={handleMealPhoto}
+                variant="outline"
+                className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
+              >
+                <Camera className="w-6 h-6 text-blue-500" />
+                <span className="text-sm font-medium text-gray-800">Log Meal</span>
+              </Button>
+              {logOptions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.label}
+                    onClick={() => handleStartLogging(action)}
+                    variant="outline"
+                    className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
+                  >
+                    <Icon className={`w-6 h-6 ${action.color}`} />
+                    <span className="text-sm font-medium text-gray-800">{action.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </>
+        ) : currentLog && (
             <div className="p-4 space-y-4">
                 <DrawerHeader className="p-0 text-left">
                     <DrawerTitle className="flex items-center space-x-2">
@@ -159,16 +165,8 @@ const QuickAddDrawer = () => {
                 </div>
             </div>
         )}
-        </DrawerContent>
-      </Drawer>
-      {showLoggedAnimation && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-fade-in">
-            <div className="w-28 h-28 bg-background/80 rounded-full flex items-center justify-center animate-scale-in shadow-2xl">
-                <Check className="w-20 h-20 text-green-500" strokeWidth={3} />
-            </div>
-        </div>
-      )}
-    </>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
