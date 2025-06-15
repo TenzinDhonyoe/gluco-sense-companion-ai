@@ -121,6 +121,12 @@ const GlucoseTrendChart = () => {
     );
   }
 
+  // Add isLatest flag to data for highlighting
+  const dataWithLatestFlag = data.map((item, index) => ({
+    ...item,
+    isLatest: index === data.length - 1
+  }));
+
   return (
     <div className="h-64 w-full relative">
       {/* Range shading background */}
@@ -137,7 +143,7 @@ const GlucoseTrendChart = () => {
       <ChartContainer config={chartConfig}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
-            data={data} 
+            data={dataWithLatestFlag} 
             margin={{ top: 10, right: 16, left: 16, bottom: 10 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
@@ -192,10 +198,16 @@ const GlucoseTrendChart = () => {
             {/* Latest point highlight */}
             <Line 
               type="monotone" 
-              dataKey={(entry, index) => index === data.length - 1 ? entry.value : null}
+              dataKey="value"
               stroke="transparent"
               strokeWidth={0}
-              dot={{ r: 6, fill: "#00B7AE", strokeWidth: 0 }}
+              dot={(props) => {
+                const { payload } = props;
+                if (payload?.isLatest) {
+                  return <circle cx={props.cx} cy={props.cy} r={6} fill="#00B7AE" />;
+                }
+                return null;
+              }}
               connectNulls={false}
             />
           </LineChart>
