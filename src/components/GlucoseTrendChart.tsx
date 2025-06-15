@@ -148,18 +148,13 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
               />
             </YAxis>
             
-            <ReferenceArea y1={70} y2={180} fill="#E5E7EB" fillOpacity={0.3} />
+            {/* Glucose Zones */}
+            <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
+            <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
+            <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
 
-            <ReferenceLine 
-              y={70} 
-              stroke="#ef4444"
-              strokeWidth={1}
-            />
-            <ReferenceLine 
-              y={250} 
-              stroke="#f59e0b"
-              strokeWidth={1}
-            />
+            <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
+            <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
             
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
             
