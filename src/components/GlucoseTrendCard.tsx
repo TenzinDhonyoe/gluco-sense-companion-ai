@@ -1,7 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import GlucoseTrendChart from "./GlucoseTrendChart";
 
 interface GlucoseTrendCardProps {
   trend: 'low' | 'normal' | 'high';
@@ -56,11 +56,14 @@ const GlucoseTrendCard = ({ trend, lastReading }: GlucoseTrendCardProps) => {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-gray-600 mb-2">{trendInfo.description}</p>
-        <p className="text-xs text-gray-500">
-          Last updated {minutesAgo} minutes ago
-        </p>
+      <CardContent className="space-y-4">
+        <GlucoseTrendChart />
+        <div>
+          <p className="text-sm text-gray-600 mb-2">{trendInfo.description}</p>
+          <p className="text-xs text-gray-500">
+            Last updated {minutesAgo} minutes ago
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
