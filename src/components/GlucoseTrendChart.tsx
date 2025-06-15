@@ -1,4 +1,3 @@
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
@@ -66,6 +65,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
   })), [finalData]);
 
   const yAxisDomain = [40, 280];
+  const yTicks = [40, 80, 120, 160, 200, 240, 280];
 
   const xTicks = useMemo(() => {
     if (!dataWithLatestFlag || dataWithLatestFlag.length === 0) return [];
@@ -111,7 +111,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 5, right: 15, left: 20, bottom: 20 }}
+            margin={{ top: 20, right: 15, left: 20, bottom: 25 }}
           >
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-gray-200/50" />
             
@@ -132,10 +132,10 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
             <YAxis 
               orientation="left"
               domain={yAxisDomain}
+              ticks={yTicks}
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={false}
               tickLine={false}
-              tickCount={6}
               width={40}
               tickFormatter={(value) => `${value}`}
             >
