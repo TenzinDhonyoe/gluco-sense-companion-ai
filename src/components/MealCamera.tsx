@@ -107,7 +107,7 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
       <DialogContent className="w-screen h-screen max-w-none rounded-none border-none sm:max-w-lg sm:h-auto sm:rounded-lg sm:border p-0 gap-0">
         <div className="flex flex-col h-full">
             <DialogHeader className="p-6 pb-2">
-                <DialogTitle className="text-2xl font-bold text-gray-900 text-center sm:text-left">Log Meal Photo</DialogTitle>
+                <DialogTitle className="text-2xl font-bold text-center sm:text-left bg-gradient-to-br from-green-600 to-yellow-500 bg-clip-text text-transparent">Log Meal</DialogTitle>
             </DialogHeader>
             <div className="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
                 {capturedImage ? (
