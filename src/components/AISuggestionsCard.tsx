@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, RefreshCw } from "lucide-react";
@@ -12,28 +13,24 @@ interface AISuggestionsCardProps {
 }
 
 const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   // NOTE: Storing API keys in frontend code is not secure.
   // This is for demonstration purposes only.
   const apiKey = "AIzaSyArfchp6gp_d33mKf3k0KsOfs5w9GheeQs";
 
-  useEffect(() => {
-    // Fetch suggestions only once when data is available.
-    // Subsequent fetches are manual via refresh button.
-    if (apiKey && glucoseData.length > 0 && suggestions.length === 0) {
-      fetchSuggestions();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [glucoseData]); // Reruns when glucoseData is populated.
+  const {
+    data: suggestions,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+    isSuccess,
+  } = useQuery({
+    queryKey: ['ai-suggestions'],
+    queryFn: async () => {
+      if (!apiKey) return [];
 
-  const fetchSuggestions = async () => {
-    if (!apiKey) return;
-
-    setIsLoading(true);
-    setSuggestions([]);
-    try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
@@ -65,24 +62,38 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
       
       const parsedSuggestions = text.split('•').map(s => s.trim()).filter(s => s.length > 0);
 
-      if (parsedSuggestions.length === 0) throw new Error("AI returned no suggestions.");
-
-      setSuggestions(parsedSuggestions);
-      toast({
-        title: "AI Suggestions Updated",
-        description: "New personalized recommendations are ready!",
-      });
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      let description = "Failed to fetch suggestions. Please try again.";
-      if (error instanceof Error && (error.message.includes('API key not valid') || error.message.includes('quota'))) {
-        description = "There was an issue with the AI service. Please try again later.";
+      if (parsedSuggestions.length === 0) {
+        throw new Error("AI returned no suggestions.");
       }
-      toast({ title: "Error", description, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
+
+      return parsedSuggestions;
+    },
+    enabled: glucoseData.length > 0 && !!apiKey,
+    refetchOnWindowFocus: false,
+    retry: false, // Prevents retrying automatically on error, avoiding rate-limit loops.
+  });
+
+  useEffect(() => {
+    if (isSuccess && suggestions) {
+        toast({
+            title: "AI Suggestions Updated",
+            description: "New personalized recommendations are ready!",
+        });
     }
-  };
+  }, [isSuccess, suggestions, toast]);
+  
+  useEffect(() => {
+    if (isError) {
+        console.error("Error fetching suggestions:", error);
+        let description = "Failed to fetch suggestions. Please try again.";
+        if (error instanceof Error && (error.message.includes('API key not valid') || error.message.includes('quota'))) {
+            description = "There was an issue with the AI service. Please try again later.";
+        }
+        toast({ title: "Error", description, variant: "destructive" });
+    }
+  }, [isError, error, toast]);
+
+  const showLoading = isLoading || isFetching;
 
   return (
     <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
@@ -93,24 +104,24 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
             <span className="text-gray-900">AI Suggestions</span>
           </div>
           <Button
-            onClick={fetchSuggestions}
-            disabled={isLoading || !apiKey}
+            onClick={() => refetch()}
+            disabled={showLoading || !apiKey}
             variant="ghost"
             size="sm"
             className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${showLoading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading ? (
+        {showLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
             ))}
           </div>
-        ) : suggestions.length > 0 ? (
+        ) : (suggestions && suggestions.length > 0) ? (
           suggestions.map((suggestion, index) => (
             <div
               key={index}
@@ -120,7 +131,7 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
             </div>
           ))
         ) : (
-          <p className="text-sm text-gray-600">Could not load AI suggestions. Please try refreshing.</p>
+          <p className="text-sm text-gray-600">{isError ? "Could not load AI suggestions. Please try refreshing." : "No suggestions available."}</p>
         )}
       </CardContent>
     </Card>
