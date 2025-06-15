@@ -109,7 +109,7 @@ const Dashboard = () => {
         )}
 
         {/* AI Suggestions */}
-        <AISuggestionsCard />
+        <AISuggestionsCard glucoseData={last24HoursData} />
 
         {/* HbA1c Estimate */}
         <HbA1cCard />
