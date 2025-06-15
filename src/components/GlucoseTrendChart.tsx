@@ -1,7 +1,8 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export interface GlucoseReading {
   time: string;
@@ -16,6 +17,15 @@ interface GlucoseTrendChartProps {
 }
 
 const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
+  const [timeRange, setTimeRange] = useState('3'); // default 3 hours
+
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    const now = Date.now();
+    const hours = parseInt(timeRange);
+    const fromTimestamp = now - hours * 60 * 60 * 1000;
+    return data.filter(d => d.timestamp >= fromTimestamp);
+  }, [data, timeRange]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -37,7 +47,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
     },
   };
 
-  if (data.length < 4) {
+  if (filteredData.length < 4) {
     return (
       <div className="h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg">
         <div className="text-center">
@@ -51,7 +61,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
   // DATA PIPELINE
   const MAX_VISIBLE_POINTS = 24;
   
-  const points = data.map(d => ({ ...d, x: d.timestamp, y: d.value }));
+  const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
 
   const decimatedData = points.length > MAX_VISIBLE_POINTS
     ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
@@ -107,6 +117,20 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
   
   return (
     <div className="h-60 w-full relative">
+      <div className="absolute top-3 right-3 z-10">
+        <ToggleGroup 
+          type="single" 
+          defaultValue={timeRange} 
+          onValueChange={(value) => { if (value) setTimeRange(value); }} 
+          size="sm" 
+          className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
+        >
+          <ToggleGroupItem value="3" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">3H</ToggleGroupItem>
+          <ToggleGroupItem value="6" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">6H</ToggleGroupItem>
+          <ToggleGroupItem value="12" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">12H</ToggleGroupItem>
+          <ToggleGroupItem value="24" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">24H</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
       <ChartContainer config={chartConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 

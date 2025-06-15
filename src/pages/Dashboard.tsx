@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -63,9 +64,9 @@ const Dashboard = () => {
   const latestReading = glucoseData.length > 0 ? glucoseData[glucoseData.length - 1] : undefined;
   const lastReadingTime = latestReading ? new Date(latestReading.timestamp) : new Date();
   
-  // Filter data to the last 3 hours for the trend card
-  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
-  const last3HoursData = glucoseData.filter(d => d.timestamp >= threeHoursAgo);
+  // Filter data to the last 24 hours for the trend card
+  const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const last24HoursData = glucoseData.filter(d => d.timestamp >= twentyFourHoursAgo);
   
   let glucoseTrend: 'low' | 'normal' | 'high' = 'normal';
   if (latestReading) {
@@ -103,7 +104,7 @@ const Dashboard = () => {
             lastReading={lastReadingTime}
             latestValue={latestReading?.value}
             trendDirection={trendDirection}
-            glucoseData={last3HoursData}
+            glucoseData={last24HoursData}
           />
         )}
 
