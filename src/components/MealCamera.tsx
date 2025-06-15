@@ -1,8 +1,9 @@
 
+```tsx
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, RefreshCcw, X } from 'lucide-react';
+import { Camera, RefreshCcw, X, SwitchCamera } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface MealCameraProps {
@@ -18,11 +19,20 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
-  const startCamera = async () => {
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const startCamera = async (mode: 'user' | 'environment') => {
+    stopCamera();
     setError(null);
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -38,18 +48,13 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
       onOpenChange(false);
     }
   };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  };
   
   useEffect(() => {
     if (open) {
       setCapturedImage(null);
-      startCamera();
+      const initialMode = 'environment';
+      setFacingMode(initialMode);
+      startCamera(initialMode);
     } else {
       stopCamera();
     }
@@ -78,7 +83,13 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
   
   const handleRetake = () => {
       setCapturedImage(null);
-      startCamera();
+      startCamera(facingMode);
+  };
+
+  const handleFlipCamera = () => {
+    const newMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newMode);
+    startCamera(newMode);
   };
   
   const handleConfirm = () => {
@@ -94,35 +105,42 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] p-0 gap-0">
-        <DialogHeader className="p-4 pb-0">
-          <DialogTitle>Log Meal Photo</DialogTitle>
-        </DialogHeader>
-        <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-            {capturedImage ? (
-                <img src={capturedImage} alt="Captured meal" className="w-full h-full object-contain" />
-            ) : (
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            )}
-             <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-white bg-black/30 hover:bg-black/50 hover:text-white rounded-full" onClick={handleClose}>
-                <X className="w-5 h-5"/>
-            </Button>
-            {error && <p className="absolute text-white bg-red-500/80 p-4 rounded-md">{error}</p>}
-        </div>
-        <DialogFooter className="p-4 border-t">
-          {capturedImage ? (
-            <div className="flex w-full justify-between gap-2">
-                <Button variant="outline" onClick={handleRetake} className="w-full">
-                    <RefreshCcw /> Retake
+      <DialogContent className="w-screen h-screen max-w-none rounded-none border-none sm:max-w-lg sm:h-auto sm:rounded-lg sm:border p-0 gap-0">
+        <div className="flex flex-col h-full">
+            <DialogHeader className="p-6 pb-2">
+                <DialogTitle className="text-2xl font-bold text-gray-900 text-center sm:text-left">Log Meal Photo</DialogTitle>
+            </DialogHeader>
+            <div className="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
+                {capturedImage ? (
+                    <img src={capturedImage} alt="Captured meal" className="w-full h-full object-contain" />
+                ) : (
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                )}
+                <Button size="icon" variant="ghost" className="absolute top-4 right-4 text-white bg-black/30 hover:bg-black/50 hover:text-white rounded-full z-10" onClick={handleClose}>
+                    <X className="w-5 h-5"/>
                 </Button>
-                <Button onClick={handleConfirm} className="w-full">Confirm</Button>
+                {!capturedImage && stream && (
+                    <Button size="icon" variant="ghost" className="absolute bottom-4 left-4 text-white bg-black/30 hover:bg-black/50 hover:text-white rounded-full z-10" onClick={handleFlipCamera}>
+                        <SwitchCamera className="w-6 h-6" />
+                    </Button>
+                )}
+                {error && <p className="absolute text-white bg-red-500/80 p-4 rounded-md">{error}</p>}
             </div>
-          ) : (
-            <Button onClick={handleCapture} className="w-full" disabled={!!error || !stream}>
-                <Camera /> Capture
-            </Button>
-          )}
-        </DialogFooter>
+            <DialogFooter className="p-4 border-t">
+            {capturedImage ? (
+                <div className="flex w-full justify-between gap-2">
+                    <Button variant="outline" onClick={handleRetake} className="w-full">
+                        <RefreshCcw /> Retake
+                    </Button>
+                    <Button onClick={handleConfirm} className="w-full">Confirm</Button>
+                </div>
+            ) : (
+                <Button onClick={handleCapture} className="w-full" disabled={!!error || !stream}>
+                    <Camera /> Capture
+                </Button>
+            )}
+            </DialogFooter>
+        </div>
         <canvas ref={canvasRef} className="hidden" />
       </DialogContent>
     </Dialog>
@@ -130,3 +148,4 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
 };
 
 export default MealCamera;
+```
