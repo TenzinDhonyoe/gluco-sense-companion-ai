@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +6,14 @@ import { Lightbulb, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { type LogEntry } from "@/lib/logStore";
 
 interface AISuggestionsCardProps {
   glucoseData: GlucoseReading[];
+  logs: LogEntry[];
 }
 
-const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
+const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
   const { toast } = useToast();
   // NOTE: Storing API keys in frontend code is not secure.
   // This is for demonstration purposes only.
@@ -27,7 +28,7 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
     refetch,
     isSuccess,
   } = useQuery({
-    queryKey: ['ai-suggestions'],
+    queryKey: ['ai-suggestions', logs],
     queryFn: async () => {
       if (!apiKey) return [];
 
@@ -35,14 +36,23 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
       const glucose_series = glucoseData.slice(-20).map(d => `${d.value} at ${d.time}`).join(', ');
-      const meal_log = "Lunch: Salad with grilled chicken. Dinner: Salmon with quinoa and roasted vegetables.";
-      const exercise_log = "20-minute brisk walk after dinner.";
-      const sleep_hours = 7;
-      const steps = 8500;
+      
+      const formatLogs = (logType: LogEntry['type'] | LogEntry['type'][], defaultText: string) => {
+        const types = Array.isArray(logType) ? logType : [logType];
+        const relevantLogs = logs.filter(log => types.includes(log.type));
+        if (relevantLogs.length === 0) return defaultText;
+        return relevantLogs.map(log => log.description).join('; ');
+      };
+      
+      const meal_log = formatLogs(['meal', 'snack', 'beverage'], "No meals or snacks logged.");
+      const exercise_log = formatLogs('exercise', "No exercise logged.");
+      
+      const sleep_hours = 7; // Placeholder
+      const steps = 8500; // Placeholder
 
       const prompt = `You are a certified diabetes educator focusing on pre-diabetes prevention. Your tone is encouraging and actionable.
 
-      Based on the following data, return exactly 3 bullet-point suggestions to help keep glucose in a healthy range.
+      Based on the following data for a user, return exactly 3 bullet-point suggestions to help keep glucose in a healthy range.
       Each suggestion must be 75 characters or less.
       Start each suggestion with a '•' character, and separate them with a new line.
       Do not include any other text, titles, or pleasantries in your response. Just the 3 bullet points.
@@ -50,8 +60,8 @@ const AISuggestionsCard = ({ glucoseData }: AISuggestionsCardProps) => {
       ---
       DATA:
       Past 24h readings (mg/dL): ${glucose_series}
-      Logs:
-        – Meals: ${meal_log} 
+      User's Recent Logs:
+        – Meals/Snacks/Beverages: ${meal_log} 
         – Exercise: ${exercise_log}
       Vitals: ${sleep_hours}h sleep, ${steps} steps
       ---`;

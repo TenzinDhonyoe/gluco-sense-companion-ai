@@ -1,8 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Camera, Dumbbell, Coffee, Apple } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { addLog } from "@/lib/logStore";
 
 const QuickActionsCard = () => {
   const { toast } = useToast();
@@ -15,16 +15,26 @@ const QuickActionsCard = () => {
   };
 
   const handleWorkoutLog = () => {
+    addLog({ type: 'exercise', description: 'Quick 15-minute walk', points: 25 });
     toast({
       title: "Workout Logged",
-      description: "Quick 15-minute walk added to your activity log!",
+      description: "Quick 15-minute walk added to your activity log! (+25 points)",
     });
   };
 
   const handleSnackLog = () => {
+    addLog({ type: 'snack', description: 'Apple', points: 10 });
     toast({
       title: "Snack Logged",
-      description: "Apple added to your food log!",
+      description: "Apple added to your food log! (+10 points)",
+    });
+  };
+
+  const handleBeverageLog = () => {
+    addLog({ type: 'beverage', description: 'Water', points: 5 });
+    toast({
+      title: "Beverage Logged",
+      description: "Water added to your log! (+5 points)",
     });
   };
 
@@ -63,6 +73,7 @@ const QuickActionsCard = () => {
           </Button>
           
           <Button
+            onClick={handleBeverageLog}
             variant="outline"
             className="flex flex-col items-center space-y-2 h-auto py-4 border-purple-200 hover:bg-purple-50"
           >

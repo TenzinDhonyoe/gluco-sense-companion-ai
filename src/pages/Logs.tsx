@@ -1,48 +1,45 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Plus, Clock, Apple, Dumbbell } from "lucide-react";
+import { Camera, Plus, Clock, Apple, Dumbbell, Coffee } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
+import { getLogs, addLog as addLogToStore, type LogEntry } from "@/lib/logStore";
 
-interface LogEntry {
+// This interface is now for documentation, the source of truth is in logStore.ts
+export interface LogEntry {
   id: string;
-  type: 'meal' | 'exercise' | 'snack';
+  type: 'meal' | 'exercise' | 'snack' | 'beverage';
   description: string;
-  time: Date;
+  time: Date; // The component will work with Date objects
   points?: number;
 }
 
 const Logs = () => {
   const { toast } = useToast();
-  const [logs, setLogs] = useState<LogEntry[]>([
-    {
-      id: '1',
-      type: 'meal',
-      description: 'Grilled chicken salad with quinoa',
-      time: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      points: 15
-    },
-    {
-      id: '2',
-      type: 'exercise',
-      description: '20-minute brisk walk',
-      time: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      points: 25
-    },
-    {
-      id: '3',
-      type: 'snack',
-      description: 'Greek yogurt with berries',
-      time: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-      points: 10
-    }
-  ]);
-
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [newLogDescription, setNewLogDescription] = useState("");
+
+  useEffect(() => {
+    const fetchLogs = () => {
+        const storedLogs = getLogs().map(log => ({
+            ...log,
+            time: new Date(log.time) // Convert ISO string back to Date
+        }));
+        setLogs(storedLogs);
+    };
+
+    fetchLogs(); // Initial fetch
+
+    const handleLogsChanged = () => fetchLogs();
+    window.addEventListener('logsChanged', handleLogsChanged);
+
+    return () => {
+        window.removeEventListener('logsChanged', handleLogsChanged);
+    };
+  }, []);
 
   const addLog = (type: LogEntry['type']) => {
     if (!newLogDescription.trim()) {
@@ -54,20 +51,19 @@ const Logs = () => {
       return;
     }
 
-    const newLog: LogEntry = {
-      id: Date.now().toString(),
+    const points = type === 'exercise' ? 25 : type === 'meal' ? 15 : 10;
+    
+    addLogToStore({
       type,
       description: newLogDescription,
-      time: new Date(),
-      points: type === 'exercise' ? 25 : type === 'meal' ? 15 : 10
-    };
+      points
+    });
 
-    setLogs([newLog, ...logs]);
     setNewLogDescription("");
     
     toast({
       title: "Log Added!",
-      description: `+${newLog.points} points earned!`,
+      description: `+${points} points earned!`,
     });
   };
 
@@ -79,6 +75,8 @@ const Logs = () => {
         return <Dumbbell className="w-5 h-5 text-blue-500" />;
       case 'snack':
         return <Apple className="w-5 h-5 text-orange-500" />;
+      case 'beverage':
+        return <Coffee className="w-5 h-5 text-purple-500" />;
       default:
         return <Clock className="w-5 h-5 text-gray-500" />;
     }

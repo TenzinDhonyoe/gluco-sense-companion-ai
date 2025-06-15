@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -10,11 +9,20 @@ import RewardsCard from "@/components/RewardsCard";
 import { Bluetooth } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
+import { getLogs, type LogEntry } from "@/lib/logStore";
 
 const Dashboard = () => {
   const { toast } = useToast();
   const [isConnected, setIsConnected] = useState(true);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  useEffect(() => {
+    const fetchLogs = () => setLogs(getLogs());
+    fetchLogs();
+    window.addEventListener('logsChanged', fetchLogs);
+    return () => window.removeEventListener('logsChanged', fetchLogs);
+  }, []);
 
   // Generate simulated glucose readings with trend index
   const generateGlucoseReading = (timestamp: number): { value: number; trendIndex: number } => {
@@ -111,7 +119,7 @@ const Dashboard = () => {
         )}
 
         {/* AI Suggestions */}
-        <AISuggestionsCard glucoseData={last24HoursData} />
+        <AISuggestionsCard glucoseData={last24HoursData} logs={logs} />
 
         {/* HbA1c Estimate */}
         <HbA1cCard />
