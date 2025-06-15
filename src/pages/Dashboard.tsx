@@ -63,9 +63,9 @@ const Dashboard = () => {
   const latestReading = glucoseData.length > 0 ? glucoseData[glucoseData.length - 1] : undefined;
   const lastReadingTime = latestReading ? new Date(latestReading.timestamp) : new Date();
   
-  // Filter data to the last 6 hours for the trend card
-  const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
-  const last6HoursData = glucoseData.filter(d => d.timestamp >= sixHoursAgo);
+  // Filter data to the last 3 hours for the trend card
+  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+  const last3HoursData = glucoseData.filter(d => d.timestamp >= threeHoursAgo);
   
   let glucoseTrend: 'low' | 'normal' | 'high' = 'normal';
   if (latestReading) {
@@ -103,7 +103,7 @@ const Dashboard = () => {
             lastReading={lastReadingTime}
             latestValue={latestReading?.value}
             trendDirection={trendDirection}
-            glucoseData={last6HoursData}
+            glucoseData={last3HoursData}
           />
         )}
 

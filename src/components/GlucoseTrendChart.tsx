@@ -1,8 +1,8 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
+import { useMemo } from "react";
 
 export interface GlucoseReading {
   time: string;
@@ -16,16 +16,15 @@ interface GlucoseTrendChartProps {
   trendDirection: 'up' | 'down' | 'flat';
 }
 
-const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => {
+const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const point = payload[0].payload;
       return (
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="font-medium text-gray-900">{`${label} – ${data.value} mg/dL`}</p>
-          <p className="text-sm text-gray-600">{`Trend Index ${data.trendIndex}`}</p>
+        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
+          <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
+          <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
         </div>
       );
     }
@@ -35,14 +34,13 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
   const chartConfig = {
     value: {
       label: "Glucose (mg/dL)",
-      color: "#002D3A", // Brand navy
+      color: "#002D3A",
     },
   };
 
-  // Empty state if not enough data for a meaningful trend
   if (data.length < 4) {
     return (
-      <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg">
+      <div className="h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
           <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
@@ -51,163 +49,139 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
     );
   }
 
-  // DATA PIPELINE: Decimate and smooth data for cleaner rendering
+  // DATA PIPELINE
   const MAX_VISIBLE_POINTS = 24;
   
-  // 1. Map data to include x and y for the downsampling algorithm
   const points = data.map(d => ({ ...d, x: d.timestamp, y: d.value }));
 
-  // 2. Decimate if we have more points than our visible limit
   const decimatedData = points.length > MAX_VISIBLE_POINTS
     ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
     : points;
 
-  // 3. Smooth the data with a 3-point moving average
   const finalData = movingAverage(decimatedData, 3);
 
-  // Add isLatest flag to data for highlighting
-  const dataWithLatestFlag = finalData.map((item, index) => ({
+  const dataWithLatestFlag = useMemo(() => finalData.map((item, index) => ({
     ...item,
-    isLatest: index === finalData.length - 1
-  }));
+    isLatest: index === finalData.length - 1,
+  })), [finalData]);
 
-  const yAxisDomain = [50, 200];
-  const yAxisRange = yAxisDomain[1] - yAxisDomain[0];
+  const yAxisDomain = [40, 280];
 
-  const xTicks = finalData.filter((_, index) => index % 6 === 0).map(d => d.time);
+  const xTicks = useMemo(() => {
+    if (!dataWithLatestFlag || dataWithLatestFlag.length === 0) return [];
+    
+    const ticks: number[] = [];
+    const addedHours: { [key: number]: boolean } = {};
 
+    dataWithLatestFlag.forEach(d => {
+        const date = new Date(d.timestamp);
+        const hour = date.getHours();
+        if (!addedHours[hour]) {
+            ticks.push(d.timestamp);
+            addedHours[hour] = true;
+        }
+    });
+
+    const lastTimestamp = dataWithLatestFlag[dataWithLatestFlag.length - 1].timestamp;
+    if (!ticks.includes(lastTimestamp)) {
+        ticks.push(lastTimestamp);
+    }
+    return ticks;
+  }, [dataWithLatestFlag]);
+
+  const CustomXAxisTick = (props: any) => {
+    const { x, y, payload, index } = props;
+    const isLast = index === xTicks.length - 1;
+    const label = isLast 
+        ? "Now" 
+        : new Date(payload.value).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(/\s/g, '');
+    
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={12}>
+                {label}
+            </text>
+        </g>
+    );
+  };
+  
   return (
-    <div className="h-80 w-full relative">
-      {/* Range shading background */}
-      <div
-        className="absolute pointer-events-none"
-        style={{ top: 25, right: 35, bottom: 30, left: 74 }}
-      >
-        {/* High (Red) Zone: > 140 */}
-        <div
-          className="absolute left-0 right-0 bg-red-100 opacity-50"
-          style={{
-            top: 0,
-            height: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
-          }}
-        />
-        {/* In-Range (Green) Zone: 70-140 */}
-        <div
-          className="absolute left-0 right-0 bg-emerald-50 opacity-40"
-          style={{
-            top: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
-            height: `${((140 - 70) / yAxisRange) * 100}%`,
-          }}
-        />
-        {/* Low (Yellow) Zone: < 70 */}
-        <div
-          className="absolute left-0 right-0 bg-yellow-100 opacity-50"
-          style={{
-            top: `${((yAxisDomain[1] - 70) / yAxisRange) * 100}%`,
-            height: `${((70 - yAxisDomain[0]) / yAxisRange) * 100}%`,
-          }}
-        />
-      </div>
-      
-      <ChartContainer config={chartConfig}>
+    <div className="h-60 w-full relative">
+      <ChartContainer config={chartConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 25, right: 35, left: 24, bottom: 30 }}
+            margin={{ top: 5, right: 35, left: 5, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-gray-200/50" />
             
-            {/* X-axis with better formatting */}
             <XAxis 
-              dataKey="time" 
-              tick={{ fontSize: 11, fill: "#6B7280" }}
-              axisLine={{ stroke: "#E5E7EB" }}
-              tickLine={{ stroke: "#E5E7EB" }}
+              dataKey="timestamp" 
+              type="number"
+              domain={['dataMin', 'dataMax']}
               ticks={xTicks}
+              tick={<CustomXAxisTick />}
+              axisLine={false}
+              tickLine={false}
+              padding={{ left: 10, right: 10 }}
               height={30}
             />
             
-            {/* Y-axis with visible ticks and labels */}
             <YAxis 
+              yAxisId="right"
+              orientation="right"
               domain={yAxisDomain}
               tick={{ fontSize: 11, fill: "#6B7280" }}
-              axisLine={{ stroke: "#E5E7EB" }}
-              tickLine={{ stroke: "#E5E7EB" }}
-              tickCount={7}
-              width={50}
-              label={{ 
-                value: 'mg/dL', 
-                angle: -90, 
-                position: 'insideLeft',
-                style: { textAnchor: 'middle', fontSize: '12px', fill: '#6B7280' }
-              }}
+              axisLine={false}
+              tickLine={false}
+              tickCount={6}
+              width={30}
+              tickFormatter={(value) => `– ${value}`}
             />
             
-            {/* Threshold lines */}
+            <ReferenceArea y1={70} y2={180} fill="#E5E7EB" fillOpacity={0.3} yAxisId="right" />
+
             <ReferenceLine 
+              yAxisId="right"
               y={70} 
-              stroke="#14B8A6" 
+              stroke="#ef4444"
               strokeWidth={1}
-              strokeDasharray="4 4"
             />
             <ReferenceLine 
-              y={140} 
-              stroke="#14B8A6" 
+              yAxisId="right"
+              y={250} 
+              stroke="#f59e0b"
               strokeWidth={1}
-              strokeDasharray="4 4"
             />
             
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
             
-            {/* Main glucose line with smooth curve */}
             <Line 
+              yAxisId="right"
               type="monotone" 
               dataKey="value" 
               stroke="#002D3A"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: "#002D3A", strokeWidth: 0 }}
+              strokeWidth={2.5}
+              dot={{ r: 2.5, fill: '#002D3A' }}
+              activeDot={{ r: 5 }}
             />
             
-            {/* Latest point highlight with trend arrow */}
             <Line 
+              yAxisId="right"
               type="monotone" 
               dataKey="value"
               stroke="transparent"
               strokeWidth={0}
+              activeDot={false}
               dot={(props) => {
                 const { cx, cy, payload } = props;
                 if (payload?.isLatest) {
-                  let TrendIcon;
-                  let iconColor;
-                  
-                  switch (trendDirection) {
-                    case 'up':
-                      TrendIcon = TrendingUp;
-                      iconColor = "#ef4444"; // red-500
-                      break;
-                    case 'down':
-                      TrendIcon = TrendingDown;
-                      iconColor = "#f59e0b"; // amber-500
-                      break;
-                    default:
-                      TrendIcon = Minus;
-                      iconColor = "#6b7280"; // gray-500
-                  }
-
                   return (
-                    <g>
-                      <circle cx={cx} cy={cy} r={6} fill="#00B7AE" />
-                      {/* Using foreignObject to reliably render React components inside SVG */}
-                      <foreignObject x={cx + 8} y={cy - 12} width={24} height={24}>
-                        <TrendIcon color={iconColor} className="w-6 h-6 animate-pulse" />
-                      </foreignObject>
-                    </g>
+                      <circle cx={cx} cy={cy} r={5} fill="white" stroke="#002D3A" strokeWidth={2}/>
                   );
                 }
                 return null;
               }}
-              connectNulls={false}
             />
           </LineChart>
         </ResponsiveContainer>
