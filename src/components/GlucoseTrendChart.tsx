@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
@@ -112,7 +111,7 @@ const GlucoseTrendChart = () => {
   // Empty state if not enough data
   if (data.length < 4) {
     return (
-      <div className="h-64 w-full flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+      <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
           <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
@@ -128,11 +127,11 @@ const GlucoseTrendChart = () => {
   }));
 
   return (
-    <div className="h-64 w-full relative">
+    <div className="h-80 w-full relative">
       {/* Range shading background */}
       <div className="absolute inset-0 pointer-events-none">
         <div 
-          className="absolute left-4 right-4 bg-emerald-50 opacity-40 rounded"
+          className="absolute left-16 right-8 bg-emerald-50 opacity-40 rounded"
           style={{
             top: `${((200 - 140) / (200 - 50)) * 100}%`,
             height: `${((140 - 70) / (200 - 50)) * 100}%`
@@ -144,29 +143,38 @@ const GlucoseTrendChart = () => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 10, right: 16, left: 16, bottom: 10 }}
+            margin={{ top: 20, right: 24, left: 24, bottom: 40 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
             
-            {/* X-axis with 3-hour intervals */}
+            {/* X-axis with better formatting */}
             <XAxis 
               dataKey="time" 
-              tick={{ fontSize: 10, fill: "#6B7280" }}
+              tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={{ stroke: "#E5E7EB" }}
               tickLine={{ stroke: "#E5E7EB" }}
               interval="preserveStartEnd"
               tickFormatter={(value, index) => {
-                // Show only every 12th tick (3 hours intervals for 15-min data)
+                // Show every 12th tick (3 hours intervals for 15-min data)
                 return index % 12 === 0 ? value : '';
               }}
+              height={60}
             />
             
-            {/* Y-axis without left ticks */}
+            {/* Y-axis with visible ticks and labels */}
             <YAxis 
               domain={[50, 200]}
-              tick={false}
-              axisLine={false}
-              tickLine={false}
+              tick={{ fontSize: 11, fill: "#6B7280" }}
+              axisLine={{ stroke: "#E5E7EB" }}
+              tickLine={{ stroke: "#E5E7EB" }}
+              tickCount={7}
+              width={50}
+              label={{ 
+                value: 'mg/dL', 
+                angle: -90, 
+                position: 'insideLeft',
+                style: { textAnchor: 'middle', fontSize: '12px', fill: '#6B7280' }
+              }}
             />
             
             {/* Threshold lines */}
@@ -192,7 +200,7 @@ const GlucoseTrendChart = () => {
               stroke="#002D3A"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 3, fill: "#002D3A", strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: "#002D3A", strokeWidth: 0 }}
             />
             
             {/* Latest point highlight */}
