@@ -26,7 +26,7 @@ const FullScreenInsights = () => {
       </div>
 
       {/* Content, shown only in landscape mode */}
-      <div className="hidden h-full w-full flex-col p-4 landscape:flex lg:p-6">
+      <div className="hidden h-full w-full flex-col p-3 landscape:flex lg:p-4">
         <header className="flex-shrink-0">
           <Link
             to="/dashboard"
@@ -36,7 +36,7 @@ const FullScreenInsights = () => {
             Back to Dashboard
           </Link>
         </header>
-        <main className="flex-grow pt-4">
+        <main className="flex-grow pt-2">
           <GlucoseTrendChart
             data={glucoseData}
             trendDirection={trendDirection}
