@@ -111,9 +111,9 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 20, right: 15, left: 20, bottom: 25 }}
+            margin={{ top: 20, right: 15, left: 20, bottom: 15 }}
           >
-            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-gray-200/50" />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/50" />
             
             <XAxis 
               dataKey="timestamp" 
@@ -122,12 +122,9 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
               ticks={xTicks}
               tick={<CustomXAxisTick />}
               axisLine={false}
-              tickLine={false}
+              tickLine={true}
               padding={{ left: 10, right: 10 }}
-              height={45}
-            >
-              <Label value="Time" position="insideBottom" offset={-10} style={{ fill: '#6B7280', fontSize: 12 }} />
-            </XAxis>
+            />
             
             <YAxis 
               orientation="left"
@@ -135,7 +132,7 @@ const GlucoseTrendChart = ({ data }: GlucoseTrendChartProps) => {
               ticks={yTicks}
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={false}
-              tickLine={false}
+              tickLine={true}
               width={40}
               tickFormatter={(value) => `${value}`}
             >
