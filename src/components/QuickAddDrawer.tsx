@@ -13,22 +13,38 @@ import { Plus, Camera, Dumbbell, Coffee, Apple, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addLog } from "@/lib/logStore";
 import { toast as sonnerToast } from "sonner";
+import MealCamera from "./MealCamera";
 
 type LogType = 'exercise' | 'snack' | 'beverage';
 
 const QuickAddDrawer = () => {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
   const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
 
   const handleMealPhoto = () => {
-    toast({
-      title: "Camera Feature",
-      description: "Meal photo logging will be implemented with device camera access.",
+    setIsCameraOpen(true);
+    // setOpen(false); We want the main drawer to close when camera opens, but MealCamera is not part of the drawer component so it will stay open. We close it on capture.
+  };
+
+  const handleCaptureMeal = (imageDataUrl: string) => {
+    console.log("Captured meal image:", imageDataUrl.substring(0, 50) + "...");
+    addLog({ type: 'meal', description: 'Logged via photo', points: 15 });
+    setOpen(false); // close the main drawer
+      
+    sonnerToast.custom((t) => (
+      <div className="flex flex-col items-center justify-center bg-background p-6 rounded-xl shadow-lg border w-full max-w-md mx-auto">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+              <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
+          </div>
+          <p className="mt-4 text-xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
+      </div>
+    ), {
+      duration: 2000,
     });
-    setOpen(false);
   };
   
   const handleCancelLogging = () => {
@@ -102,71 +118,78 @@ const QuickAddDrawer = () => {
   };
 
   return (
-    <Drawer open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-        if (!isOpen) {
-            handleCancelLogging();
-        }
-    }}>
-      <DrawerTrigger asChild>
-        <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
-          <Plus className="h-5 w-5" />
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        {loggingStep === 0 ? (
-          <>
-            <DrawerHeader className="text-left">
-              <DrawerTitle>Quick Add</DrawerTitle>
-            </DrawerHeader>
-            <div className="grid grid-cols-2 gap-3 p-4">
-              <Button
-                key="Log Meal"
-                onClick={handleMealPhoto}
-                variant="outline"
-                className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
-              >
-                <Camera className="w-6 h-6 text-blue-500" />
-                <span className="text-sm font-medium text-gray-800">Log Meal</span>
-              </Button>
-              {logOptions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Button
-                    key={action.label}
-                    onClick={() => handleStartLogging(action)}
-                    variant="outline"
-                    className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
-                  >
-                    <Icon className={`w-6 h-6 ${action.color}`} />
-                    <span className="text-sm font-medium text-gray-800">{action.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </>
-        ) : currentLog && (
-            <div className="p-4 space-y-4">
-                <DrawerHeader className="p-0 text-left">
-                    <DrawerTitle className="flex items-center space-x-2">
-                        <currentLog.icon className={`w-6 h-6 ${currentLog.color}`} />
-                        <span>Log {currentLog.label}</span>
-                    </DrawerTitle>
-                </DrawerHeader>
-                <Input 
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={`E.g., ${currentLog.defaultDescription}`}
-                    className="border-gray-200"
-                />
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button variant="outline" onClick={handleCancelLogging}>Cancel</Button>
-                    <Button onClick={handleFinalLog}>Log Activity</Button>
-                </div>
-            </div>
-        )}
-      </DrawerContent>
-    </Drawer>
+    <>
+      <Drawer open={open} onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if (!isOpen) {
+              handleCancelLogging();
+          }
+      }}>
+        <DrawerTrigger asChild>
+          <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
+            <Plus className="h-5 w-5" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent>
+          {loggingStep === 0 ? (
+            <>
+              <DrawerHeader className="text-left">
+                <DrawerTitle>Quick Add</DrawerTitle>
+              </DrawerHeader>
+              <div className="grid grid-cols-2 gap-3 p-4">
+                <Button
+                  key="Log Meal"
+                  onClick={handleMealPhoto}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
+                >
+                  <Camera className="w-6 h-6 text-blue-500" />
+                  <span className="text-sm font-medium text-gray-800">Log Meal</span>
+                </Button>
+                {logOptions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <Button
+                      key={action.label}
+                      onClick={() => handleStartLogging(action)}
+                      variant="outline"
+                      className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
+                    >
+                      <Icon className={`w-6 h-6 ${action.color}`} />
+                      <span className="text-sm font-medium text-gray-800">{action.label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </>
+          ) : currentLog && (
+              <div className="p-4 space-y-4">
+                  <DrawerHeader className="p-0 text-left">
+                      <DrawerTitle className="flex items-center space-x-2">
+                          <currentLog.icon className={`w-6 h-6 ${currentLog.color}`} />
+                          <span>Log {currentLog.label}</span>
+                      </DrawerTitle>
+                  </DrawerHeader>
+                  <Input 
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={`E.g., ${currentLog.defaultDescription}`}
+                      className="border-gray-200"
+                  />
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Button variant="outline" onClick={handleCancelLogging}>Cancel</Button>
+                      <Button onClick={handleFinalLog}>Log Activity</Button>
+                  </div>
+              </div>
+          )}
+        </DrawerContent>
+      </Drawer>
+      <MealCamera 
+        open={isCameraOpen}
+        onOpenChange={setIsCameraOpen}
+        onCapture={handleCaptureMeal}
+      />
+    </>
   );
 };
 
