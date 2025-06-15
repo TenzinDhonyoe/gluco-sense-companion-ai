@@ -117,7 +117,7 @@ const Dashboard = () => {
               trendDirection={trendDirection}
               glucoseData={last24HoursData}
             />
-            <div className="absolute top-6 right-6">
+            <div className="absolute top-16 right-6">
               <QuickAddDrawer />
             </div>
           </div>

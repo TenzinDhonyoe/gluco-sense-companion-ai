@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import {
   Drawer,
@@ -91,7 +90,7 @@ const QuickAddDrawer = () => {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" size="icon" className="bg-white/50 rounded-full shadow-md">
+        <Button size="icon" className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full shadow-lg transition hover:scale-105">
           <Plus className="h-5 w-5" />
         </Button>
       </DrawerTrigger>
@@ -121,4 +120,3 @@ const QuickAddDrawer = () => {
 };
 
 export default QuickAddDrawer;
-
