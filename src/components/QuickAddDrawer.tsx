@@ -19,7 +19,7 @@ const QuickAddDrawer = () => {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
-  const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string} | null>(null);
+  const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
 
   const handleLog = (type: LogType, description: string, points: number) => {
