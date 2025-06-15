@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  User, 
   Settings, 
   Bell, 
   Bluetooth, 
@@ -51,9 +50,10 @@ const Profile = () => {
         <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
-              </div>
+              <Avatar className="w-16 h-16 border-2 border-white/50">
+                <AvatarImage src="/lovable-uploads/a5cb90a4-fd80-42c7-968b-baed1db61e39.png" alt="Sarah Johnson" />
+                <AvatarFallback className="bg-white/30 text-white text-2xl font-bold">SJ</AvatarFallback>
+              </Avatar>
               <div>
                 <h2 className="text-2xl font-bold">Sarah Johnson</h2>
                 <p className="text-blue-100">Pre-diabetic monitoring</p>
