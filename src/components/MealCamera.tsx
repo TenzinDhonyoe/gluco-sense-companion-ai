@@ -1,5 +1,4 @@
 
-```tsx
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -129,14 +128,14 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
             <DialogFooter className="p-4 border-t">
             {capturedImage ? (
                 <div className="flex w-full justify-between gap-2">
-                    <Button variant="outline" onClick={handleRetake} className="w-full">
-                        <RefreshCcw /> Retake
+                    <Button variant="outline" onClick={handleRetake} className="w-full flex items-center gap-2">
+                        <RefreshCcw className="w-4 h-4" /> Retake
                     </Button>
                     <Button onClick={handleConfirm} className="w-full">Confirm</Button>
                 </div>
             ) : (
-                <Button onClick={handleCapture} className="w-full" disabled={!!error || !stream}>
-                    <Camera /> Capture
+                <Button onClick={handleCapture} className="w-full flex items-center gap-2" disabled={!!error || !stream}>
+                    <Camera className="w-4 h-4" /> Capture
                 </Button>
             )}
             </DialogFooter>
@@ -148,4 +147,3 @@ const MealCamera = ({ open, onOpenChange, onCapture }: MealCameraProps) => {
 };
 
 export default MealCamera;
-```
