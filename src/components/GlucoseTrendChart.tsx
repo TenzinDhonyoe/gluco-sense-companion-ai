@@ -1,92 +1,20 @@
-import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
-interface GlucoseReading {
+export interface GlucoseReading {
   time: string;
   value: number;
   timestamp: number;
   trendIndex: number;
 }
 
-const GlucoseTrendChart = () => {
-  const [data, setData] = useState<GlucoseReading[]>([]);
+interface GlucoseTrendChartProps {
+  data: GlucoseReading[];
+  trendDirection: 'up' | 'down' | 'flat';
+}
 
-  // Generate simulated glucose readings with trend index
-  const generateGlucoseReading = (timestamp: number, index: number): { value: number; trendIndex: number } => {
-    // Simulate realistic glucose values with smoother transitions
-    const baseValue = 100;
-    const timeOfDay = (timestamp % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000); // Hours in day
-    
-    // Gentle daily rhythm (higher after meals, lower at night)
-    const dailyPattern = Math.sin((timeOfDay - 6) * Math.PI / 12) * 15;
-    
-    // Smooth trending with some persistence
-    const trend = Math.sin(timestamp / (4 * 60 * 60 * 1000)) * 20; // 4-hour cycles
-    
-    // Reduced noise for smoother curve
-    const noise = (Math.random() - 0.5) * 8;
-    
-    const value = Math.max(60, Math.min(200, baseValue + dailyPattern + trend + noise));
-    
-    // Calculate trend index based on rate of change
-    const trendIndex = Math.round((value - 100) / 10);
-    
-    return { value: Math.round(value), trendIndex };
-  };
-
-  useEffect(() => {
-    // Initialize with last 24 hours of data (15-minute intervals)
-    const now = Date.now();
-    const initialData: GlucoseReading[] = [];
-    
-    for (let i = 96; i >= 0; i--) { // 96 intervals = 24 hours
-      const timestamp = now - (i * 15 * 60 * 1000);
-      const time = new Date(timestamp).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: false 
-      });
-      
-      const { value, trendIndex } = generateGlucoseReading(timestamp, i);
-      
-      initialData.push({
-        time,
-        value,
-        timestamp,
-        trendIndex
-      });
-    }
-    
-    setData(initialData);
-
-    // Update with new reading every 15 minutes
-    const interval = setInterval(() => {
-      const newTimestamp = Date.now();
-      const newTime = new Date(newTimestamp).toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: false 
-      });
-      
-      const { value, trendIndex } = generateGlucoseReading(newTimestamp, 0);
-      
-      const newReading: GlucoseReading = {
-        time: newTime,
-        value,
-        timestamp: newTimestamp,
-        trendIndex
-      };
-
-      setData(prevData => {
-        const newData = [...prevData.slice(1), newReading]; // Keep last 96 points
-        return newData;
-      });
-    }, 15 * 60 * 1000); // 15 minutes
-
-    return () => clearInterval(interval);
-  }, []);
+const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => {
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -112,7 +40,7 @@ const GlucoseTrendChart = () => {
   // Empty state if not enough data
   if (data.length < 4) {
     return (
-      <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+      <div className="h-80 w-full flex items-center justify-center bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
           <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
@@ -127,28 +55,35 @@ const GlucoseTrendChart = () => {
     isLatest: index === data.length - 1
   }));
 
-  // Calculate trend for the arrow
-  let trendDirection: 'up' | 'down' | 'flat' = 'flat';
-  if (data.length >= 2) {
-    const lastValue = data[data.length - 1].value;
-    const secondLastValue = data[data.length - 2].value;
-    const diff = lastValue - secondLastValue;
-    if (diff > 2) { // Threshold to avoid showing arrows for tiny fluctuations
-      trendDirection = 'up';
-    } else if (diff < -2) {
-      trendDirection = 'down';
-    }
-  }
+  const yAxisDomain = [50, 200];
+  const yAxisRange = yAxisDomain[1] - yAxisDomain[0];
 
   return (
     <div className="h-80 w-full relative">
       {/* Range shading background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div 
-          className="absolute left-16 right-8 bg-emerald-50 opacity-40 rounded"
+        {/* High (Red) Zone: > 140 */}
+        <div
+          className="absolute left-16 right-8 bg-red-100 opacity-50"
           style={{
-            top: `${((200 - 140) / (200 - 50)) * 100}%`,
-            height: `${((140 - 70) / (200 - 50)) * 100}%`
+            top: 0,
+            height: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
+          }}
+        />
+        {/* In-Range (Green) Zone: 70-140 */}
+        <div 
+          className="absolute left-16 right-8 bg-emerald-50 opacity-40"
+          style={{
+            top: `${((yAxisDomain[1] - 140) / yAxisRange) * 100}%`,
+            height: `${((140 - 70) / yAxisRange) * 100}%`,
+          }}
+        />
+        {/* Low (Yellow) Zone: < 70 */}
+        <div
+          className="absolute left-16 right-8 bg-yellow-100 opacity-50"
+          style={{
+            top: `${((yAxisDomain[1] - 70) / yAxisRange) * 100}%`,
+            height: `${((70 - yAxisDomain[0]) / yAxisRange) * 100}%`,
           }}
         />
       </div>
@@ -177,7 +112,7 @@ const GlucoseTrendChart = () => {
             
             {/* Y-axis with visible ticks and labels */}
             <YAxis 
-              domain={[50, 200]}
+              domain={yAxisDomain}
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={{ stroke: "#E5E7EB" }}
               tickLine={{ stroke: "#E5E7EB" }}
