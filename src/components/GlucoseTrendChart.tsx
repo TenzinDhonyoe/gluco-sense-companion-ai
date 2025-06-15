@@ -58,12 +58,14 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
   const yAxisDomain = [50, 200];
   const yAxisRange = yAxisDomain[1] - yAxisDomain[0];
 
+  const xTicks = data.filter((_, index) => index % 12 === 0).map(d => d.time);
+
   return (
     <div className="h-80 w-full relative">
       {/* Range shading background */}
       <div
         className="absolute pointer-events-none"
-        style={{ top: 20, right: 30, bottom: 40, left: 74 }}
+        style={{ top: 25, right: 35, bottom: 30, left: 74 }}
       >
         {/* High (Red) Zone: > 140 */}
         <div
@@ -95,7 +97,7 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={dataWithLatestFlag} 
-            margin={{ top: 20, right: 30, left: 24, bottom: 40 }}
+            margin={{ top: 25, right: 35, left: 24, bottom: 30 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
             
@@ -105,12 +107,8 @@ const GlucoseTrendChart = ({ data, trendDirection }: GlucoseTrendChartProps) => 
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={{ stroke: "#E5E7EB" }}
               tickLine={{ stroke: "#E5E7EB" }}
-              interval="preserveStartEnd"
-              tickFormatter={(value, index) => {
-                // Show every 12th tick (3 hours intervals for 15-min data)
-                return index % 12 === 0 ? value : '';
-              }}
-              height={60}
+              ticks={xTicks}
+              height={30}
             />
             
             {/* Y-axis with visible ticks and labels */}
