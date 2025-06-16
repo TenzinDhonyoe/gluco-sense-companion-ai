@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils } from "lucide-react";
+import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, Bluetooth } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
@@ -95,9 +95,10 @@ const Dashboard = () => {
               className="h-12 w-12"
             />
           </div>
-          <Button onClick={handleSignOut} variant="outline" size="sm">
-            Sign Out
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Bluetooth className="w-5 h-5 text-blue-500" />
+            <span className="text-sm font-medium text-gray-700">Connected</span>
+          </div>
         </div>
 
         {/* Current Glucose */}

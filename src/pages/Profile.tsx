@@ -1,4 +1,6 @@
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +15,15 @@ import {
   Target,
   Trophy,
   Shield,
-  HelpCircle
+  HelpCircle,
+  LogOut
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
@@ -41,6 +46,11 @@ const Profile = () => {
       title: "Settings Updated",
       description: `${setting} ${value ? 'enabled' : 'disabled'}`,
     });
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
   return (
@@ -157,6 +167,15 @@ const Profile = () => {
             <Button variant="outline" className="w-full justify-start">
               <HelpCircle className="w-4 h-4 mr-2" />
               Help & Support
+            </Button>
+
+            <Button 
+              onClick={handleSignOut} 
+              variant="outline" 
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
             </Button>
           </CardContent>
         </Card>
