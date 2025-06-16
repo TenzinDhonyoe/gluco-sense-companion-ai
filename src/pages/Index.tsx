@@ -1,79 +1,50 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Activity, Heart, Target, Trophy } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import Auth from "./Auth";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking if user is onboarded
-    const timer = setTimeout(() => {
-      // For prototype, auto-navigate to dashboard
-      // navigate("/dashboard");
-    }, 3000);
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+      
+      // If user is already logged in, redirect to dashboard
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
 
-    return () => clearTimeout(timer);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="text-center mb-4 animate-fade-in">
-          <img src="/lovable-uploads/dfd89829-7ba8-47a8-9247-a552f80c02b5.png" alt="App Logo" className="w-20 h-20 mx-auto mb-2" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
-            GlucoSense
-          </h1>
-          <p className="text-base text-gray-600">
-            Your AI-powered wellness companion
-          </p>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-4 w-full max-w-lg">
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-4 text-center">
-              <Heart className="w-8 h-8 text-red-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-800 mb-2">Live Monitoring</h3>
-              <p className="text-sm text-gray-600">Real-time glucose trends from your NIR watch</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-4 text-center">
-              <Target className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-800 mb-2">AI Insights</h3>
-              <p className="text-sm text-gray-600">Personalized suggestions for better health</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-4 text-center">
-              <Activity className="w-8 h-8 text-green-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-800 mb-2">Quick Logging</h3>
-              <p className="text-sm text-gray-600">Log meals & workouts in under 10 seconds</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-800 mb-2">Rewards</h3>
-              <p className="text-sm text-gray-600">Earn points and streaks for healthy habits</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Button 
-          onClick={() => navigate("/dashboard")} 
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 text-base font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-        >
-          Get Started
-        </Button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Show auth screen if not logged in
+  return <Auth />;
 };
 
 export default Index;
