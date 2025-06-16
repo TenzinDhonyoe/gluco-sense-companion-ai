@@ -85,7 +85,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
       {/* Header */}
-      <div className="text-center py-4">
+      <div className="text-center pt-8 pb-2">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
           GlucoSense
         </h1>
