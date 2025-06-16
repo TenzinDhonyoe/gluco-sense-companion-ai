@@ -11,6 +11,8 @@ import QuickAddDrawer from "@/components/QuickAddDrawer";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
 import RewardsCard from "@/components/RewardsCard";
 import { supabase } from "@/integrations/supabase/client";
+import { type GlucoseReading } from "@/components/GlucoseTrendChart";
+import { type LogEntry } from "@/lib/logStore";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -20,6 +22,36 @@ const Dashboard = () => {
     calories: 320,
     sleep: 7.5
   });
+
+  // Mock glucose data for demonstration
+  const mockGlucoseData: GlucoseReading[] = [
+    { time: '6:00 AM', value: 95 },
+    { time: '8:00 AM', value: 142 },
+    { time: '10:00 AM', value: 128 },
+    { time: '12:00 PM', value: 156 },
+    { time: '2:00 PM', value: 134 },
+    { time: '4:00 PM', value: 118 },
+    { time: '6:00 PM', value: 145 },
+    { time: '8:00 PM', value: 122 },
+  ];
+
+  // Mock log entries for demonstration
+  const mockLogs: LogEntry[] = [
+    {
+      id: '1',
+      type: 'meal',
+      description: 'Grilled chicken salad with mixed vegetables',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      value: undefined
+    },
+    {
+      id: '2', 
+      type: 'exercise',
+      description: 'Morning walk - 30 minutes',
+      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+      value: 30
+    }
+  ];
 
   useEffect(() => {
     // Check if user is authenticated
@@ -66,7 +98,13 @@ const Dashboard = () => {
         </div>
 
         {/* Current Glucose */}
-        <GlucoseTrendCard />
+        <GlucoseTrendCard 
+          trend="normal"
+          lastReading={new Date()}
+          latestValue={122}
+          trendDirection="flat"
+          glucoseData={mockGlucoseData}
+        />
 
         {/* Today's Progress */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
@@ -143,13 +181,13 @@ const Dashboard = () => {
         </Card>
 
         {/* AI Suggestions */}
-        <AISuggestionsCard />
+        <AISuggestionsCard glucoseData={mockGlucoseData} logs={mockLogs} />
 
         {/* Rewards */}
         <RewardsCard />
       </div>
 
-      <QuickAddDrawer isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} />
+      <QuickAddDrawer />
       <BottomNav />
     </div>
   );
