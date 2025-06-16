@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -131,9 +132,15 @@ const Dashboard = () => {
         <RewardsCard />
       </div>
 
+      {/* Floating Quick Add Button */}
+      <div className="fixed bottom-24 right-6 z-50">
+        <QuickAddDrawer />
+      </div>
+
       <BottomNav />
     </div>
   );
 };
 
 export default Dashboard;
+
