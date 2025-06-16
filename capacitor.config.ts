@@ -1,0 +1,15 @@
+
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'app.lovable.9d436c18e9f14cbc882353b3ede185a8',
+  appName: 'gluco-sense-companion-ai',
+  webDir: 'dist',
+  server: {
+    url: 'https://9d436c18-e9f1-4cbc-8823-53b3ede185a8.lovableproject.com?forceHideBadge=true',
+    cleartext: true
+  },
+  bundledWebRuntime: false
+};
+
+export default config;
