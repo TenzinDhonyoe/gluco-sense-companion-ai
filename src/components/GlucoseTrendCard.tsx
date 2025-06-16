@@ -30,6 +30,17 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
     }
   };
 
+  const getBorderColor = () => {
+    if (trend === 'high' || trendDirection === 'down') {
+      return 'border-red-500';
+    } else if (trend === 'normal') {
+      return 'border-green-500';
+    } else if (trend === 'low') {
+      return 'border-red-500';
+    }
+    return 'border-gray-200';
+  };
+
   const trendInfo = getTrendInfo(trend);
   const minutesAgo = Math.floor((Date.now() - lastReading.getTime()) / (1000 * 60));
 
@@ -53,7 +64,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   return (
     <Card className="bg-transparent border-0 shadow-none p-0">
       <CardHeader className="p-0 pb-6 flex flex-row justify-center items-center">
-        <div className="flex items-center bg-white border-2 border-gray-200 rounded-full p-2 space-x-3 shadow-sm">
+        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full p-2 space-x-3 shadow-sm`}>
           <div className="text-center pl-4">
             <p className="text-4xl font-bold text-gray-800">{latestValue ?? '...'}</p>
             <p className="text-sm text-gray-500 -mt-1">mg/dL</p>
