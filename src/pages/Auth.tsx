@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+
 const Auth = () => {
   const navigate = useNavigate();
   const {
@@ -79,7 +80,7 @@ const Auth = () => {
   };
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
       {/* Header */}
-      <div className="text-center pt-8 pb-2">
+      <div className="text-center pt-16 pb-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
           GlucoSense
         </h1>
@@ -89,20 +90,25 @@ const Auth = () => {
       {/* Main Content */}
       <div className="flex-1 flex justify-center items-center px-6 py-2">
         <div className="w-full max-w-sm">
-          {/* Illustration */}
-          <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-6 mb-4 relative overflow-hidden rounded-2xl">
+          {/* Animated Illustration */}
+          <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-6 mb-4 relative overflow-hidden rounded-2xl group hover:shadow-2xl transition-all duration-500 animate-gradient-x">
             <div className="relative z-10 text-center text-white">
-              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center">
-                <div className="w-6 h-6 bg-white rounded-full"></div>
+              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse hover:animate-bounce transition-all duration-300">
+                <div className="w-6 h-6 bg-white rounded-full animate-ping"></div>
               </div>
-              <h3 className="text-base font-semibold mb-1">Track Your Health</h3>
-              <p className="text-xs opacity-90">Monitor glucose levels and wellness insights</p>
+              <h3 className="text-base font-semibold mb-1 transform group-hover:scale-105 transition-transform duration-300">Track Your Health</h3>
+              <p className="text-xs opacity-90 transform group-hover:translate-y-1 transition-transform duration-300">Monitor glucose levels and wellness insights</p>
             </div>
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-            <div className="absolute bottom-0 left-0 w-14 h-14 bg-white/10 rounded-full -ml-7 -mb-7"></div>
+            {/* Animated floating elements */}
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10 animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
+            <div className="absolute bottom-0 left-0 w-14 h-14 bg-white/10 rounded-full -ml-7 -mb-7 animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
+            <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-white/5 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute top-1/4 right-1/4 w-6 h-6 bg-white/5 rounded-full animate-float" style={{ animationDelay: '0.5s' }}></div>
+            {/* Gradient overlay animation */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
           </div>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-shadow duration-300">
             <CardContent className="p-5">
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1">
@@ -155,4 +161,5 @@ const Auth = () => {
       </div>
     </div>;
 };
+
 export default Auth;
