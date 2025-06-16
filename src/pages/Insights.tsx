@@ -53,7 +53,7 @@ const Insights = () => {
                 <span className="text-lg font-bold text-gray-900">{Math.round(timeInRange)}%</span>
               </div>
               <Progress value={timeInRange} className="h-3" />
-              <p className="text-xs text-gray-500 mt-1">Target: >70%</p>
+              <p className="text-xs text-gray-500 mt-1">Target: {">"}70%</p>
             </div>
 
             {/* Post Meal Spikes */}
