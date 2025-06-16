@@ -1,15 +1,14 @@
 
-
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
-import HbA1cCard from "@/components/HbA1cCard";
 import RewardsCard from "@/components/RewardsCard";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
-import { Bluetooth } from "lucide-react";
+import { Bluetooth, Footprints, Flame, Moon, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { getLogs, type LogEntry } from "@/lib/logStore";
 
@@ -74,7 +73,6 @@ const Dashboard = () => {
   const latestReading = glucoseData.length > 0 ? glucoseData[glucoseData.length - 1] : undefined;
   const lastReadingTime = latestReading ? new Date(latestReading.timestamp) : new Date();
   
-  // Memoize the filtered data to prevent unnecessary re-renders and API calls
   const last24HoursData = useMemo(() => {
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
     return glucoseData.filter(d => d.timestamp >= twentyFourHoursAgo);
@@ -94,6 +92,19 @@ const Dashboard = () => {
     if (diff > 2) trendDirection = 'up';
     else if (diff < -2) trendDirection = 'down';
   }
+
+  // Mock data for Today's Progress
+  const todaysProgress = {
+    steps: 8247,
+    stepGoal: 10000,
+    calories: 342,
+    calorieGoal: 500,
+    sleep: 7.2,
+    sleepGoal: 8
+  };
+
+  // Recent activities from logs (last 3)
+  const recentActivities = logs.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
@@ -122,11 +133,59 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Today's Progress */}
+        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="w-5 h-5 text-blue-500" />
+              <span>Today's Progress</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <Footprints className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900">{todaysProgress.steps.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">/{todaysProgress.stepGoal.toLocaleString()} steps</div>
+              </div>
+              <div className="text-center">
+                <Flame className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900">{todaysProgress.calories}</div>
+                <div className="text-sm text-gray-600">/{todaysProgress.calorieGoal} cal burned</div>
+              </div>
+              <div className="text-center">
+                <Moon className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900">{todaysProgress.sleep}h</div>
+                <div className="text-sm text-gray-600">/{todaysProgress.sleepGoal}h sleep</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activities */}
+        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle>Recent Activities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentActivities.map(activity => (
+                <div key={activity.id} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{activity.description}</p>
+                    <p className="text-sm text-gray-500 capitalize">{activity.type}</p>
+                  </div>
+                  <Badge className="bg-yellow-500 text-white">
+                    +{activity.points}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* AI Suggestions */}
         <AISuggestionsCard glucoseData={last24HoursData} logs={logs} />
-
-        {/* HbA1c Estimate */}
-        <HbA1cCard />
 
         {/* Rewards */}
         <RewardsCard />
@@ -143,4 +202,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
