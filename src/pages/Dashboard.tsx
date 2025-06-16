@@ -88,9 +88,12 @@ const Dashboard = () => {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Good morning! 👋</h1>
-            <p className="text-gray-600">Let's check your health today</p>
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
+              alt="Logo" 
+              className="h-12 w-12"
+            />
           </div>
           <Button onClick={handleSignOut} variant="outline" size="sm">
             Sign Out
