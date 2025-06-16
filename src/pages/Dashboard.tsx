@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -5,6 +6,7 @@ import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
 import HbA1cCard from "@/components/HbA1cCard";
 import RewardsCard from "@/components/RewardsCard";
+import QuickAddDrawer from "@/components/QuickAddDrawer";
 import { Bluetooth } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
