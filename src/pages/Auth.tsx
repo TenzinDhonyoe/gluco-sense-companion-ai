@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+
 const Auth = () => {
   const navigate = useNavigate();
   const {
@@ -79,7 +80,7 @@ const Auth = () => {
   };
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
       {/* Header */}
-      <div className="text-center pt-8 pb-2">
+      <div className="text-center pt-12 pb-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-1">
           GlucoSense
         </h1>
@@ -92,7 +93,7 @@ const Auth = () => {
           {/* Illustration */}
           <div className="bg-gradient-to-r from-blue-400 to-purple-500 p-6 mb-4 relative overflow-hidden rounded-2xl">
             <div className="relative z-10 text-center text-white">
-              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse">
                 <div className="w-6 h-6 bg-white rounded-full"></div>
               </div>
               <h3 className="text-base font-semibold mb-1">Track Your Health</h3>
@@ -155,4 +156,5 @@ const Auth = () => {
       </div>
     </div>;
 };
+
 export default Auth;
