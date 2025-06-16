@@ -25,14 +25,14 @@ const Dashboard = () => {
 
   // Mock glucose data for demonstration
   const mockGlucoseData: GlucoseReading[] = [
-    { time: '6:00 AM', value: 95 },
-    { time: '8:00 AM', value: 142 },
-    { time: '10:00 AM', value: 128 },
-    { time: '12:00 PM', value: 156 },
-    { time: '2:00 PM', value: 134 },
-    { time: '4:00 PM', value: 118 },
-    { time: '6:00 PM', value: 145 },
-    { time: '8:00 PM', value: 122 },
+    { time: '6:00 AM', value: 95, timestamp: Date.now() - 8 * 60 * 60 * 1000, trendIndex: 0 },
+    { time: '8:00 AM', value: 142, timestamp: Date.now() - 6 * 60 * 60 * 1000, trendIndex: 1 },
+    { time: '10:00 AM', value: 128, timestamp: Date.now() - 4 * 60 * 60 * 1000, trendIndex: 2 },
+    { time: '12:00 PM', value: 156, timestamp: Date.now() - 2 * 60 * 60 * 1000, trendIndex: 3 },
+    { time: '2:00 PM', value: 134, timestamp: Date.now() - 1 * 60 * 60 * 1000, trendIndex: 4 },
+    { time: '4:00 PM', value: 118, timestamp: Date.now() - 0.5 * 60 * 60 * 1000, trendIndex: 5 },
+    { time: '6:00 PM', value: 145, timestamp: Date.now() - 0.25 * 60 * 60 * 1000, trendIndex: 6 },
+    { time: '8:00 PM', value: 122, timestamp: Date.now(), trendIndex: 7 },
   ];
 
   // Mock log entries for demonstration
@@ -41,15 +41,15 @@ const Dashboard = () => {
       id: '1',
       type: 'meal',
       description: 'Grilled chicken salad with mixed vegetables',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      value: undefined
+      time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      points: 15
     },
     {
       id: '2', 
       type: 'exercise',
       description: 'Morning walk - 30 minutes',
-      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-      value: 30
+      time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+      points: 25
     }
   ];
 
