@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,13 +91,13 @@ const Dashboard = () => {
   const sleepProgress = (todaysProgress.sleep / todaysProgress.sleepGoal) * 100;
   const mealsProgress = (todaysProgress.meals / todaysProgress.mealsGoal) * 100;
 
-  const CircularProgress = ({ value, size = 120, strokeWidth = 8, color = "text-blue-500" }) => {
+  const CircularProgress = ({ value, size = 80, strokeWidth = 6, color = "text-blue-500" }) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const offset = circumference - (value / 100) * circumference;
 
     return (
-      <div className="relative" style={{ width: size, height: size }}>
+      <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
         <svg
           className="transform -rotate-90"
           width={size}
@@ -133,7 +131,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -160,53 +158,53 @@ const Dashboard = () => {
 
         {/* Today's Progress */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <TrendingUp className="w-5 h-5 text-blue-500" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="relative inline-block">
-                  <CircularProgress value={stepsProgress} color="text-teal-500" />
+          <CardContent className="pt-2">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              <div className="flex flex-col items-center space-y-2">
+                <div className="relative">
+                  <CircularProgress value={stepsProgress} color="text-teal-500" size={70} strokeWidth={5} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.steps.toLocaleString()}</span>
-                    <span className="text-xs text-gray-500">steps</span>
+                    <span className="text-sm font-bold text-gray-900 leading-none">{Math.round(todaysProgress.steps / 1000)}k</span>
+                    <span className="text-xs text-gray-500 leading-none">steps</span>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-900">Steps</p>
-                  <p className="text-xs text-gray-500">of {todaysProgress.stepsGoal.toLocaleString()}</p>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-gray-900">Steps</p>
+                  <p className="text-xs text-gray-500">{Math.round(stepsProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="text-center">
-                <div className="relative inline-block">
-                  <CircularProgress value={sleepProgress} color="text-purple-500" />
+              <div className="flex flex-col items-center space-y-2">
+                <div className="relative">
+                  <CircularProgress value={sleepProgress} color="text-purple-500" size={70} strokeWidth={5} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.sleep}</span>
-                    <span className="text-xs text-gray-500">hrs</span>
+                    <span className="text-sm font-bold text-gray-900 leading-none">{todaysProgress.sleep}h</span>
+                    <span className="text-xs text-gray-500 leading-none">sleep</span>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-900">Sleep</p>
-                  <p className="text-xs text-gray-500">of {todaysProgress.sleepGoal}</p>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-gray-900">Sleep</p>
+                  <p className="text-xs text-gray-500">{Math.round(sleepProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="text-center">
-                <div className="relative inline-block">
-                  <CircularProgress value={mealsProgress} color="text-orange-500" />
+              <div className="flex flex-col items-center space-y-2">
+                <div className="relative">
+                  <CircularProgress value={mealsProgress} color="text-orange-500" size={70} strokeWidth={5} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.meals}</span>
-                    <span className="text-xs text-gray-500">logged</span>
+                    <span className="text-sm font-bold text-gray-900 leading-none">{todaysProgress.meals}</span>
+                    <span className="text-xs text-gray-500 leading-none">meals</span>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-900">Meals</p>
-                  <p className="text-xs text-gray-500">of {todaysProgress.mealsGoal}</p>
+                <div className="text-center">
+                  <p className="text-xs font-medium text-gray-900">Meals</p>
+                  <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
                 </div>
               </div>
             </div>
@@ -215,19 +213,19 @@ const Dashboard = () => {
 
         {/* Recent Activities */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <Clock className="w-5 h-5 text-gray-600" />
               <span>Recent Activities</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="pt-2">
+            <div className="space-y-2">
               {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <activity.icon className={`w-5 h-5 ${activity.color}`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+                  <activity.icon className={`w-4 h-4 ${activity.color} flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{activity.description}</p>
                     <p className="text-xs text-gray-500">{activity.time}</p>
                   </div>
                 </div>
@@ -251,4 +249,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
