@@ -82,6 +82,8 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
                   data={glucoseData} 
                   trendDirection={trendDirection} 
                   containerClassName="pointer-events-none"
+                  showTimeRangeFilter={false}
+                  defaultTimeRange="6"
                 />
             </div>
         </Link>

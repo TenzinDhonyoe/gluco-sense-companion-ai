@@ -17,10 +17,17 @@ interface GlucoseTrendChartProps {
   data: GlucoseReading[];
   trendDirection: 'up' | 'down' | 'flat';
   containerClassName?: string;
+  showTimeRangeFilter?: boolean;
+  defaultTimeRange?: string;
 }
 
-const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps) => {
-  const [timeRange, setTimeRange] = useState('3'); // default 3 hours
+const GlucoseTrendChart = ({ 
+  data, 
+  containerClassName, 
+  showTimeRangeFilter = true,
+  defaultTimeRange = '3'
+}: GlucoseTrendChartProps) => {
+  const [timeRange, setTimeRange] = useState(defaultTimeRange);
 
   const filteredData = useMemo(() => {
     if (!data) return [];
@@ -126,52 +133,54 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
   
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
-      <div 
-        className="absolute top-3 right-3 z-10"
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ToggleGroup 
-          type="single" 
-          value={timeRange}
-          onValueChange={handleTimeRangeChange}
-          size="sm" 
-          className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
+      {showTimeRangeFilter && (
+        <div 
+          className="absolute top-3 right-3 z-10"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
-          <ToggleGroupItem 
-            value="3" 
-            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
+          <ToggleGroup 
+            type="single" 
+            value={timeRange}
+            onValueChange={handleTimeRangeChange}
+            size="sm" 
+            className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
           >
-            3H
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="6" 
-            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            6H
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="12" 
-            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            12H
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="24" 
-            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            24H
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+            <ToggleGroupItem 
+              value="3" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              3H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="6" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              6H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="12" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              12H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="24" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              24H
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
       <ChartContainer config={chartConfig} className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 

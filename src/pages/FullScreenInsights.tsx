@@ -27,6 +27,8 @@ const FullScreenInsights = () => {
             data={glucoseData}
             trendDirection={trendDirection}
             containerClassName="h-full"
+            showTimeRangeFilter={true}
+            defaultTimeRange="6"
           />
         </main>
       </div>
