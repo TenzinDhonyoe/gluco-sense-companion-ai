@@ -61,7 +61,7 @@ const Profile = () => {
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <Avatar className="w-16 h-16 border-2 border-white/50">
-                <AvatarImage src="/lovable-uploads/a5cb90a4-fd80-42c7-968b-baed1db61e39.png" alt="Sarah Johnson" />
+                <AvatarImage src="/lovable-uploads/880f3ea4-efd1-4de5-93a4-d0d91ae981f7.png" alt="Sarah Johnson" />
                 <AvatarFallback className="bg-white/30 text-white text-2xl font-bold">SJ</AvatarFallback>
               </Avatar>
               <div>
