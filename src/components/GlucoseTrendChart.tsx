@@ -245,10 +245,18 @@ const GlucoseTrendChart = ({
               strokeWidth={0}
               activeDot={false}
               dot={(props) => {
-                const { cx, cy, payload } = props;
+                const { cx, cy, payload, index } = props;
                 if (payload?.isLatest) {
                   return (
-                      <circle cx={cx} cy={cy} r={5} fill="white" stroke="#002D3A" strokeWidth={2}/>
+                      <circle 
+                        key={`latest-${index}`}
+                        cx={cx} 
+                        cy={cy} 
+                        r={5} 
+                        fill="white" 
+                        stroke="#002D3A" 
+                        strokeWidth={2}
+                      />
                   );
                 }
                 return null;

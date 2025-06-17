@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,25 @@ const Dashboard = () => {
     { time: '1 min ago', value: 155, timestamp: Date.now() - 1 * 60 * 1000, trendIndex: 7 },
     { time: 'now', value: 142, timestamp: Date.now(), trendIndex: 8 },
   ];
+
+  // Calculate latest value and trend direction from data
+  const latestReading = mockGlucoseData[mockGlucoseData.length - 1];
+  const previousReading = mockGlucoseData[mockGlucoseData.length - 2];
+  
+  const calculateTrendDirection = (): 'up' | 'down' | 'flat' => {
+    if (!latestReading || !previousReading) return 'flat';
+    const difference = latestReading.value - previousReading.value;
+    if (difference > 5) return 'up';
+    if (difference < -5) return 'down';
+    return 'flat';
+  };
+
+  const calculateTrendCategory = (): 'low' | 'normal' | 'high' => {
+    if (!latestReading) return 'normal';
+    if (latestReading.value < 70) return 'low';
+    if (latestReading.value > 180) return 'high';
+    return 'normal';
+  };
 
   // Mock log entries for demonstration
   const mockLogs: LogEntry[] = [
@@ -140,10 +160,10 @@ const Dashboard = () => {
 
         {/* Current Glucose */}
         <GlucoseTrendCard 
-          trend="normal"
-          lastReading={new Date()}
-          latestValue={122}
-          trendDirection="flat"
+          trend={calculateTrendCategory()}
+          lastReading={new Date(latestReading?.timestamp || Date.now())}
+          latestValue={latestReading?.value}
+          trendDirection={calculateTrendDirection()}
           glucoseData={mockGlucoseData}
         />
 
