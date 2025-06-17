@@ -26,16 +26,17 @@ const Dashboard = () => {
     mealsGoal: 3
   });
 
-  // Mock glucose data for demonstration
+  // Mock glucose data for demonstration - updated every minute
   const mockGlucoseData: GlucoseReading[] = [
-    { time: '6:00 AM', value: 95, timestamp: Date.now() - 8 * 60 * 60 * 1000, trendIndex: 0 },
-    { time: '8:00 AM', value: 142, timestamp: Date.now() - 6 * 60 * 60 * 1000, trendIndex: 1 },
-    { time: '10:00 AM', value: 128, timestamp: Date.now() - 4 * 60 * 60 * 1000, trendIndex: 2 },
-    { time: '12:00 PM', value: 156, timestamp: Date.now() - 2 * 60 * 60 * 1000, trendIndex: 3 },
-    { time: '2:00 PM', value: 134, timestamp: Date.now() - 1 * 60 * 60 * 1000, trendIndex: 4 },
-    { time: '4:00 PM', value: 118, timestamp: Date.now() - 0.5 * 60 * 60 * 1000, trendIndex: 5 },
-    { time: '6:00 PM', value: 145, timestamp: Date.now() - 0.25 * 60 * 60 * 1000, trendIndex: 6 },
-    { time: '8:00 PM', value: 122, timestamp: Date.now(), trendIndex: 7 },
+    { time: '8 min ago', value: 118, timestamp: Date.now() - 8 * 60 * 1000, trendIndex: 0 },
+    { time: '7 min ago', value: 125, timestamp: Date.now() - 7 * 60 * 1000, trendIndex: 1 },
+    { time: '6 min ago', value: 132, timestamp: Date.now() - 6 * 60 * 1000, trendIndex: 2 },
+    { time: '5 min ago', value: 128, timestamp: Date.now() - 5 * 60 * 1000, trendIndex: 3 },
+    { time: '4 min ago', value: 135, timestamp: Date.now() - 4 * 60 * 1000, trendIndex: 4 },
+    { time: '3 min ago', value: 129, timestamp: Date.now() - 3 * 60 * 1000, trendIndex: 5 },
+    { time: '2 min ago', value: 124, timestamp: Date.now() - 2 * 60 * 1000, trendIndex: 6 },
+    { time: '1 min ago', value: 122, timestamp: Date.now() - 1 * 60 * 1000, trendIndex: 7 },
+    { time: 'now', value: 122, timestamp: Date.now(), trendIndex: 8 },
   ];
 
   // Mock log entries for demonstration
