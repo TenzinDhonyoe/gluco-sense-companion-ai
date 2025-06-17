@@ -74,13 +74,6 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const recentActivities = [
-    { type: "meal", time: "2 hours ago", description: "Logged lunch: Grilled chicken salad", icon: Utensils, color: "text-green-600" },
-    { type: "glucose", time: "3 hours ago", description: "Glucose reading: 142 mg/dL", icon: Activity, color: "text-blue-600" },
-    { type: "exercise", time: "5 hours ago", description: "Morning walk: 30 minutes", icon: Footprints, color: "text-orange-600" },
-    { type: "medication", time: "8 hours ago", description: "Insulin dose logged", icon: Clock, color: "text-purple-600" },
-  ];
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -207,29 +200,6 @@ const Dashboard = () => {
                   <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activities */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center space-x-2 text-lg">
-              <Clock className="w-5 h-5 text-gray-600" />
-              <span>Recent Activities</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-2">
-              {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                  <activity.icon className={`w-4 h-4 ${activity.color} flex-shrink-0`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{activity.description}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>
