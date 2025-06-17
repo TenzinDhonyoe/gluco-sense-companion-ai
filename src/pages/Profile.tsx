@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,29 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Settings, 
-  Bell, 
-  Bluetooth, 
-  Heart, 
-  Activity,
-  Target,
-  Trophy,
-  Shield,
-  HelpCircle,
-  LogOut
-} from "lucide-react";
+import { Settings, Bell, Bluetooth, Heart, Activity, Target, Trophy, Shield, HelpCircle, LogOut } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
 const Profile = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
   const [highAlerts, setHighAlerts] = useState(true);
-
   const handleSettingChange = (setting: string, value: boolean) => {
     switch (setting) {
       case 'notifications':
@@ -41,20 +29,16 @@ const Profile = () => {
         setHighAlerts(value);
         break;
     }
-    
     toast({
       title: "Settings Updated",
-      description: `${setting} ${value ? 'enabled' : 'disabled'}`,
+      description: `${setting} ${value ? 'enabled' : 'disabled'}`
     });
   };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
       <div className="p-6 space-y-6">
         {/* Profile Header */}
         <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
@@ -65,7 +49,7 @@ const Profile = () => {
                 <AvatarFallback className="bg-white/30 text-white text-2xl font-bold">SJ</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-2xl font-bold">Sarah Johnson</h2>
+                <h2 className="text-2xl font-bold">Shannon</h2>
                 <p className="text-blue-100">Pre-diabetic monitoring</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge className="bg-white/20 text-white">
@@ -124,10 +108,7 @@ const Profile = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Auto-sync readings</span>
-                <Switch
-                  checked={autoSync}
-                  onCheckedChange={(value) => handleSettingChange('autoSync', value)}
-                />
+                <Switch checked={autoSync} onCheckedChange={value => handleSettingChange('autoSync', value)} />
               </div>
             </div>
           </CardContent>
@@ -147,10 +128,7 @@ const Profile = () => {
                 <Bell className="w-5 h-5 text-gray-500" />
                 <span className="text-gray-900">Push Notifications</span>
               </div>
-              <Switch
-                checked={notifications}
-                onCheckedChange={(value) => handleSettingChange('notifications', value)}
-              />
+              <Switch checked={notifications} onCheckedChange={value => handleSettingChange('notifications', value)} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -158,10 +136,7 @@ const Profile = () => {
                 <Shield className="w-5 h-5 text-gray-500" />
                 <span className="text-gray-900">High Glucose Alerts</span>
               </div>
-              <Switch
-                checked={highAlerts}
-                onCheckedChange={(value) => handleSettingChange('highAlerts', value)}
-              />
+              <Switch checked={highAlerts} onCheckedChange={value => handleSettingChange('highAlerts', value)} />
             </div>
 
             <Button variant="outline" className="w-full justify-start">
@@ -169,11 +144,7 @@ const Profile = () => {
               Help & Support
             </Button>
 
-            <Button 
-              onClick={handleSignOut} 
-              variant="outline" 
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
+            <Button onClick={handleSignOut} variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
@@ -182,8 +153,6 @@ const Profile = () => {
       </div>
 
       <BottomNav />
-    </div>
-  );
+    </div>;
 };
-
 export default Profile;
