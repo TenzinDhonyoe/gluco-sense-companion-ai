@@ -1,9 +1,11 @@
 
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, Bell } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
@@ -18,9 +20,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [todaysProgress, setTodaysProgress] = useState({
-    steps: 7542,
-    calories: 320,
-    sleep: 7.5
+    steps: 8432,
+    stepsGoal: 10000,
+    sleep: 7,
+    sleepGoal: 8,
+    meals: 2,
+    mealsGoal: 3
   });
 
   // Mock glucose data for demonstration
@@ -83,6 +88,49 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  // Calculate progress percentages
+  const stepsProgress = (todaysProgress.steps / todaysProgress.stepsGoal) * 100;
+  const sleepProgress = (todaysProgress.sleep / todaysProgress.sleepGoal) * 100;
+  const mealsProgress = (todaysProgress.meals / todaysProgress.mealsGoal) * 100;
+
+  const CircularProgress = ({ value, size = 120, strokeWidth = 8, color = "text-blue-500" }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (value / 100) * circumference;
+
+    return (
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg
+          className="transform -rotate-90"
+          width={size}
+          height={size}
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            className="text-gray-200"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            className={color}
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
       <div className="p-6 space-y-6">
@@ -119,21 +167,47 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <Footprints className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{todaysProgress.steps.toLocaleString()}</p>
-                <p className="text-sm text-gray-600">Steps</p>
+            <div className="grid grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="relative inline-block">
+                  <CircularProgress value={stepsProgress} color="text-teal-500" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.steps.toLocaleString()}</span>
+                    <span className="text-xs text-gray-500">steps</span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-900">Steps</p>
+                  <p className="text-xs text-gray-500">of {todaysProgress.stepsGoal.toLocaleString()}</p>
+                </div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <Flame className="w-6 h-6 text-orange-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{todaysProgress.calories}</p>
-                <p className="text-sm text-gray-600">Calories</p>
+              
+              <div className="text-center">
+                <div className="relative inline-block">
+                  <CircularProgress value={sleepProgress} color="text-purple-500" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.sleep}</span>
+                    <span className="text-xs text-gray-500">hrs</span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-900">Sleep</p>
+                  <p className="text-xs text-gray-500">of {todaysProgress.sleepGoal}</p>
+                </div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <Moon className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{todaysProgress.sleep}h</p>
-                <p className="text-sm text-gray-600">Sleep</p>
+              
+              <div className="text-center">
+                <div className="relative inline-block">
+                  <CircularProgress value={mealsProgress} color="text-orange-500" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-gray-900">{todaysProgress.meals}</span>
+                    <span className="text-xs text-gray-500">logged</span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-900">Meals</p>
+                  <p className="text-xs text-gray-500">of {todaysProgress.mealsGoal}</p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -177,3 +251,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
