@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import RewardsCard from "@/components/RewardsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
+import DynamicAvatar from "@/components/DynamicAvatar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -156,12 +156,10 @@ const Dashboard = () => {
               className="h-12 w-12"
             />
           </div>
-          <button onClick={() => navigate("/profile")} className="p-1">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src="/lovable-uploads/a5cb90a4-fd80-42c7-968b-baed1db61e39.png" alt="Profile" />
-              <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">SJ</AvatarFallback>
-            </Avatar>
-          </button>
+          <DynamicAvatar 
+            onClick={() => navigate("/profile")} 
+            size={48}
+          />
         </div>
 
         {/* Current Glucose */}
