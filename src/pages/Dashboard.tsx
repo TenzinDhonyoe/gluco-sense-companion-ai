@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +107,9 @@ const Dashboard = () => {
           glucoseData={mockGlucoseData}
         />
 
+        {/* AI Suggestions */}
+        <AISuggestionsCard glucoseData={mockGlucoseData} logs={mockLogs} />
+
         {/* Today's Progress */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
           <CardHeader>
@@ -157,9 +161,6 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* AI Suggestions */}
-        <AISuggestionsCard glucoseData={mockGlucoseData} logs={mockLogs} />
 
         {/* Rewards */}
         <RewardsCard />
