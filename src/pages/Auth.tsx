@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-
 const Auth = () => {
   const navigate = useNavigate();
   const {
@@ -78,16 +77,11 @@ const Auth = () => {
       [e.target.name]: e.target.value
     });
   };
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col">
+  return <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col">
       {/* Header with Logo */}
-      <div className="text-center pt-12 pb-4">
+      <div className="text-center pt-12 pb-4 py-[20px]">
         <div className="flex justify-center mb-4">
-          <img 
-            src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
-            alt="GlucoSense Logo" 
-            className="h-16 w-16"
-          />
+          <img src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" alt="GlucoSense Logo" className="h-16 w-16" />
         </div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-1">
           GlucoSense
@@ -118,16 +112,7 @@ const Auth = () => {
                   <Label htmlFor="email" className="text-gray-700 font-medium text-sm">Email</Label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={handleInputChange} 
-                      className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
-                      placeholder="Enter your email" 
-                      required 
-                    />
+                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" placeholder="Enter your email" required />
                   </div>
                 </div>
 
@@ -135,50 +120,22 @@ const Auth = () => {
                   <Label htmlFor="password" className="text-gray-700 font-medium text-sm">Password</Label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                    <Input 
-                      id="password" 
-                      name="password" 
-                      type={showPassword ? "text" : "password"} 
-                      value={formData.password} 
-                      onChange={handleInputChange} 
-                      className="pl-9 pr-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
-                      placeholder="Enter your password" 
-                      required 
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => setShowPassword(!showPassword)} 
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600"
-                    >
+                    <Input id="password" name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleInputChange} className="pl-9 pr-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" placeholder="Enter your password" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                {!isLogin && (
-                  <div className="space-y-1">
+                {!isLogin && <div className="space-y-1">
                     <Label htmlFor="confirmPassword" className="text-gray-700 font-medium text-sm">Confirm Password</Label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      <Input 
-                        id="confirmPassword" 
-                        name="confirmPassword" 
-                        type="password" 
-                        value={formData.confirmPassword} 
-                        onChange={handleInputChange} 
-                        className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
-                        placeholder="Confirm your password" 
-                        required 
-                      />
+                      <Input id="confirmPassword" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleInputChange} className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" placeholder="Confirm your password" required />
                     </div>
-                  </div>
-                )}
+                  </div>}
 
-                <Button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full h-10 bg-gradient-to-r from-green-600 to-yellow-600 hover:from-green-700 hover:to-yellow-700 text-white font-semibold rounded-xl shadow-lg mt-4"
-                >
+                <Button type="submit" disabled={loading} className="w-full h-10 bg-gradient-to-r from-green-600 to-yellow-600 hover:from-green-700 hover:to-yellow-700 text-white font-semibold rounded-xl shadow-lg mt-4">
                   {loading ? "Loading..." : isLogin ? "Log In" : "Create Account"}
                 </Button>
               </form>
@@ -187,10 +144,7 @@ const Auth = () => {
                 <p className="text-gray-600 text-xs">
                   {isLogin ? "New to GlucoSense?" : "Already have an account?"}
                 </p>
-                <button 
-                  onClick={() => setIsLogin(!isLogin)} 
-                  className="text-green-600 font-semibold mt-1 hover:text-green-700 text-sm"
-                >
+                <button onClick={() => setIsLogin(!isLogin)} className="text-green-600 font-semibold mt-1 hover:text-green-700 text-sm">
                   {isLogin ? "Create Account" : "Log In"}
                 </button>
               </div>
@@ -202,8 +156,6 @@ const Auth = () => {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
