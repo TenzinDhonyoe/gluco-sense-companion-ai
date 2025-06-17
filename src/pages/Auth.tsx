@@ -79,40 +79,40 @@ const Auth = () => {
     });
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col justify-center py-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col">
       {/* Header with Logo */}
-      <div className="text-center pb-6">
-        <div className="flex justify-center mb-3">
+      <div className="text-center pt-12 pb-4">
+        <div className="flex justify-center mb-4">
           <img 
             src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
             alt="GlucoSense Logo" 
-            className="h-12 w-12"
+            className="h-16 w-16"
           />
         </div>
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-1">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-1">
           GlucoSense
         </h1>
-        <p className="text-gray-600 text-xs">Your AI-powered wellness companion</p>
+        <p className="text-gray-600 text-sm">Your AI-powered wellness companion</p>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex justify-center items-center px-6">
+      <div className="flex-1 flex justify-center items-center px-6 py-2">
         <div className="w-full max-w-sm">
-          {/* Compact Illustration */}
-          <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-4 mb-4 relative overflow-hidden rounded-xl">
+          {/* Illustration */}
+          <div className="bg-gradient-to-r from-green-500 to-yellow-500 p-6 mb-4 relative overflow-hidden rounded-2xl">
             <div className="relative z-10 text-center text-white">
-              <div className="w-8 h-8 bg-white/20 rounded-full mx-auto mb-2 flex items-center justify-center">
-                <div className="w-4 h-4 bg-white rounded-full"></div>
+              <div className="w-12 h-12 bg-white/20 rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse">
+                <div className="w-6 h-6 bg-white rounded-full"></div>
               </div>
-              <h3 className="text-sm font-semibold mb-1">Track Your Health</h3>
+              <h3 className="text-base font-semibold mb-1">Track Your Health</h3>
               <p className="text-xs opacity-90">Monitor glucose levels and wellness insights</p>
             </div>
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8"></div>
-            <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/10 rounded-full -ml-6 -mb-6"></div>
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+            <div className="absolute bottom-0 left-0 w-14 h-14 bg-white/10 rounded-full -ml-7 -mb-7"></div>
           </div>
 
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-            <CardContent className="p-4">
+            <CardContent className="p-5">
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1">
                   <Label htmlFor="email" className="text-gray-700 font-medium text-sm">Email</Label>
@@ -124,7 +124,7 @@ const Auth = () => {
                       type="email" 
                       value={formData.email} 
                       onChange={handleInputChange} 
-                      className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
+                      className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
                       placeholder="Enter your email" 
                       required 
                     />
@@ -141,7 +141,7 @@ const Auth = () => {
                       type={showPassword ? "text" : "password"} 
                       value={formData.password} 
                       onChange={handleInputChange} 
-                      className="pl-9 pr-9 h-9 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
+                      className="pl-9 pr-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
                       placeholder="Enter your password" 
                       required 
                     />
@@ -166,7 +166,7 @@ const Auth = () => {
                         type="password" 
                         value={formData.confirmPassword} 
                         onChange={handleInputChange} 
-                        className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
+                        className="pl-9 h-10 bg-gray-50 border-gray-200 text-sm focus:border-green-500 focus:ring-green-500" 
                         placeholder="Confirm your password" 
                         required 
                       />
@@ -177,13 +177,13 @@ const Auth = () => {
                 <Button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full h-9 bg-gradient-to-r from-green-600 to-yellow-600 hover:from-green-700 hover:to-yellow-700 text-white font-semibold rounded-xl shadow-lg mt-4"
+                  className="w-full h-10 bg-gradient-to-r from-green-600 to-yellow-600 hover:from-green-700 hover:to-yellow-700 text-white font-semibold rounded-xl shadow-lg mt-4"
                 >
                   {loading ? "Loading..." : isLogin ? "Log In" : "Create Account"}
                 </Button>
               </form>
 
-              <div className="mt-3 text-center">
+              <div className="mt-4 text-center">
                 <p className="text-gray-600 text-xs">
                   {isLogin ? "New to GlucoSense?" : "Already have an account?"}
                 </p>
@@ -197,7 +197,7 @@ const Auth = () => {
             </CardContent>
           </Card>
 
-          <p className="text-center text-xs text-gray-500 mt-2 px-4">
+          <p className="text-center text-xs text-gray-500 mt-3 px-4">
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>
