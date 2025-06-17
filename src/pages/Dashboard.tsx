@@ -135,28 +135,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <Button 
-                onClick={() => setIsQuickAddOpen(true)} 
-                className="h-16 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Log Entry
-              </Button>
-              <Button variant="outline" className="h-16 border-2 border-blue-200 hover:bg-blue-50">
-                <Activity className="w-5 h-5 mr-2" />
-                View Trends
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Recent Activities */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
           <CardHeader>
@@ -187,7 +165,11 @@ const Dashboard = () => {
         <RewardsCard />
       </div>
 
-      <QuickAddDrawer />
+      {/* Quick Add Button - Fixed position bottom right */}
+      <div className="fixed bottom-24 right-6 z-10">
+        <QuickAddDrawer />
+      </div>
+
       <BottomNav />
     </div>
   );
