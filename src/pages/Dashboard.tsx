@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,9 +94,7 @@ const Dashboard = () => {
               className="h-12 w-12"
             />
           </div>
-          <div className="flex items-center space-x-2 bg-gray-800 text-white px-3 py-2 rounded-full">
-            <Bell className="w-4 h-4 text-blue-400" />
-          </div>
+          <Bell className="w-6 h-6 text-gray-600" />
         </div>
 
         {/* Current Glucose */}
