@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, BarChart3, MessageSquare, User } from "lucide-react";
+import { Home, FileText, BarChart3, MessageSquare } from "lucide-react";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ const BottomNav = () => {
     { path: "/logs", icon: FileText, label: "Log" },
     { path: "/insights", icon: BarChart3, label: "Insights" },
     { path: "/chat", icon: MessageSquare, label: "Chat" },
-    { path: "/profile", icon: User, label: "Profile" },
   ];
 
   return (

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, Bell } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
@@ -155,7 +156,12 @@ const Dashboard = () => {
               className="h-12 w-12"
             />
           </div>
-          <Bell className="w-6 h-6 text-gray-600" />
+          <button onClick={() => navigate("/profile")} className="p-1">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src="/lovable-uploads/a5cb90a4-fd80-42c7-968b-baed1db61e39.png" alt="Profile" />
+              <AvatarFallback className="bg-blue-100 text-blue-600 text-sm font-medium">SJ</AvatarFallback>
+            </Avatar>
+          </button>
         </div>
 
         {/* Current Glucose */}
