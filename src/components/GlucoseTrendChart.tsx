@@ -52,10 +52,48 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
 
   if (filteredData.length < 4) {
     return (
-      <div className="h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
-          <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
+      <div className={cn("w-full", containerClassName)}>
+        {/* Time Range Filter */}
+        <div className="flex justify-end mb-3">
+          <ToggleGroup 
+            type="single" 
+            value={timeRange}
+            onValueChange={(value) => value && setTimeRange(value)}
+            size="sm" 
+            className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
+          >
+            <ToggleGroupItem 
+              value="3" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            >
+              3H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="6" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            >
+              6H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="12" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            >
+              12H
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="24" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            >
+              24H
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        
+        <div className="h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg">
+          <div className="text-center">
+            <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
+            <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
+          </div>
         </div>
       </div>
     );
@@ -117,137 +155,124 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
         </g>
     );
   };
-
-  const handleTimeRangeChange = (value: string | undefined) => {
-    if (value) {
-      setTimeRange(value);
-    }
-  };
   
   return (
-    <div className={cn("h-60 w-full relative", containerClassName)}>
-      <div 
-        className="absolute top-3 right-3 z-10"
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className={cn("w-full", containerClassName)}>
+      {/* Time Range Filter - Now separate from chart */}
+      <div className="flex justify-end mb-3">
         <ToggleGroup 
           type="single" 
           value={timeRange}
-          onValueChange={handleTimeRangeChange}
+          onValueChange={(value) => value && setTimeRange(value)}
           size="sm" 
           className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
         >
           <ToggleGroupItem 
             value="3" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
           >
             3H
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="6" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
           >
             6H
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="12" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
           >
             12H
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="24" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
           >
             24H
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <ChartContainer config={chartConfig} className="h-full w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
-            data={dataWithLatestFlag} 
-            margin={{ top: 20, right: 15, left: 20, bottom: 15 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/50" />
-            
-            <XAxis 
-              dataKey="timestamp" 
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              ticks={xTicks}
-              tick={<CustomXAxisTick />}
-              axisLine={false}
-              tickLine={true}
-              padding={{ left: 10, right: 10 }}
-            />
-            
-            <YAxis 
-              orientation="left"
-              domain={yAxisDomain}
-              ticks={yTicks}
-              tick={{ fontSize: 11, fill: "#6B7280" }}
-              axisLine={false}
-              tickLine={true}
-              width={40}
-              tickFormatter={(value) => `${value}`}
-            >
-              <Label
-                value="mg/dL"
-                angle={-90}
-                position="insideLeft"
-                style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12 }}
-                offset={-5}
-              />
-            </YAxis>
-            
-            {/* Glucose Zones */}
-            <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
-            <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
-            <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
 
-            <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
-            <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
-            
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
-            
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#002D3A"
-              strokeWidth={2.5}
-              dot={{ r: 2.5, fill: '#002D3A' }}
-              activeDot={{ r: 5 }}
-            />
-            
-            <Line 
-              type="monotone" 
-              dataKey="value"
-              stroke="transparent"
-              strokeWidth={0}
-              activeDot={false}
-              dot={(props) => {
-                const { cx, cy, payload } = props;
-                if (payload?.isLatest) {
-                  return (
-                      <circle cx={cx} cy={cy} r={5} fill="white" stroke="#002D3A" strokeWidth={2}/>
-                  );
-                }
-                return null;
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+      {/* Chart Container - Clean without overlapping elements */}
+      <div className="h-60 w-full">
+        <ChartContainer config={chartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart 
+              data={dataWithLatestFlag} 
+              margin={{ top: 20, right: 15, left: 20, bottom: 15 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/50" />
+              
+              <XAxis 
+                dataKey="timestamp" 
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                ticks={xTicks}
+                tick={<CustomXAxisTick />}
+                axisLine={false}
+                tickLine={true}
+                padding={{ left: 10, right: 10 }}
+              />
+              
+              <YAxis 
+                orientation="left"
+                domain={yAxisDomain}
+                ticks={yTicks}
+                tick={{ fontSize: 11, fill: "#6B7280" }}
+                axisLine={false}
+                tickLine={true}
+                width={40}
+                tickFormatter={(value) => `${value}`}
+              >
+                <Label
+                  value="mg/dL"
+                  angle={-90}
+                  position="insideLeft"
+                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12 }}
+                  offset={-5}
+                />
+              </YAxis>
+              
+              {/* Glucose Zones */}
+              <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
+              <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
+              <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
+
+              <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
+              <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
+              
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
+              
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#002D3A"
+                strokeWidth={2.5}
+                dot={{ r: 2.5, fill: '#002D3A' }}
+                activeDot={{ r: 5 }}
+              />
+              
+              <Line 
+                type="monotone" 
+                dataKey="value"
+                stroke="transparent"
+                strokeWidth={0}
+                activeDot={false}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload?.isLatest) {
+                    return (
+                        <circle cx={cx} cy={cy} r={5} fill="white" stroke="#002D3A" strokeWidth={2}/>
+                    );
+                  }
+                  return null;
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
     </div>
   );
 };
