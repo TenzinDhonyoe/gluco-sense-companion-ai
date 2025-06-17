@@ -2,7 +2,7 @@
 import { useLocation, Link } from "react-router-dom";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import GlucoseTrendChart from "@/components/GlucoseTrendChart";
-import { ArrowLeft, RotateCw } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const FullScreenInsights = () => {
   const location = useLocation();
@@ -12,21 +12,7 @@ const FullScreenInsights = () => {
 
   return (
     <div className="w-screen h-screen bg-white">
-      {/* Rotation prompt, shown only in portrait mode */}
-      <div className="flex h-full w-full items-center justify-center p-4 text-center landscape:hidden">
-        <div className="flex flex-col items-center">
-          <RotateCw className="w-12 h-12 mb-4 text-gray-400 animate-spin" />
-          <h2 className="text-xl font-bold text-gray-800">
-            Please rotate your device
-          </h2>
-          <p className="text-gray-600 mt-2">
-            This view is optimized for landscape.
-          </p>
-        </div>
-      </div>
-
-      {/* Content, shown only in landscape mode */}
-      <div className="hidden h-full w-full flex-col p-3 landscape:flex lg:p-4">
+      <div className="h-full w-full flex flex-col p-3 lg:p-4">
         <header className="flex-shrink-0">
           <Link
             to="/dashboard"

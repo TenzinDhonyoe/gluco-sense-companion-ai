@@ -1,3 +1,4 @@
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
@@ -117,27 +118,30 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
     );
   };
 
-  const handleFilterChange = (value: string | undefined, event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (value) setTimeRange(value);
+  const handleTimeRangeChange = (value: string | undefined) => {
+    if (value) {
+      setTimeRange(value);
+    }
   };
   
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
       <div 
-        className="absolute top-3 right-3 z-10 pointer-events-auto"
+        className="absolute top-3 right-3 z-10"
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         <ToggleGroup 
           type="single" 
-          defaultValue={timeRange} 
-          onValueChange={(value) => { if (value) setTimeRange(value); }} 
+          value={timeRange}
+          onValueChange={handleTimeRangeChange}
           size="sm" 
           className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
         >
           <ToggleGroupItem 
             value="3" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             3H
@@ -145,6 +149,7 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
           <ToggleGroupItem 
             value="6" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             6H
@@ -152,6 +157,7 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
           <ToggleGroupItem 
             value="12" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             12H
@@ -159,6 +165,7 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
           <ToggleGroupItem 
             value="24" 
             className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             24H
