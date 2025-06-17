@@ -1,4 +1,3 @@
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
@@ -117,10 +116,18 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
         </g>
     );
   };
+
+  const handleFilterChange = (value: string | undefined, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (value) setTimeRange(value);
+  };
   
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
-      <div className="absolute top-3 right-3 z-10">
+      <div 
+        className="absolute top-3 right-3 z-10 pointer-events-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <ToggleGroup 
           type="single" 
           defaultValue={timeRange} 
@@ -128,10 +135,34 @@ const GlucoseTrendChart = ({ data, containerClassName }: GlucoseTrendChartProps)
           size="sm" 
           className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
         >
-          <ToggleGroupItem value="3" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">3H</ToggleGroupItem>
-          <ToggleGroupItem value="6" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">6H</ToggleGroupItem>
-          <ToggleGroupItem value="12" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">12H</ToggleGroupItem>
-          <ToggleGroupItem value="24" className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm">24H</ToggleGroupItem>
+          <ToggleGroupItem 
+            value="3" 
+            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            3H
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="6" 
+            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            6H
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="12" 
+            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            12H
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="24" 
+            className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            24H
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
       <ChartContainer config={chartConfig} className="h-full w-full">

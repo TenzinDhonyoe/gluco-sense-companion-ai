@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import GlucoseTrendChart, { type GlucoseReading } from "./GlucoseTrendChart";
@@ -79,7 +78,11 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
       <CardContent className="space-y-4 p-0">
         <Link to="/insights/full" state={{ glucoseData, trendDirection }}>
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
-                <GlucoseTrendChart data={glucoseData} trendDirection={trendDirection} />
+                <GlucoseTrendChart 
+                  data={glucoseData} 
+                  trendDirection={trendDirection} 
+                  containerClassName="pointer-events-none"
+                />
             </div>
         </Link>
         <div className="text-center pt-2">
