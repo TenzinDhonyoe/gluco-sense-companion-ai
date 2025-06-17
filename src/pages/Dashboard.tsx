@@ -1,9 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, Bluetooth } from "lucide-react";
+import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, Bell } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
@@ -95,8 +96,7 @@ const Dashboard = () => {
             />
           </div>
           <div className="flex items-center space-x-2 bg-gray-800 text-white px-3 py-2 rounded-full">
-            <Bluetooth className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium">Connected</span>
+            <Bell className="w-4 h-4 text-blue-400" />
           </div>
         </div>
 
