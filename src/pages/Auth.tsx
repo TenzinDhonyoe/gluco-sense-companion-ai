@@ -80,8 +80,15 @@ const Auth = () => {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col">
-      {/* Header */}
+      {/* Header with Logo */}
       <div className="text-center pt-12 pb-4">
+        <div className="flex justify-center mb-4">
+          <img 
+            src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
+            alt="GlucoSense Logo" 
+            className="h-16 w-16"
+          />
+        </div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent mb-1">
           GlucoSense
         </h1>
