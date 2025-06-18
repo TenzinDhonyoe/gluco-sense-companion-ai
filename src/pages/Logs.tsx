@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 import MealCamera from "@/components/MealCamera";
 import QuickGlucoseEntry from "@/components/QuickGlucoseEntry";
+import AIParseInput from "@/components/AIParseInput";
 
 // This interface is now for documentation, the source of truth is in logStore.ts
 export interface LogEntry {
@@ -115,6 +115,9 @@ const Logs = () => {
             <h1 className="text-2xl font-bold text-gray-900">Log Activity</h1>
             <p className="text-gray-600">Track your meals, workouts, and glucose</p>
           </div>
+
+          {/* AI Parse Input Section */}
+          <AIParseInput />
 
           {/* Quick Add Section */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
