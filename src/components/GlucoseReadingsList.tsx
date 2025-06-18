@@ -11,11 +11,12 @@ import GlucoseEntryForm from "./GlucoseEntryForm";
 
 interface GlucoseReading {
   id: string;
+  user_id: string;
   value: number;
   unit: GlucoseUnit;
   timestamp: string;
-  tag?: GlucoseTag;
-  notes?: string;
+  tag?: GlucoseTag | null;
+  notes?: string | null;
   source: string;
   created_at: string;
   updated_at: string;

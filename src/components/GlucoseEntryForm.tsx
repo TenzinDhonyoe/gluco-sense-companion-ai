@@ -1,14 +1,13 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Calendar, Clock, Save, X } from "lucide-react";
+import { Calendar, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseUnit, type GlucoseTag, glucoseTags, convertGlucoseValue, getGlucoseCategory } from "@/lib/glucoseUtils";
@@ -21,8 +20,8 @@ interface GlucoseEntryFormProps {
     value: number;
     unit: GlucoseUnit;
     timestamp: string;
-    tag?: GlucoseTag;
-    notes?: string;
+    tag?: GlucoseTag | null;
+    notes?: string | null;
   };
 }
 
@@ -49,7 +48,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
       unit: initialData?.unit || 'mg/dL',
       date: now.toISOString().split('T')[0],
       time: now.toTimeString().slice(0, 5),
-      tag: initialData?.tag,
+      tag: initialData?.tag || undefined,
       notes: initialData?.notes || '',
     },
   });
