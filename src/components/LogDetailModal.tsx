@@ -89,9 +89,6 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
           case 'notes':
             updateData.notes = editValues[field];
             break;
-          case 'meal_type':
-            updateData.meal_type = editValues[field];
-            break;
         }
       } else {
         switch (field) {
@@ -360,7 +357,6 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
                 </div>
               )}
               <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
-              {log.meal_type && renderEditableBadge('meal_type', log.meal_type, editingField === 'meal_type')}
             </div>
           </div>
         </div>
