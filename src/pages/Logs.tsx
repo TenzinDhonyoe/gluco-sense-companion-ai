@@ -1,15 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Plus, Clock, Apple, Dumbbell, Coffee, UtensilsCrossed } from "lucide-react";
+import { Camera, Clock, Apple, Dumbbell, Coffee, UtensilsCrossed, Brain, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 import MealCamera from "@/components/MealCamera";
 import QuickGlucoseEntry from "@/components/QuickGlucoseEntry";
-import AIParseInput from "@/components/AIParseInput";
+import { supabase } from "@/integrations/supabase/client";
 
 // This interface is now for documentation, the source of truth is in logStore.ts
 export interface LogEntry {
@@ -23,7 +24,8 @@ export interface LogEntry {
 const Logs = () => {
   const { toast } = useToast();
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [newLogDescription, setNewLogDescription] = useState("");
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   useEffect(() => {
@@ -45,28 +47,54 @@ const Logs = () => {
     };
   }, []);
 
-  const addLog = (type: LogEntry['type']) => {
-    if (!newLogDescription.trim()) {
+  const handleAISubmit = async () => {
+    if (!input.trim()) {
       toast({
-        title: "Description Required",
-        description: "Please enter a description for your log entry.",
+        title: "Input Required",
+        description: "Please describe what you ate or your exercise activity.",
         variant: "destructive"
       });
       return;
     }
 
-    const points = type === 'exercise' ? 25 : type === 'meal' ? 15 : 10;
-    addLogToStore({
-      type,
-      description: newLogDescription,
-      points
-    });
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Please sign in to use this feature');
+      }
 
-    setNewLogDescription("");
-    toast({
-      title: "Log Added!",
-      description: `+${points} points earned!`
-    });
+      const response = await supabase.functions.invoke('parse-user-input', {
+        body: { input: input.trim() }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to parse input');
+      }
+
+      const result = response.data;
+      if (result.success) {
+        toast({
+          title: "Successfully Logged!",
+          description: result.message,
+        });
+        setInput("");
+        
+        // Trigger logs refresh
+        window.dispatchEvent(new CustomEvent('logsChanged'));
+      } else {
+        throw new Error(result.error || 'Unknown error occurred');
+      }
+    } catch (error) {
+      console.error('Error parsing input:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to process your input. Please try again.',
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCaptureMeal = (imageDataUrl: string) => {
@@ -116,61 +144,63 @@ const Logs = () => {
             <p className="text-gray-600">Track your meals, workouts, and glucose</p>
           </div>
 
-          {/* AI Parse Input Section */}
-          <AIParseInput />
-
-          {/* Quick Add Section */}
+          {/* Combined AI Logging Section */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Plus className="w-5 h-5 text-blue-500" />
-                <span>Quick Add</span>
+                <Brain className="w-5 h-5 text-purple-500" />
+                <span>AI-Powered Logging</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Input
-                placeholder="What did you eat or do?"
-                value={newLogDescription}
-                onChange={(e) => setNewLogDescription(e.target.value)}
-                className="border-gray-200"
+              <Textarea
+                placeholder="Describe what you ate or your exercise... 
+                
+Examples:
+• Had 2 slices of pepperoni pizza and a Coke
+• Jogged for 30 minutes at moderate pace  
+• Ate a chicken caesar salad with dressing
+• Did 45 minutes of weight training"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="min-h-[100px] border-gray-200"
+                disabled={isLoading}
               />
               
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  onClick={() => addLog('meal')}
-                  className="bg-green-500 hover:bg-green-600 text-white"
-                >
-                  <UtensilsCrossed />
-                  Meal
-                </Button>
-                <Button
-                  onClick={() => addLog('exercise')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <Dumbbell />
-                  Exercise
-                </Button>
-                <Button
-                  onClick={() => addLog('snack')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Apple />
-                  Snack
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={handleAISubmit}
+                disabled={isLoading || !input.trim()}
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white h-12"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing with AI...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Log with AI
+                  </>
+                )}
+              </Button>
+              
+              <div className="grid grid-cols-2 gap-2 pt-2">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
                   variant="outline"
-                  className="border-blue-200 hover:bg-blue-50"
+                  className="border-blue-200 hover:bg-blue-50 h-12"
                 >
-                  <Camera />
+                  <Camera className="w-4 h-4 mr-2" />
                   Take Photo
                 </Button>
                 
                 <QuickGlucoseEntry />
               </div>
+              
+              <p className="text-xs text-gray-500 text-center">
+                AI will automatically detect if it's a meal or exercise and log it with nutrition/activity data
+              </p>
             </CardContent>
           </Card>
 
