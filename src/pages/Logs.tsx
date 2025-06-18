@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,15 +143,9 @@ const Logs = () => {
             <p className="text-gray-600">Track your meals, workouts, and glucose</p>
           </div>
 
-          {/* Combined AI Logging Section */}
+          {/* Combined Logging Section */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Brain className="w-5 h-5 text-purple-500" />
-                <span>AI-Powered Logging</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <Textarea
                 placeholder="Describe what you ate or your exercise... 
                 
