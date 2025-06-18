@@ -34,6 +34,34 @@ const Insights = () => {
           <p className="text-gray-600">Your glucose management overview</p>
         </div>
 
+        {/* This Week's Focus - moved to top */}
+        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Focus className="w-5 h-5" />
+              <span>This Week's Focus</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
+                <div>
+                  <h4 className="font-semibold mb-1">Reduce post-meal spikes</h4>
+                  <p className="text-blue-100 text-sm">Try eating protein before carbs and take a 10-minute walk after meals</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
+                <div>
+                  <h4 className="font-semibold mb-1">Improve sleep consistency</h4>
+                  <p className="text-blue-100 text-sm">Aim for 7-8 hours of sleep with consistent bedtime to help stabilize glucose</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* HbA1c Estimate */}
         <HbA1cCard />
 
@@ -95,34 +123,6 @@ const Insights = () => {
                   </Badge>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* This Week's Focus */}
-        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Focus className="w-5 h-5" />
-              <span>This Week's Focus</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
-                <div>
-                  <h4 className="font-semibold mb-1">Reduce post-meal spikes</h4>
-                  <p className="text-blue-100 text-sm">Try eating protein before carbs and take a 10-minute walk after meals</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
-                <div>
-                  <h4 className="font-semibold mb-1">Improve sleep consistency</h4>
-                  <p className="text-blue-100 text-sm">Aim for 7-8 hours of sleep with consistent bedtime to help stabilize glucose</p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
