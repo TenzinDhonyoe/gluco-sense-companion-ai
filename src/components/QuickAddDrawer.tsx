@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import {
   Drawer,
@@ -136,11 +137,17 @@ const QuickAddDrawer = () => {
         duration: 2000,
       });
   };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setIsGlucoseFormOpen(false);
+    }
+  };
   
   // If glucose form is open, show it
   if (isGlucoseFormOpen) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={handleOverlayClick}>
         <div className="bg-white w-full rounded-t-xl p-4">
           <GlucoseEntryForm
             onSuccess={handleGlucoseSuccess}
