@@ -168,6 +168,11 @@ const Logs = () => {
     setIsDetailModalOpen(true);
   };
 
+  const handleLogUpdate = () => {
+    // Refresh the database logs after an update
+    fetchDetailedDatabaseLogs();
+  };
+
   const handleAISubmit = async () => {
     if (!input.trim()) {
       toast({
@@ -403,6 +408,7 @@ const Logs = () => {
         log={selectedLog}
         open={isDetailModalOpen}
         onOpenChange={setIsDetailModalOpen}
+        onLogUpdate={handleLogUpdate}
       />
     </>
   );
