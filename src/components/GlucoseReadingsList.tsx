@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseUnit, type GlucoseTag, formatGlucoseValue, getGlucoseCategory } from "@/lib/glucoseUtils";
 import GlucoseEntryForm from "./GlucoseEntryForm";
+import { type Database } from "@/integrations/supabase/types";
+
+type GlucoseReadingRow = Database['public']['Tables']['glucose_readings']['Row'];
 
 interface GlucoseReading {
   id: string;
@@ -41,7 +43,22 @@ const GlucoseReadingsList = () => {
         .limit(20);
 
       if (error) throw error;
-      setReadings(data || []);
+      
+      // Transform the data to ensure proper typing
+      const transformedData: GlucoseReading[] = (data || []).map((row: GlucoseReadingRow) => ({
+        id: row.id,
+        user_id: row.user_id,
+        value: row.value,
+        unit: row.unit as GlucoseUnit,
+        timestamp: row.timestamp,
+        tag: row.tag as GlucoseTag | null,
+        notes: row.notes,
+        source: row.source,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      }));
+      
+      setReadings(transformedData);
     } catch (error) {
       console.error('Error fetching glucose readings:', error);
       toast({
