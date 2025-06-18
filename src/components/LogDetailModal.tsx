@@ -425,64 +425,6 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
       <div className="grid grid-cols-2 gap-4">
         {log.duration && renderEditableField('duration', log.duration, <Clock className="w-5 h-5 text-purple-500" />, 'Duration', ' min')}
         {log.calories_burned && renderEditableField('calories_burned', log.calories_burned, <Flame className="w-5 h-5 text-orange-500" />, 'Calories Burned')}
-        
-        {log.intensity && (
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Intensity</p>
-                {editingField === 'intensity' ? (
-                  <div className="flex items-center space-x-2 mt-1">
-                    <select
-                      value={editValues.intensity || ''}
-                      onChange={(e) => setEditValues({ ...editValues, intensity: e.target.value })}
-                      className="text-lg font-semibold border rounded px-2 py-1"
-                      autoFocus
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSave('intensity')}
-                      disabled={isSaving}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Save className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancel}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Badge className={`mt-1 ${
-                    log.intensity === 'high' ? 'bg-red-500' :
-                    log.intensity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}>
-                    {log.intensity}
-                  </Badge>
-                )}
-              </div>
-              {editingField !== 'intensity' && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit('intensity', log.intensity)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {log.average_heart_rate && renderEditableField('average_heart_rate', log.average_heart_rate, <div className="w-5 h-5 bg-red-500 rounded-full" />, 'Avg Heart Rate', ' bpm')}
         {log.max_heart_rate && renderEditableField('max_heart_rate', log.max_heart_rate, <div className="w-5 h-5 bg-red-600 rounded-full" />, 'Max Heart Rate', ' bpm')}
       </div>
