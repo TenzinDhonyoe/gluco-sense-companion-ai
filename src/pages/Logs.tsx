@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 import MealCamera from "@/components/MealCamera";
 import QuickGlucoseEntry from "@/components/QuickGlucoseEntry";
+import LogDetailModal from "@/components/LogDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -28,6 +29,19 @@ interface DatabaseLog {
   time: Date;
   calories?: number;
   duration?: number;
+  // Additional meal properties
+  total_carbs?: number;
+  total_protein?: number;
+  total_fat?: number;
+  total_fiber?: number;
+  meal_type?: string;
+  notes?: string;
+  // Additional exercise properties
+  intensity?: string;
+  exercise_type?: string;
+  calories_burned?: number;
+  average_heart_rate?: number;
+  max_heart_rate?: number;
 }
 
 const Logs = () => {
@@ -39,6 +53,8 @@ const Logs = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [logFilter, setLogFilter] = useState<'all' | 'meal' | 'exercise'>('all');
   const [isLoadingDatabase, setIsLoadingDatabase] = useState(true);
+  const [selectedLog, setSelectedLog] = useState<DatabaseLog | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchLogs = () => {
@@ -60,10 +76,10 @@ const Logs = () => {
   }, []);
 
   useEffect(() => {
-    fetchDatabaseLogs();
+    fetchDetailedDatabaseLogs();
   }, []);
 
-  const fetchDatabaseLogs = async () => {
+  const fetchDetailedDatabaseLogs = async () => {
     setIsLoadingDatabase(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,18 +88,18 @@ const Logs = () => {
         return;
       }
 
-      // Fetch meals
+      // Fetch meals with all nutrition data
       const { data: mealsData, error: mealsError } = await supabase
         .from('meals')
-        .select('id, meal_name, timestamp, total_calories')
+        .select('id, meal_name, meal_type, timestamp, total_calories, total_carbs, total_protein, total_fat, total_fiber, notes')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
         .limit(10);
 
-      // Fetch exercises
+      // Fetch exercises with all workout data
       const { data: exercisesData, error: exercisesError } = await supabase
         .from('exercises')
-        .select('id, exercise_name, timestamp, duration_minutes')
+        .select('id, exercise_name, exercise_type, timestamp, duration_minutes, intensity, calories_burned, average_heart_rate, max_heart_rate, notes')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
         .limit(10);
@@ -98,7 +114,7 @@ const Logs = () => {
 
       const combinedLogs: DatabaseLog[] = [];
 
-      // Add meals
+      // Add meals with detailed data
       if (mealsData) {
         mealsData.forEach(meal => {
           combinedLogs.push({
@@ -106,12 +122,18 @@ const Logs = () => {
             type: 'meal',
             description: meal.meal_name,
             time: new Date(meal.timestamp),
-            calories: meal.total_calories || undefined
+            calories: meal.total_calories || undefined,
+            total_carbs: meal.total_carbs || undefined,
+            total_protein: meal.total_protein || undefined,
+            total_fat: meal.total_fat || undefined,
+            total_fiber: meal.total_fiber || undefined,
+            meal_type: meal.meal_type || undefined,
+            notes: meal.notes || undefined
           });
         });
       }
 
-      // Add exercises
+      // Add exercises with detailed data
       if (exercisesData) {
         exercisesData.forEach(exercise => {
           combinedLogs.push({
@@ -119,7 +141,13 @@ const Logs = () => {
             type: 'exercise',
             description: exercise.exercise_name,
             time: new Date(exercise.timestamp),
-            duration: exercise.duration_minutes
+            duration: exercise.duration_minutes,
+            intensity: exercise.intensity || undefined,
+            exercise_type: exercise.exercise_type || undefined,
+            calories_burned: exercise.calories_burned || undefined,
+            average_heart_rate: exercise.average_heart_rate || undefined,
+            max_heart_rate: exercise.max_heart_rate || undefined,
+            notes: exercise.notes || undefined
           });
         });
       }
@@ -133,6 +161,11 @@ const Logs = () => {
     } finally {
       setIsLoadingDatabase(false);
     }
+  };
+
+  const handleLogClick = (log: DatabaseLog) => {
+    setSelectedLog(log);
+    setIsDetailModalOpen(true);
   };
 
   const handleAISubmit = async () => {
@@ -171,7 +204,7 @@ const Logs = () => {
         // Trigger logs refresh
         window.dispatchEvent(new CustomEvent('logsChanged'));
         // Refresh database logs
-        fetchDatabaseLogs();
+        fetchDetailedDatabaseLogs();
       } else {
         throw new Error(result.error || 'Unknown error occurred');
       }
@@ -321,7 +354,8 @@ const Logs = () => {
                   filteredDatabaseLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow"
+                      onClick={() => handleLogClick(log)}
+                      className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
                     >
                       {getLogIcon(log.type)}
                       <div className="flex-1">
@@ -332,12 +366,12 @@ const Logs = () => {
                         <Badge variant="secondary" className="capitalize">
                           {log.type}
                         </Badge>
-                        {log.calories && (
+                        {log.type === 'meal' && log.calories && (
                           <Badge className="bg-orange-500 text-white">
                             {log.calories} cal
                           </Badge>
                         )}
-                        {log.duration && (
+                        {log.type === 'exercise' && log.duration && (
                           <Badge className="bg-blue-500 text-white">
                             {log.duration}min
                           </Badge>
@@ -358,10 +392,17 @@ const Logs = () => {
 
         <BottomNav />
       </div>
+
       <MealCamera
         open={isCameraOpen}
         onOpenChange={setIsCameraOpen}
         onCapture={handleCaptureMeal}
+      />
+
+      <LogDetailModal
+        log={selectedLog}
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
       />
     </>
   );
