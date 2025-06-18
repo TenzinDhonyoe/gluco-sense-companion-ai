@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import {
   Drawer,
@@ -137,7 +136,7 @@ const QuickAddDrawer = () => {
         duration: 2000,
       });
   };
-
+  
   // If glucose form is open, show it
   if (isGlucoseFormOpen) {
     return (
@@ -208,18 +207,14 @@ const QuickAddDrawer = () => {
                   })}
                 </div>
                 
-                {/* Circular Glucose Button */}
-                <div className="flex justify-center pt-2">
-                  <Button
-                    onClick={handleGlucoseLog}
-                    className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-105"
-                  >
-                    <Droplets className="w-8 h-8" />
-                  </Button>
-                </div>
-                <div className="text-center">
-                  <span className="text-sm font-medium text-gray-800">Log Glucose</span>
-                </div>
+                {/* Full Width Glucose Button */}
+                <Button
+                  onClick={handleGlucoseLog}
+                  className="w-full h-12 bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center space-x-2"
+                >
+                  <Droplets className="w-5 h-5" />
+                  <span className="text-sm font-medium">Log Glucose</span>
+                </Button>
               </div>
             </>
           ) : currentLog && (
