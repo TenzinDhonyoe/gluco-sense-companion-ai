@@ -1,15 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Clock, Apple, Dumbbell, Coffee, UtensilsCrossed, Brain, Loader2 } from "lucide-react";
+import { Camera, Clock, Apple, Dumbbell, Coffee, UtensilsCrossed, Brain, Loader2, Filter } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { getLogs, addLog as addLogToStore, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 import MealCamera from "@/components/MealCamera";
 import QuickGlucoseEntry from "@/components/QuickGlucoseEntry";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // This interface is now for documentation, the source of truth is in logStore.ts
 export interface LogEntry {
@@ -20,12 +22,24 @@ export interface LogEntry {
   points?: number;
 }
 
+interface DatabaseLog {
+  id: string;
+  type: 'meal' | 'exercise';
+  description: string;
+  time: Date;
+  calories?: number;
+  duration?: number;
+}
+
 const Logs = () => {
   const { toast } = useToast();
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [databaseLogs, setDatabaseLogs] = useState<DatabaseLog[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [logFilter, setLogFilter] = useState<'all' | 'meal' | 'exercise'>('all');
+  const [isLoadingDatabase, setIsLoadingDatabase] = useState(true);
 
   useEffect(() => {
     const fetchLogs = () => {
@@ -45,6 +59,83 @@ const Logs = () => {
       window.removeEventListener('logsChanged', handleLogsChanged);
     };
   }, []);
+
+  useEffect(() => {
+    fetchDatabaseLogs();
+  }, []);
+
+  const fetchDatabaseLogs = async () => {
+    setIsLoadingDatabase(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsLoadingDatabase(false);
+        return;
+      }
+
+      // Fetch meals
+      const { data: mealsData, error: mealsError } = await supabase
+        .from('meals')
+        .select('id, meal_name, timestamp, total_calories')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+      // Fetch exercises
+      const { data: exercisesData, error: exercisesError } = await supabase
+        .from('exercises')
+        .select('id, exercise_name, timestamp, duration_minutes, calories_burned')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+      if (mealsError) {
+        console.error('Error fetching meals:', mealsError);
+      }
+
+      if (exercisesError) {
+        console.error('Error fetching exercises:', exercisesError);
+      }
+
+      const combinedLogs: DatabaseLog[] = [];
+
+      // Add meals
+      if (mealsData) {
+        mealsData.forEach(meal => {
+          combinedLogs.push({
+            id: meal.id,
+            type: 'meal',
+            description: meal.meal_name,
+            time: new Date(meal.timestamp),
+            calories: meal.total_calories || undefined
+          });
+        });
+      }
+
+      // Add exercises
+      if (exercisesData) {
+        exercisesData.forEach(exercise => {
+          combinedLogs.push({
+            id: exercise.id,
+            type: 'exercise',
+            description: exercise.exercise_name,
+            time: new Date(exercise.timestamp),
+            calories: exercise.calories_burned || undefined,
+            duration: exercise.duration_minutes
+          });
+        });
+      }
+
+      // Sort by time (most recent first)
+      combinedLogs.sort((a, b) => b.time.getTime() - a.time.getTime());
+
+      setDatabaseLogs(combinedLogs);
+    } catch (error) {
+      console.error('Error fetching database logs:', error);
+    } finally {
+      setIsLoadingDatabase(false);
+    }
+  };
 
   const handleAISubmit = async () => {
     if (!input.trim()) {
@@ -81,6 +172,8 @@ const Logs = () => {
         
         // Trigger logs refresh
         window.dispatchEvent(new CustomEvent('logsChanged'));
+        // Refresh database logs
+        fetchDatabaseLogs();
       } else {
         throw new Error(result.error || 'Unknown error occurred');
       }
@@ -131,8 +224,17 @@ const Logs = () => {
 
     if (diffInHours < 1) return "Just now";
     if (diffInHours === 1) return "1 hour ago";
-    return `${diffInHours} hours ago`;
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return "1 day ago";
+    return `${diffInDays} days ago`;
   };
+
+  const filteredDatabaseLogs = databaseLogs.filter(log => {
+    if (logFilter === 'all') return true;
+    return log.type === logFilter;
+  });
 
   return (
     <>
@@ -145,9 +247,9 @@ const Logs = () => {
 
           {/* Combined Logging Section */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="space-y-3 pt-6">
+            <CardContent className="space-y-2 pt-6">
               <Textarea
-                placeholder="Describe what you ate or did for exercise..."
+                placeholder="What did you eat or do?"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="min-h-[60px] border-gray-200"
@@ -172,7 +274,7 @@ const Logs = () => {
                 )}
               </Button>
               
-              <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
                   variant="outline"
@@ -194,32 +296,63 @@ const Logs = () => {
           {/* Recent Logs */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Recent Logs</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Recent Logs</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
+                  <Select value={logFilter} onValueChange={(value: 'all' | 'meal' | 'exercise') => setLogFilter(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="meal">Meals</SelectItem>
+                      <SelectItem value="exercise">Exercise</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow"
-                  >
-                    {getLogIcon(log.type)}
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{log.description}</p>
-                      <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="capitalize">
-                        {log.type}
-                      </Badge>
-                      {log.points && (
-                        <Badge className="bg-yellow-500 text-white">
-                          +{log.points}
-                        </Badge>
-                      )}
-                    </div>
+                {isLoadingDatabase ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
                   </div>
-                ))}
+                ) : filteredDatabaseLogs.length > 0 ? (
+                  filteredDatabaseLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow"
+                    >
+                      {getLogIcon(log.type)}
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{log.description}</p>
+                        <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="secondary" className="capitalize">
+                          {log.type}
+                        </Badge>
+                        {log.calories && (
+                          <Badge className="bg-orange-500 text-white">
+                            {log.calories} cal
+                          </Badge>
+                        )}
+                        {log.duration && (
+                          <Badge className="bg-blue-500 text-white">
+                            {log.duration}min
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No logs found</p>
+                    <p className="text-sm">Start logging your meals and exercises!</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
