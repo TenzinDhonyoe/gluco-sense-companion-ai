@@ -25,7 +25,7 @@ const QuickGlucoseEntry = () => {
           variant="outline"
           className="w-full border-blue-200 hover:bg-blue-50 h-12 text-sm"
         >
-          <Droplets className="w-4 h-4 mr-2 text-blue-500" />
+          <Droplets className="w-4 h-4 mr-2 text-red-500" />
           Log Glucose
         </Button>
       </DrawerTrigger>
