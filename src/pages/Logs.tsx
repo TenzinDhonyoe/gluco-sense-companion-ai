@@ -150,7 +150,7 @@ const Logs = () => {
                 placeholder="Describe what you ate or did for exercise..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="min-h-[100px] border-gray-200"
+                className="min-h-[60px] border-gray-200"
                 disabled={isLoading}
               />
               
