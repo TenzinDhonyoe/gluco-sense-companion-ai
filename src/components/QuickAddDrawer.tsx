@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Camera, Dumbbell, Coffee, Apple, Check } from "lucide-react";
+import { Plus, Camera, Dumbbell, Coffee, Apple, Check, Droplets } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addLog } from "@/lib/logStore";
 import { toast as sonnerToast } from "sonner";
 import MealCamera from "./MealCamera";
+import GlucoseEntryForm from "./GlucoseEntryForm";
 
 type LogType = 'exercise' | 'snack' | 'beverage';
 
@@ -21,19 +22,23 @@ const QuickAddDrawer = () => {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+  const [isGlucoseFormOpen, setIsGlucoseFormOpen] = React.useState(false);
   const [loggingStep, setLoggingStep] = React.useState(0); // 0: main view, 1: logging view
   const [currentLog, setCurrentLog] = React.useState<{type: LogType, label: string, icon: React.ElementType, points: number, defaultDescription: string, color: string} | null>(null);
   const [description, setDescription] = React.useState("");
 
   const handleMealPhoto = () => {
     setIsCameraOpen(true);
-    // setOpen(false); We want the main drawer to close when camera opens, but MealCamera is not part of the drawer component so it will stay open. We close it on capture.
+  };
+
+  const handleGlucoseLog = () => {
+    setIsGlucoseFormOpen(true);
   };
 
   const handleCaptureMeal = (imageDataUrl: string) => {
     console.log("Captured meal image:", imageDataUrl.substring(0, 50) + "...");
     addLog({ type: 'meal', description: 'Logged via photo', points: 15 });
-    setOpen(false); // close the main drawer
+    setOpen(false);
       
     sonnerToast.custom((t) => (
       <div className="flex flex-col items-center justify-center bg-background p-6 rounded-xl shadow-lg border w-full max-w-md mx-auto">
@@ -41,6 +46,22 @@ const QuickAddDrawer = () => {
               <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
           </div>
           <p className="mt-4 text-xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Logged</p>
+      </div>
+    ), {
+      duration: 2000,
+    });
+  };
+
+  const handleGlucoseSuccess = () => {
+    setIsGlucoseFormOpen(false);
+    setOpen(false);
+    
+    sonnerToast.custom((t) => (
+      <div className="flex flex-col items-center justify-center bg-background p-6 rounded-xl shadow-lg border w-full max-w-md mx-auto">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+              <Check className="w-10 h-10 text-green-600" strokeWidth={3} />
+          </div>
+          <p className="mt-4 text-xl font-semibold text-gray-800 animate-fade-in" style={{animationDelay: '0.2s'}}>Glucose Logged</p>
       </div>
     ), {
       duration: 2000,
@@ -117,6 +138,30 @@ const QuickAddDrawer = () => {
       });
   };
 
+  // If glucose form is open, show it
+  if (isGlucoseFormOpen) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+        <div className="bg-white w-full rounded-t-xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Log Glucose</h2>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsGlucoseFormOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+          <GlucoseEntryForm
+            onSuccess={handleGlucoseSuccess}
+            onCancel={() => setIsGlucoseFormOpen(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Drawer open={open} onOpenChange={(isOpen) => {
@@ -145,6 +190,15 @@ const QuickAddDrawer = () => {
                 >
                   <Camera className="w-6 h-6 text-blue-500" />
                   <span className="text-sm font-medium text-gray-800">Log Meal</span>
+                </Button>
+                <Button
+                  key="Log Glucose"
+                  onClick={handleGlucoseLog}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-red-200 hover:bg-red-50"
+                >
+                  <Droplets className="w-6 h-6 text-red-500" />
+                  <span className="text-sm font-medium text-gray-800">Log Glucose</span>
                 </Button>
                 {logOptions.map((action) => {
                   const Icon = action.icon;
