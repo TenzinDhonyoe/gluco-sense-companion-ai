@@ -145,9 +145,9 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5" />
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Calendar className="w-5 h-5 flex-shrink-0" />
           <span>{isEditing ? 'Edit' : 'Log'} Glucose Reading</span>
         </CardTitle>
       </CardHeader>
