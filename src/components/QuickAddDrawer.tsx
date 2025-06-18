@@ -1,4 +1,5 @@
 
+
 import * as React from "react";
 import {
   Drawer,
@@ -141,6 +142,7 @@ const QuickAddDrawer = () => {
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       setIsGlucoseFormOpen(false);
+      setOpen(false); // Also close the main drawer
     }
   };
   
@@ -246,3 +248,4 @@ const QuickAddDrawer = () => {
 };
 
 export default QuickAddDrawer;
+
