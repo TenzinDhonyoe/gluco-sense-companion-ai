@@ -30,6 +30,14 @@ interface ParsedExercise {
   timestamp: string;
 }
 
+interface FoodNutrients {
+  calories: number;
+  carbs: number;
+  protein: number;
+  fat: number;
+  fiber: number;
+}
+
 interface USDAFood {
   fdcId: number;
   description: string;
@@ -175,8 +183,9 @@ Return only valid JSON, no explanations:`;
 
 async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
   try {
-    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&dataType=Survey%20%28FNDDS%29`;
+    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&dataType=Survey%20%28FNDDS%29&api_key=DEMO_KEY`;
     
+    console.log(`Searching USDA for: ${foodName}`);
     const response = await fetch(searchUrl, {
       headers: {
         'Content-Type': 'application/json',
@@ -196,6 +205,7 @@ async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
       return food;
     }
     
+    console.log(`No USDA data found for ${foodName}`);
     return null;
   } catch (error) {
     console.error(`Error searching USDA for ${foodName}:`, error);
@@ -203,14 +213,8 @@ async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
   }
 }
 
-function extractNutrients(usdaFood: USDAFood) {
-  const nutrients = {
-    calories: 0,
-    carbs: 0,
-    protein: 0,
-    fat: 0,
-    fiber: 0,
-  };
+function extractNutrients(usdaFood: USDAFood): Partial<FoodNutrients> {
+  const nutrients: Partial<FoodNutrients> = {};
 
   for (const nutrient of usdaFood.foodNutrients) {
     const name = nutrient.nutrient.name.toLowerCase();
@@ -230,6 +234,75 @@ function extractNutrients(usdaFood: USDAFood) {
   }
 
   return nutrients;
+}
+
+async function estimateNutrientsWithAI(foodName: string, quantity: number, unit: string, partialData?: Partial<FoodNutrients>): Promise<FoodNutrients> {
+  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+  if (!openRouterApiKey) {
+    throw new Error('OpenRouter API key not configured');
+  }
+
+  const prompt = `Estimate the nutritional values per ${unit} for "${foodName}". 
+${partialData ? `USDA data (partial): ${JSON.stringify(partialData)}` : 'No USDA data available.'}
+
+Provide estimates for ALL missing values. Return only JSON in this exact format:
+{
+  "calories": number_per_unit,
+  "carbs": number_grams_per_unit,
+  "protein": number_grams_per_unit,
+  "fat": number_grams_per_unit,
+  "fiber": number_grams_per_unit
+}
+
+Be realistic and conservative with estimates. Consider typical serving sizes.`;
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'mistralai/mistral-7b-instruct:free',
+        messages: [
+          { role: 'system', content: 'You are a nutrition expert. Provide realistic nutritional estimates. Return only valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI estimation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content.trim();
+    
+    const estimated = JSON.parse(content);
+    console.log(`AI estimated nutrients for ${foodName}:`, estimated);
+    
+    // Merge partial USDA data with AI estimates, preferring USDA when available
+    return {
+      calories: partialData?.calories ?? estimated.calories ?? 0,
+      carbs: partialData?.carbs ?? estimated.carbs ?? 0,
+      protein: partialData?.protein ?? estimated.protein ?? 0,
+      fat: partialData?.fat ?? estimated.fat ?? 0,
+      fiber: partialData?.fiber ?? estimated.fiber ?? 0,
+    };
+  } catch (error) {
+    console.error(`Error estimating nutrients for ${foodName}:`, error);
+    // Fallback to basic estimates if AI fails
+    return {
+      calories: 100,
+      carbs: 15,
+      protein: 3,
+      fat: 2,
+      fiber: 1,
+    };
+  }
 }
 
 async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any) {
@@ -264,28 +337,36 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
   for (const item of parsedMeal.food_items) {
     console.log(`Processing food item: ${item.food_name}`);
     
-    // Search USDA database
+    // Try to get USDA data first
     const usdaFood = await searchUSDAFood(item.food_name);
-    let nutrients = null;
+    let partialNutrients: Partial<FoodNutrients> = {};
     
     if (usdaFood) {
-      nutrients = extractNutrients(usdaFood);
-      console.log(`Found nutrients for ${item.food_name}:`, nutrients);
-    } else {
-      console.log(`No USDA data found for ${item.food_name}`);
+      partialNutrients = extractNutrients(usdaFood);
+      console.log(`USDA partial nutrients for ${item.food_name}:`, partialNutrients);
     }
 
-    // Insert food item
+    // Get complete nutrients (USDA + AI estimation for missing values)
+    const completeNutrients = await estimateNutrientsWithAI(
+      item.food_name,
+      item.quantity,
+      item.unit,
+      partialNutrients
+    );
+
+    console.log(`Final nutrients for ${item.food_name}:`, completeNutrients);
+
+    // Insert food item with complete nutrition data
     const foodItemData = {
       meal_id: meal.id,
       food_name: item.food_name,
       quantity: item.quantity,
       unit: item.unit,
-      calories_per_unit: nutrients?.calories || null,
-      carbs_per_unit: nutrients?.carbs || null,
-      protein_per_unit: nutrients?.protein || null,
-      fat_per_unit: nutrients?.fat || null,
-      fiber_per_unit: nutrients?.fiber || null,
+      calories_per_unit: completeNutrients.calories,
+      carbs_per_unit: completeNutrients.carbs,
+      protein_per_unit: completeNutrients.protein,
+      fat_per_unit: completeNutrients.fat,
+      fiber_per_unit: completeNutrients.fiber,
     };
 
     const { data: foodItem, error: foodError } = await supabase
@@ -302,24 +383,22 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
     foodItems.push(foodItem);
 
     // Accumulate totals
-    if (nutrients) {
-      totalCalories += (nutrients.calories || 0) * item.quantity;
-      totalCarbs += (nutrients.carbs || 0) * item.quantity;
-      totalProtein += (nutrients.protein || 0) * item.quantity;
-      totalFat += (nutrients.fat || 0) * item.quantity;
-      totalFiber += (nutrients.fiber || 0) * item.quantity;
-    }
+    totalCalories += completeNutrients.calories * item.quantity;
+    totalCarbs += completeNutrients.carbs * item.quantity;
+    totalProtein += completeNutrients.protein * item.quantity;
+    totalFat += completeNutrients.fat * item.quantity;
+    totalFiber += completeNutrients.fiber * item.quantity;
   }
 
   // Update meal with totals
   const { error: updateError } = await supabase
     .from('meals')
     .update({
-      total_calories: Math.round(totalCalories) || null,
-      total_carbs: Math.round(totalCarbs * 100) / 100 || null,
-      total_protein: Math.round(totalProtein * 100) / 100 || null,
-      total_fat: Math.round(totalFat * 100) / 100 || null,
-      total_fiber: Math.round(totalFiber * 100) / 100 || null,
+      total_calories: Math.round(totalCalories),
+      total_carbs: Math.round(totalCarbs * 100) / 100,
+      total_protein: Math.round(totalProtein * 100) / 100,
+      total_fat: Math.round(totalFat * 100) / 100,
+      total_fiber: Math.round(totalFiber * 100) / 100,
     })
     .eq('id', meal.id);
 
@@ -345,13 +424,24 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
 async function processExercise(parsedExercise: ParsedExercise, userId: string, supabase: any) {
   console.log('Processing exercise:', parsedExercise.exercise_name);
 
+  // Estimate calories burned if not provided
+  let caloriesBurned = parsedExercise.calories_burned;
+  if (!caloriesBurned) {
+    caloriesBurned = await estimateCaloriesBurnedWithAI(
+      parsedExercise.exercise_name,
+      parsedExercise.exercise_type,
+      parsedExercise.duration_minutes,
+      parsedExercise.intensity
+    );
+  }
+
   const exerciseData = {
     user_id: userId,
     exercise_name: parsedExercise.exercise_name,
     exercise_type: parsedExercise.exercise_type,
     duration_minutes: parsedExercise.duration_minutes,
     intensity: parsedExercise.intensity,
-    calories_burned: parsedExercise.calories_burned || null,
+    calories_burned: caloriesBurned,
     timestamp: new Date().toISOString(),
   };
 
@@ -367,4 +457,62 @@ async function processExercise(parsedExercise: ParsedExercise, userId: string, s
 
   console.log('Exercise processed successfully:', exercise.id);
   return exercise;
+}
+
+async function estimateCaloriesBurnedWithAI(
+  exerciseName: string,
+  exerciseType: string,
+  durationMinutes: number,
+  intensity: string
+): Promise<number> {
+  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+  if (!openRouterApiKey) {
+    // Fallback calculation if AI is not available
+    const baseRate = intensity === 'low' ? 4 : intensity === 'moderate' ? 6 : intensity === 'high' ? 8 : 10;
+    return Math.round(baseRate * durationMinutes);
+  }
+
+  const prompt = `Estimate calories burned for this exercise:
+- Exercise: ${exerciseName}
+- Type: ${exerciseType}
+- Duration: ${durationMinutes} minutes
+- Intensity: ${intensity}
+
+Assume average adult weight (70kg/154lbs). Return only the number of calories burned as an integer.`;
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'mistralai/mistral-7b-instruct:free',
+        messages: [
+          { role: 'system', content: 'You are a fitness expert. Estimate calories burned and return only the number.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 100,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI estimation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content.trim();
+    
+    const calories = parseInt(content.match(/\d+/)?.[0] || '0');
+    console.log(`AI estimated calories for ${exerciseName}: ${calories}`);
+    
+    return calories > 0 ? calories : Math.round(6 * durationMinutes); // Fallback
+  } catch (error) {
+    console.error(`Error estimating calories for ${exerciseName}:`, error);
+    // Fallback calculation
+    const baseRate = intensity === 'low' ? 4 : intensity === 'moderate' ? 6 : intensity === 'high' ? 8 : 10;
+    return Math.round(baseRate * durationMinutes);
+  }
 }
