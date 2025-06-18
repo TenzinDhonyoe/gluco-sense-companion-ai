@@ -181,39 +181,45 @@ const QuickAddDrawer = () => {
               <DrawerHeader className="text-left">
                 <DrawerTitle>Quick Add</DrawerTitle>
               </DrawerHeader>
-              <div className="grid grid-cols-2 gap-3 p-4">
-                <Button
-                  key="Log Meal"
-                  onClick={handleMealPhoto}
-                  variant="outline"
-                  className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
-                >
-                  <Camera className="w-6 h-6 text-blue-500" />
-                  <span className="text-sm font-medium text-gray-800">Log Meal</span>
-                </Button>
-                <Button
-                  key="Log Glucose"
-                  onClick={handleGlucoseLog}
-                  variant="outline"
-                  className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-red-200 hover:bg-red-50"
-                >
-                  <Droplets className="w-6 h-6 text-red-500" />
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    key="Log Meal"
+                    onClick={handleMealPhoto}
+                    variant="outline"
+                    className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Camera className="w-6 h-6 text-blue-500" />
+                    <span className="text-sm font-medium text-gray-800">Log Meal</span>
+                  </Button>
+                  {logOptions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Button
+                        key={action.label}
+                        onClick={() => handleStartLogging(action)}
+                        variant="outline"
+                        className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
+                      >
+                        <Icon className={`w-6 h-6 ${action.color}`} />
+                        <span className="text-sm font-medium text-gray-800">{action.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                {/* Circular Glucose Button */}
+                <div className="flex justify-center pt-2">
+                  <Button
+                    onClick={handleGlucoseLog}
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-105"
+                  >
+                    <Droplets className="w-8 h-8" />
+                  </Button>
+                </div>
+                <div className="text-center">
                   <span className="text-sm font-medium text-gray-800">Log Glucose</span>
-                </Button>
-                {logOptions.map((action) => {
-                  const Icon = action.icon;
-                  return (
-                    <Button
-                      key={action.label}
-                      onClick={() => handleStartLogging(action)}
-                      variant="outline"
-                      className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
-                    >
-                      <Icon className={`w-6 h-6 ${action.color}`} />
-                      <span className="text-sm font-medium text-gray-800">{action.label}</span>
-                    </Button>
-                  );
-                })}
+                </div>
               </div>
             </>
           ) : currentLog && (
