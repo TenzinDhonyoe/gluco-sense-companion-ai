@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -41,13 +40,13 @@ interface FoodNutrients {
 interface USDAFood {
   fdcId: number;
   description: string;
-  foodNutrients: Array<{
-    nutrient: {
-      id: number;
-      name: string;
-      unitName: string;
+  foodNutrients?: Array<{
+    nutrient?: {
+      id?: number;
+      name?: string;
+      unitName?: string;
     };
-    amount: number;
+    amount?: number;
   }>;
 }
 
@@ -184,12 +183,12 @@ Return only valid JSON, no explanations:`;
 async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
   const usdaApiKey = Deno.env.get('USDA_API_KEY');
   if (!usdaApiKey) {
-    console.error('USDA API key not configured, using demo key');
+    console.error('USDA API key not configured');
+    return null;
   }
 
   try {
-    const apiKey = usdaApiKey || 'DEMO_KEY';
-    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&dataType=Survey%20%28FNDDS%29&api_key=${apiKey}`;
+    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&dataType=Survey%20%28FNDDS%29&api_key=${usdaApiKey}`;
     
     console.log(`Searching USDA for: ${foodName}`);
     const response = await fetch(searchUrl, {
@@ -201,7 +200,7 @@ async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
     if (!response.ok) {
       console.error(`USDA API error for ${foodName}:`, response.status);
       // Try with broader search if first search fails
-      const broadSearchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=3&api_key=${apiKey}`;
+      const broadSearchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=3&api_key=${usdaApiKey}`;
       const broadResponse = await fetch(broadSearchUrl);
       
       if (!broadResponse.ok) {
@@ -236,11 +235,23 @@ async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
 function extractNutrients(usdaFood: USDAFood): Partial<FoodNutrients> {
   const nutrients: Partial<FoodNutrients> = {};
 
-  for (const nutrient of usdaFood.foodNutrients) {
-    const name = nutrient.nutrient.name.toLowerCase();
-    const amount = nutrient.amount || 0;
+  // Safety check for foodNutrients array
+  if (!usdaFood.foodNutrients || !Array.isArray(usdaFood.foodNutrients)) {
+    console.log('No foodNutrients array found in USDA response');
+    return nutrients;
+  }
 
-    if (name.includes('energy') && nutrient.nutrient.unitName === 'KCAL') {
+  for (const nutrientData of usdaFood.foodNutrients) {
+    // Safety checks for nested objects
+    if (!nutrientData || !nutrientData.nutrient || !nutrientData.nutrient.name) {
+      console.log('Skipping invalid nutrient data:', nutrientData);
+      continue;
+    }
+
+    const name = nutrientData.nutrient.name.toLowerCase();
+    const amount = nutrientData.amount || 0;
+
+    if (name.includes('energy') && nutrientData.nutrient.unitName === 'KCAL') {
       nutrients.calories = amount;
     } else if (name.includes('carbohydrate')) {
       nutrients.carbs = amount;
@@ -260,7 +271,8 @@ function extractNutrients(usdaFood: USDAFood): Partial<FoodNutrients> {
 async function estimateNutrientsWithAI(foodName: string, quantity: number, unit: string, partialData?: Partial<FoodNutrients>): Promise<FoodNutrients> {
   const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
   if (!openRouterApiKey) {
-    throw new Error('OpenRouter API key not configured');
+    console.log('OpenRouter API key not configured, using fallback estimates');
+    return getFallbackNutrients(partialData);
   }
 
   const hasPartialData = partialData && Object.keys(partialData).length > 0;
@@ -309,7 +321,8 @@ Be realistic and conservative with estimates. Consider typical serving sizes.`;
     });
 
     if (!response.ok) {
-      throw new Error(`AI estimation failed: ${response.status}`);
+      console.error(`AI estimation failed: ${response.status}`);
+      return getFallbackNutrients(partialData);
     }
 
     const data = await response.json();
@@ -345,27 +358,30 @@ Be realistic and conservative with estimates. Consider typical serving sizes.`;
     
   } catch (error) {
     console.error(`Error estimating nutrients for ${foodName}:`, error);
-    // Robust fallback with reasonable estimates
-    const fallbackNutrients: FoodNutrients = {
-      calories: 100,
-      carbs: 15,
-      protein: 3,
-      fat: 2,
-      fiber: 1,
-    };
-
-    // Use any partial USDA data we have
-    if (partialData) {
-      Object.keys(partialData).forEach(key => {
-        if (partialData[key] !== null && partialData[key] !== undefined) {
-          fallbackNutrients[key] = partialData[key];
-        }
-      });
-    }
-
-    console.log(`Using fallback nutrients for ${foodName}:`, fallbackNutrients);
-    return fallbackNutrients;
+    return getFallbackNutrients(partialData);
   }
+}
+
+function getFallbackNutrients(partialData?: Partial<FoodNutrients>): FoodNutrients {
+  const fallbackNutrients: FoodNutrients = {
+    calories: 100,
+    carbs: 15,
+    protein: 3,
+    fat: 2,
+    fiber: 1,
+  };
+
+  // Use any partial USDA data we have
+  if (partialData) {
+    Object.keys(partialData).forEach(key => {
+      if (partialData[key] !== null && partialData[key] !== undefined) {
+        fallbackNutrients[key] = partialData[key];
+      }
+    });
+  }
+
+  console.log(`Using fallback nutrients:`, fallbackNutrients);
+  return fallbackNutrients;
 }
 
 async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any) {
