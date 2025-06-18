@@ -147,13 +147,7 @@ const Logs = () => {
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
             <CardContent className="space-y-3 pt-6">
               <Textarea
-                placeholder="Describe what you ate or your exercise... 
-                
-Examples:
-• Had 2 slices of pepperoni pizza and a Coke
-• Jogged for 30 minutes at moderate pace  
-• Ate a chicken caesar salad with dressing
-• Did 45 minutes of weight training"
+                placeholder="Describe what you ate or did for exercise..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="min-h-[100px] border-gray-200"
