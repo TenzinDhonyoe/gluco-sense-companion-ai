@@ -12,6 +12,7 @@ import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import FullScreenInsights from "./pages/FullScreenInsights";
+import GlucoseTracker from "./pages/GlucoseTracker";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/insights" element={<Insights />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/glucose" element={<GlucoseTracker />} />
           <Route path="/insights/full" element={<FullScreenInsights />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

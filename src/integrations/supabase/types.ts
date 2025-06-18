@@ -9,7 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      glucose_readings: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          source: string
+          tag: Database["public"]["Enums"]["glucose_tag"] | null
+          timestamp: string
+          unit: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source?: string
+          tag?: Database["public"]["Enums"]["glucose_tag"] | null
+          timestamp?: string
+          unit?: string
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          source?: string
+          tag?: Database["public"]["Enums"]["glucose_tag"] | null
+          timestamp?: string
+          unit?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +56,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      glucose_tag:
+        | "fasting"
+        | "post-meal"
+        | "before-sleep"
+        | "random"
+        | "pre-meal"
+        | "bedtime"
+        | "exercise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +178,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      glucose_tag: [
+        "fasting",
+        "post-meal",
+        "before-sleep",
+        "random",
+        "pre-meal",
+        "bedtime",
+        "exercise",
+      ],
+    },
   },
 } as const
