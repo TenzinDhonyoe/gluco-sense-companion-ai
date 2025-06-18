@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,7 +83,7 @@ const Logs = () => {
       // Fetch exercises
       const { data: exercisesData, error: exercisesError } = await supabase
         .from('exercises')
-        .select('id, exercise_name, timestamp, duration_minutes, calories_burned')
+        .select('id, exercise_name, timestamp, duration_minutes')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
         .limit(10);
@@ -120,7 +119,6 @@ const Logs = () => {
             type: 'exercise',
             description: exercise.exercise_name,
             time: new Date(exercise.timestamp),
-            calories: exercise.calories_burned || undefined,
             duration: exercise.duration_minutes
           });
         });
