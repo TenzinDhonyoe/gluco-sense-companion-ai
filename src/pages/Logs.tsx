@@ -145,7 +145,7 @@ const Logs = () => {
 
           {/* Combined Logging Section */}
           <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="space-y-4 pt-6">
+            <CardContent className="space-y-3 pt-6">
               <Textarea
                 placeholder="Describe what you ate or your exercise... 
                 
@@ -178,7 +178,7 @@ Examples:
                 )}
               </Button>
               
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-1">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
                   variant="outline"
