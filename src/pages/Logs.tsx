@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -178,17 +179,19 @@ Examples:
                 )}
               </Button>
               
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
                   variant="outline"
-                  className="border-blue-200 hover:bg-blue-50 h-12"
+                  className="border-blue-200 hover:bg-blue-50 h-12 text-sm"
                 >
                   <Camera className="w-4 h-4 mr-2" />
                   Take Photo
                 </Button>
                 
-                <QuickGlucoseEntry />
+                <div className="h-12">
+                  <QuickGlucoseEntry />
+                </div>
               </div>
               
               <p className="text-xs text-gray-500 text-center">
