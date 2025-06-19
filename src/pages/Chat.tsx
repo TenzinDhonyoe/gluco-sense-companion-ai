@@ -1,10 +1,8 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Bot, User, TrendingUp, Utensils, HelpCircle } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import DynamicAvatar from "@/components/DynamicAvatar";
 
 interface Message {
   id: string;
@@ -127,9 +125,13 @@ const Chat = () => {
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 shadow-sm">
         <div className="flex items-center space-x-3">
-          <DynamicAvatar size={40} />
+          <img 
+            src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
+            alt="GlucoCoach AI" 
+            className="w-10 h-10 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+          />
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">GlucoSense AI Coach</h1>
+            <h1 className="text-lg font-semibold text-gray-900">GlucoCoach AI</h1>
             <p className="text-sm text-green-500 flex items-center">
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
               Online
@@ -149,11 +151,17 @@ const Chat = () => {
               {/* Avatar */}
               <div className="flex-shrink-0 mb-1">
                 {message.type === 'bot' ? (
-                  <DynamicAvatar size={32} />
+                  <img 
+                    src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
+                    alt="GlucoCoach AI" 
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+                  />
                 ) : (
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
+                  <img 
+                    src="/lovable-uploads/880f3ea4-efd1-4de5-93a4-d0d91ae981f7.png" 
+                    alt="User" 
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+                  />
                 )}
               </div>
               
@@ -180,7 +188,11 @@ const Chat = () => {
         {isLoading && (
           <div className="flex justify-start animate-fade-in">
             <div className="flex items-end space-x-2 max-w-[80%]">
-              <DynamicAvatar size={32} />
+              <img 
+                src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
+                alt="GlucoCoach AI" 
+                className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+              />
               <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
