@@ -19,7 +19,7 @@ const QuickExerciseEntry = () => {
   };
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={setOpen} dismissible>
       <DrawerTrigger asChild>
         <Button
           variant="outline"
