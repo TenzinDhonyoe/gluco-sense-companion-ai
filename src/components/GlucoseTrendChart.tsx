@@ -1,41 +1,119 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Tooltip, ReferenceArea, Label } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface GlucoseReading {
   time: string;
   value: number;
   timestamp: number;
   trendIndex: number;
+  source?: string;
 }
 
 interface GlucoseTrendChartProps {
-  data: GlucoseReading[];
-  trendDirection: 'up' | 'down' | 'flat';
+  data?: GlucoseReading[];
+  trendDirection?: 'up' | 'down' | 'flat';
   containerClassName?: string;
   showTimeRangeFilter?: boolean;
   defaultTimeRange?: string;
 }
 
 const GlucoseTrendChart = ({ 
-  data, 
+  data: propData, 
   containerClassName, 
   showTimeRangeFilter = true,
   defaultTimeRange = '3'
 }: GlucoseTrendChartProps) => {
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
+  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchGlucoseReadings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('glucose_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        console.error('Error fetching glucose readings:', error);
+        return;
+      }
+
+      // Transform the data to match GlucoseReading interface
+      const transformedData: GlucoseReading[] = (data || [])
+        .reverse() // Reverse to get chronological order for the chart
+        .map((reading, index) => ({
+          time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+          }),
+          value: Number(reading.value),
+          timestamp: new Date(reading.timestamp).getTime(),
+          trendIndex: index,
+          source: reading.source
+        }));
+
+      setGlucoseData(transformedData);
+    } catch (error) {
+      console.error('Error in fetchGlucoseReadings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // If prop data is provided, use it; otherwise fetch from database
+    if (propData && propData.length > 0) {
+      setGlucoseData(propData);
+      setLoading(false);
+    } else {
+      fetchGlucoseReadings();
+    }
+  }, [propData]);
+
+  useEffect(() => {
+    // Set up real-time subscription for glucose readings
+    const channel = supabase
+      .channel('chart-glucose-readings')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'glucose_readings'
+        },
+        (payload) => {
+          console.log('New glucose reading received in chart:', payload);
+          // Refresh glucose readings when new ones are added
+          fetchGlucoseReadings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const filteredData = useMemo(() => {
-    if (!data) return [];
+    if (!glucoseData) return [];
     const now = Date.now();
     const hours = parseInt(timeRange);
     const fromTimestamp = now - hours * 60 * 60 * 1000;
-    return data.filter(d => d.timestamp >= fromTimestamp);
-  }, [data, timeRange]);
+    return glucoseData.filter(d => d.timestamp >= fromTimestamp);
+  }, [glucoseData, timeRange]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -44,6 +122,9 @@ const GlucoseTrendChart = ({
         <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
           <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
           <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+          {point.source && (
+            <p className="text-xs text-gray-500 capitalize">{point.source}</p>
+          )}
         </div>
       );
     }
@@ -57,19 +138,30 @@ const GlucoseTrendChart = ({
     },
   };
 
-  if (filteredData.length < 4) {
+  if (loading) {
     return (
-      <div className="h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg">
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg font-medium">Loading...</div>
+          <div className="text-gray-300 text-sm mt-1">Fetching glucose data</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (filteredData.length < 2) {
+    return (
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
-          <div className="text-gray-300 text-sm mt-1">Need at least 4 readings to show trend</div>
+          <div className="text-gray-300 text-sm mt-1">Need at least 2 readings to show trend</div>
         </div>
       </div>
     );
   }
 
   // DATA PIPELINE
-  const MAX_VISIBLE_POINTS = 24;
+  const MAX_VISIBLE_POINTS = 48;
   
   const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
 
@@ -130,6 +222,10 @@ const GlucoseTrendChart = ({
       setTimeRange(value);
     }
   };
+
+  // Separate sensor and manual data for different styling
+  const sensorData = dataWithLatestFlag.filter(d => d.source === 'sensor');
+  const manualData = dataWithLatestFlag.filter(d => d.source === 'manual');
   
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
@@ -229,15 +325,35 @@ const GlucoseTrendChart = ({
             
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
             
+            {/* Main line for all data */}
             <Line 
               type="monotone" 
               dataKey="value" 
               stroke="#002D3A"
               strokeWidth={2.5}
-              dot={{ r: 2.5, fill: '#002D3A' }}
+              dot={(props) => {
+                const { cx, cy, payload } = props;
+                if (!payload) return null;
+                
+                // Different colors for sensor vs manual readings
+                const color = payload.source === 'sensor' ? '#002D3A' : '#0066CC';
+                const size = payload.source === 'sensor' ? 3 : 4;
+                
+                return (
+                  <circle 
+                    cx={cx} 
+                    cy={cy} 
+                    r={size} 
+                    fill={color}
+                    stroke="white"
+                    strokeWidth={1}
+                  />
+                );
+              }}
               activeDot={{ r: 5 }}
             />
             
+            {/* Highlight latest reading */}
             <Line 
               type="monotone" 
               dataKey="value"
@@ -252,10 +368,10 @@ const GlucoseTrendChart = ({
                         key={`latest-${index}`}
                         cx={cx} 
                         cy={cy} 
-                        r={5} 
+                        r={6} 
                         fill="white" 
                         stroke="#002D3A" 
-                        strokeWidth={2}
+                        strokeWidth={3}
                       />
                   );
                 }

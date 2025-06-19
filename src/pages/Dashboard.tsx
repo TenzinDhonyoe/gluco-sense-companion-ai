@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,12 +34,11 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch only sensor readings (source = 'sensor')
+      // Fetch all readings for trend calculation
       const { data, error } = await supabase
         .from('glucose_readings')
         .select('*')
         .eq('user_id', user.id)
-        .eq('source', 'sensor') // Only get sensor readings
         .order('timestamp', { ascending: false })
         .limit(50);
 
@@ -88,7 +86,7 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate latest value and trend direction from real sensor data
+  // Calculate latest value and trend direction from real data
   const latestReading = glucoseData[glucoseData.length - 1];
   const previousReading = glucoseData[glucoseData.length - 2];
   
@@ -151,20 +149,19 @@ const Dashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Set up real-time subscription for glucose readings (sensor only)
+    // Set up real-time subscription for glucose readings
     const channel = supabase
-      .channel('dashboard-sensor-glucose-readings')
+      .channel('dashboard-glucose-readings')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'glucose_readings',
-          filter: 'source=eq.sensor' // Only listen for sensor readings
+          table: 'glucose_readings'
         },
         (payload) => {
-          console.log('New sensor glucose reading received:', payload);
-          // Refresh glucose readings when new sensor ones are added
+          console.log('New glucose reading received:', payload);
+          // Refresh glucose readings when new ones are added
           fetchGlucoseReadings();
         }
       )
@@ -241,13 +238,13 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Current Glucose - Now showing only sensor data */}
+        {/* Current Glucose - Chart will fetch its own data */}
         <GlucoseTrendCard 
           trend={calculateTrendCategory()}
           lastReading={new Date(latestReading?.timestamp || Date.now())}
           latestValue={latestReading?.value}
           trendDirection={calculateTrendDirection()}
-          glucoseData={glucoseData}
+          glucoseData={[]} // Empty array since chart fetches its own data
         />
 
         {/* AI Suggestions */}

@@ -13,13 +13,6 @@ interface GlucoseTrendCardProps {
 }
 
 const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glucoseData }: GlucoseTrendCardProps) => {
-  // Filter to only show sensor data
-  const sensorGlucoseData = glucoseData.filter(reading => {
-    // Since we don't have source info in GlucoseReading interface, we'll assume all data is sensor data for now
-    // In a real implementation, you'd add source field to the GlucoseReading interface
-    return true; // For now, show all data as sensor data
-  });
-
   const getTrendInfo = (trend: string) => {
     switch (trend) {
       case 'low':
@@ -82,10 +75,9 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-0">
-        <Link to="/insights/full" state={{ glucoseData: sensorGlucoseData, trendDirection }}>
+        <Link to="/insights/full" state={{ trendDirection }}>
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
                 <GlucoseTrendChart 
-                  data={sensorGlucoseData} 
                   trendDirection={trendDirection} 
                   containerClassName="pointer-events-none"
                   showTimeRangeFilter={false}
@@ -100,7 +92,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
               Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
             </p>
             <span className="text-gray-400">&middot;</span>
-            <Link to="/insights/full" state={{ glucoseData: sensorGlucoseData, trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
+            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
               See full history
               <ArrowRight className="w-3 h-3 ml-0.5" />
             </Link>
