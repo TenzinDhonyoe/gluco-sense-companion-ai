@@ -50,7 +50,7 @@ const GlucoseTrendChart = ({
         .select('*')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (error) {
         console.error('Error fetching glucose readings:', error);
@@ -107,27 +107,50 @@ const GlucoseTrendChart = ({
   }, [propData, fetchGlucoseReadings]);
 
   useEffect(() => {
-    // Set up real-time subscription for glucose readings with immediate updates
+    // Set up real-time subscription with better error handling
     console.log('Setting up real-time subscription for glucose_readings table...');
     
     const channel = supabase
-      .channel('glucose-readings-realtime')
+      .channel('glucose-readings-changes', {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'glucose-chart' }
+        }
+      })
       .on(
         'postgres_changes',
         {
           event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
-          table: 'glucose_readings' // Specifically listen to glucose_readings table
+          table: 'glucose_readings'
         },
         (payload) => {
-          console.log('Real-time glucose reading change detected in glucose_readings table:', payload);
-          // Immediately refresh data when any change occurs to glucose_readings
-          fetchGlucoseReadings();
+          console.log('Real-time glucose reading change detected:', payload.eventType, payload);
+          // Force immediate refresh when any change occurs
+          setTimeout(() => {
+            fetchGlucoseReadings();
+          }, 100); // Small delay to ensure database consistency
         }
       )
       .subscribe((status) => {
         console.log('Real-time subscription status for glucose_readings:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to glucose_readings changes');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Subscription issue, retrying...', status);
+          // Retry subscription after a delay
+          setTimeout(() => {
+            channel.unsubscribe();
+            // The useEffect will re-run and create a new subscription
+          }, 2000);
+        }
       });
+
+    // Set up periodic refresh as fallback for real-time updates
+    const intervalId = setInterval(() => {
+      console.log('Periodic refresh of glucose data');
+      fetchGlucoseReadings();
+    }, 30000); // Refresh every 30 seconds as backup
 
     // Also listen for custom events from manual entry forms and clear data button
     const handleGlucoseReadingChanged = () => {
@@ -139,6 +162,7 @@ const GlucoseTrendChart = ({
 
     return () => {
       console.log('Cleaning up glucose readings subscription and event listeners');
+      clearInterval(intervalId);
       supabase.removeChannel(channel);
       window.removeEventListener('glucoseReadingChanged', handleGlucoseReadingChanged);
     };
