@@ -35,11 +35,12 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch the last 50 glucose readings for better chart data
+      // Fetch only sensor readings (source = 'sensor')
       const { data, error } = await supabase
         .from('glucose_readings')
         .select('*')
         .eq('user_id', user.id)
+        .eq('source', 'sensor') // Only get sensor readings
         .order('timestamp', { ascending: false })
         .limit(50);
 
@@ -68,7 +69,26 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate latest value and trend direction from real data
+  // Function to manually trigger glucose reading generation
+  const generateSensorReading = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-glucose-reading', {
+        body: { manual: true }
+      });
+      
+      if (error) {
+        console.error('Error generating sensor reading:', error);
+      } else {
+        console.log('Sensor reading generated:', data);
+        // Refresh readings after generation
+        fetchGlucoseReadings();
+      }
+    } catch (error) {
+      console.error('Error invoking generate-glucose-reading function:', error);
+    }
+  };
+
+  // Calculate latest value and trend direction from real sensor data
   const latestReading = glucoseData[glucoseData.length - 1];
   const previousReading = glucoseData[glucoseData.length - 2];
   
@@ -113,6 +133,8 @@ const Dashboard = () => {
       } else {
         // Fetch initial glucose readings
         fetchGlucoseReadings();
+        // Generate a sensor reading immediately
+        generateSensorReading();
       }
     });
 
@@ -129,19 +151,20 @@ const Dashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Set up real-time subscription for glucose readings
+    // Set up real-time subscription for glucose readings (sensor only)
     const channel = supabase
-      .channel('dashboard-glucose-readings')
+      .channel('dashboard-sensor-glucose-readings')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'glucose_readings'
+          table: 'glucose_readings',
+          filter: 'source=eq.sensor' // Only listen for sensor readings
         },
         (payload) => {
-          console.log('New glucose reading received:', payload);
-          // Refresh glucose readings when new ones are added
+          console.log('New sensor glucose reading received:', payload);
+          // Refresh glucose readings when new sensor ones are added
           fetchGlucoseReadings();
         }
       )
@@ -218,7 +241,7 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Current Glucose */}
+        {/* Current Glucose - Now showing only sensor data */}
         <GlucoseTrendCard 
           trend={calculateTrendCategory()}
           lastReading={new Date(latestReading?.timestamp || Date.now())}
