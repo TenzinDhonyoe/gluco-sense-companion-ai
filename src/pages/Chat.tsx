@@ -1,8 +1,10 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, Send, Bot, User, TrendingUp, Utensils, HelpCircle } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -12,16 +14,10 @@ interface Message {
 }
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'bot',
-      content: "Hi Alex 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userName, setUserName] = useState("there");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickReplies = [
@@ -29,6 +25,43 @@ const Chat = () => {
     { icon: Utensils, text: "Recommend a meal", message: "Can you recommend a healthy meal?" },
     { icon: HelpCircle, text: "Ask a question", message: "I have a question about diabetes management" }
   ];
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.name) {
+          const firstName = profile.name.split(' ')[0];
+          setUserName(firstName);
+          
+          // Set initial welcome message with user's name
+          setMessages([{
+            id: '1',
+            type: 'bot',
+            content: `Hi ${firstName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
+            timestamp: new Date()
+          }]);
+        } else {
+          // Fallback welcome message
+          setMessages([{
+            id: '1',
+            type: 'bot',
+            content: "Hi there 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?",
+            timestamp: new Date()
+          }]);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,7 +87,7 @@ const Chat = () => {
     
     // Handle greetings differently
     if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey')) {
-      return "Hi there! How can I help you today? 😊 I can assist with glucose patterns, meal suggestions, or answer any diabetes management questions you have.";
+      return `Hi ${userName}! How can I help you today? 😊 I can assist with glucose patterns, meal suggestions, or answer any diabetes management questions you have.`;
     }
     
     if (lowerMessage.includes('glucose') || lowerMessage.includes('blood sugar') || lowerMessage.includes('trend')) {
@@ -77,7 +110,7 @@ const Chat = () => {
       return "😴 Sleep significantly affects glucose control! Poor sleep can increase insulin resistance. Aim for 7-8 hours consistently. I notice irregular sleep patterns can correlate with higher morning glucose. How has your sleep been lately?";
     }
     
-    return "That's a great question! Based on your data, I'd recommend focusing on consistent meal timing and regular monitoring. Your recent patterns show good progress. Is there a specific aspect of diabetes management you'd like to explore further?";
+    return `That's a great question, ${userName}! Based on your data, I'd recommend focusing on consistent meal timing and regular monitoring. Your recent patterns show good progress. Is there a specific aspect of diabetes management you'd like to explore further?`;
   };
 
   const sendMessage = async (messageText?: string) => {

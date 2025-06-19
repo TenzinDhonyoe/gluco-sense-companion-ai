@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,14 +10,43 @@ import { Settings, Bell, Bluetooth, Heart, Activity, Target, Trophy, Shield, Hel
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
 const Profile = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [autoSync, setAutoSync] = useState(true);
   const [highAlerts, setHighAlerts] = useState(true);
+  const [userName, setUserName] = useState("User");
+  const [userInitials, setUserInitials] = useState("U");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.name) {
+          setUserName(profile.name);
+          const initials = profile.name
+            .split(' ')
+            .map(name => name.charAt(0))
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+          setUserInitials(initials);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
   const handleSettingChange = (setting: string, value: boolean) => {
     switch (setting) {
       case 'notifications':
@@ -34,22 +64,25 @@ const Profile = () => {
       description: `${setting} ${value ? 'enabled' : 'disabled'}`
     });
   };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
       <div className="p-6 space-y-6">
         {/* Profile Header */}
         <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <Avatar className="w-16 h-16 border-2 border-white/50">
-                <AvatarImage src="/lovable-uploads/880f3ea4-efd1-4de5-93a4-d0d91ae981f7.png" alt="Sarah Johnson" />
-                <AvatarFallback className="bg-white/30 text-white text-2xl font-bold">SJ</AvatarFallback>
+                <AvatarImage src="/lovable-uploads/880f3ea4-efd1-4de5-93a4-d0d91ae981f7.png" alt={userName} />
+                <AvatarFallback className="bg-white/30 text-white text-2xl font-bold">{userInitials}</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-2xl font-bold">Shannon</h2>
+                <h2 className="text-2xl font-bold">{userName}</h2>
                 <p className="text-blue-100">Pre-diabetic monitoring</p>
                 <div className="flex items-center space-x-2 mt-2">
                   <Badge className="bg-white/20 text-white">
@@ -108,7 +141,7 @@ const Profile = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Auto-sync readings</span>
-                <Switch checked={autoSync} onCheckedChange={value => handleSettingChange('autoSync', value)} />
+                <Switch checked={autoSync} onCheckedChange={(value) => handleSettingChange('autoSync', value)} />
               </div>
             </div>
           </CardContent>
@@ -128,7 +161,7 @@ const Profile = () => {
                 <Bell className="w-5 h-5 text-gray-500" />
                 <span className="text-gray-900">Push Notifications</span>
               </div>
-              <Switch checked={notifications} onCheckedChange={value => handleSettingChange('notifications', value)} />
+              <Switch checked={notifications} onCheckedChange={(value) => handleSettingChange('notifications', value)} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -136,7 +169,7 @@ const Profile = () => {
                 <Shield className="w-5 h-5 text-gray-500" />
                 <span className="text-gray-900">High Glucose Alerts</span>
               </div>
-              <Switch checked={highAlerts} onCheckedChange={value => handleSettingChange('highAlerts', value)} />
+              <Switch checked={highAlerts} onCheckedChange={(value) => handleSettingChange('highAlerts', value)} />
             </div>
 
             <Button variant="outline" className="w-full justify-start">
@@ -153,6 +186,8 @@ const Profile = () => {
       </div>
 
       <BottomNav />
-    </div>;
+    </div>
+  );
 };
+
 export default Profile;
