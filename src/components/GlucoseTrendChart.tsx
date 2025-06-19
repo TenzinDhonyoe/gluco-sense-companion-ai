@@ -95,12 +95,9 @@ const GlucoseTrendChart = ({
   useEffect(() => {
     // Set up real-time subscription for glucose readings
     console.log('Setting up real-time subscription for glucose readings...');
+    
     const channel = supabase
-      .channel('glucose-readings-realtime', {
-        config: {
-          broadcast: { self: true }
-        }
-      })
+      .channel('glucose-readings-changes')
       .on(
         'postgres_changes',
         {
@@ -109,8 +106,8 @@ const GlucoseTrendChart = ({
           table: 'glucose_readings'
         },
         (payload) => {
-          console.log('Real-time glucose reading change:', payload);
-          // Refresh glucose readings when any change occurs
+          console.log('Real-time glucose reading change detected:', payload);
+          // Immediately refresh data when any change occurs
           fetchGlucoseReadings();
         }
       )
@@ -118,15 +115,30 @@ const GlucoseTrendChart = ({
         console.log('Glucose readings subscription status:', status);
       });
 
+    // Also listen for custom events from manual entry forms
+    const handleGlucoseReadingChanged = () => {
+      console.log('Custom glucose reading changed event received');
+      fetchGlucoseReadings();
+    };
+
+    window.addEventListener('glucoseReadingChanged', handleGlucoseReadingChanged);
+
     return () => {
-      console.log('Cleaning up glucose readings subscription');
+      console.log('Cleaning up glucose readings subscription and event listeners');
       supabase.removeChannel(channel);
+      window.removeEventListener('glucoseReadingChanged', handleGlucoseReadingChanged);
     };
   }, [fetchGlucoseReadings]);
 
   // Process data with useMemo to avoid unnecessary recalculations
   const processedData = useMemo(() => {
-    if (!glucoseData || glucoseData.length === 0) return { finalData: [], dataWithLatestFlag: [] };
+    if (!glucoseData || glucoseData.length === 0) {
+      return { 
+        finalData: [], 
+        dataWithLatestFlag: [],
+        xTicks: []
+      };
+    }
     
     const now = Date.now();
     const hours = parseInt(timeRange);
@@ -134,7 +146,11 @@ const GlucoseTrendChart = ({
     const filteredData = glucoseData.filter(d => d.timestamp >= fromTimestamp);
 
     if (filteredData.length < 2) {
-      return { finalData: [], dataWithLatestFlag: [] };
+      return { 
+        finalData: [], 
+        dataWithLatestFlag: [],
+        xTicks: []
+      };
     }
 
     // DATA PIPELINE
@@ -153,13 +169,7 @@ const GlucoseTrendChart = ({
       isLatest: index === finalData.length - 1,
     }));
 
-    return { finalData, dataWithLatestFlag };
-  }, [glucoseData, timeRange]);
-
-  const xTicks = useMemo(() => {
-    const { dataWithLatestFlag } = processedData;
-    if (!dataWithLatestFlag || dataWithLatestFlag.length === 0) return [];
-    
+    // Calculate x-axis ticks
     const ticks: number[] = [];
     const addedHours: { [key: number]: boolean } = {};
 
@@ -176,8 +186,13 @@ const GlucoseTrendChart = ({
     if (!ticks.includes(lastTimestamp)) {
         ticks.push(lastTimestamp);
     }
-    return ticks;
-  }, [processedData]);
+
+    return { 
+      finalData, 
+      dataWithLatestFlag,
+      xTicks: ticks
+    };
+  }, [glucoseData, timeRange]);
 
   const chartConfig = {
     value: {
@@ -204,7 +219,7 @@ const GlucoseTrendChart = ({
 
   const CustomXAxisTick = (props: any) => {
     const { x, y, payload, index } = props;
-    const isLast = index === xTicks.length - 1;
+    const isLast = index === processedData.xTicks.length - 1;
     const label = isLast 
         ? "Now" 
         : new Date(payload.value).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(/\s/g, '');
@@ -235,7 +250,7 @@ const GlucoseTrendChart = ({
     );
   }
 
-  const { dataWithLatestFlag } = processedData;
+  const { dataWithLatestFlag, xTicks } = processedData;
 
   if (dataWithLatestFlag.length < 2) {
     return (
