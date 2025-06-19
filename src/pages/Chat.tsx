@@ -2,9 +2,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Bot, User, TrendingUp, Utensils, HelpCircle } from "lucide-react";
+import { MessageSquare, Send, Bot, User, TrendingUp, Utensils, HelpCircle, Trash2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -14,11 +16,14 @@ interface Message {
 }
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userName, setUserName] = useState("there");
+  const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const { messages, setMessages, addMessage, clearChat } = useChatHistory(userId);
 
   const quickReplies = [
     { icon: TrendingUp, text: "Show my glucose trend", message: "Show me my glucose trend" },
@@ -31,6 +36,8 @@ const Chat = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
+        setUserId(user.id);
+        
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('name')
@@ -41,27 +48,31 @@ const Chat = () => {
           const firstName = profile.name.split(' ')[0];
           setUserName(firstName);
           
-          // Set initial welcome message with user's name
-          setMessages([{
-            id: '1',
-            type: 'bot',
-            content: `Hi ${firstName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
-            timestamp: new Date()
-          }]);
+          // Only set initial welcome message if there's no existing chat history
+          if (messages.length === 0) {
+            setMessages([{
+              id: '1',
+              type: 'bot',
+              content: `Hi ${firstName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
+              timestamp: new Date()
+            }]);
+          }
         } else {
-          // Fallback welcome message
-          setMessages([{
-            id: '1',
-            type: 'bot',
-            content: "Hi there 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?",
-            timestamp: new Date()
-          }]);
+          // Fallback welcome message only if no existing history
+          if (messages.length === 0) {
+            setMessages([{
+              id: '1',
+              type: 'bot',
+              content: "Hi there 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?",
+              timestamp: new Date()
+            }]);
+          }
         }
       }
     };
 
     fetchUserProfile();
-  }, []);
+  }, [messages.length, setMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -124,7 +135,7 @@ const Chat = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    addMessage(userMessage);
     setInputMessage("");
     setIsLoading(true);
 
@@ -137,7 +148,7 @@ const Chat = () => {
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, botMessage]);
+      addMessage(botMessage);
       setIsLoading(false);
     }, 800 + Math.random() * 1200);
   };
@@ -153,23 +164,45 @@ const Chat = () => {
     }
   };
 
+  const handleClearChat = () => {
+    clearChat();
+    toast({
+      title: "Chat cleared",
+      description: "Your conversation history has been cleared.",
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
-            alt="GlucoCoach AI" 
-            className="w-10 h-10 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
-          />
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">GlucoCoach AI</h1>
-            <p className="text-sm text-green-500 flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              Online
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
+              alt="GlucoCoach AI" 
+              className="w-10 h-10 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+            />
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">GlucoCoach AI</h1>
+              <p className="text-sm text-green-500 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Online
+              </p>
+            </div>
           </div>
+          
+          {/* Clear Chat Button */}
+          {messages.length > 0 && (
+            <Button
+              onClick={handleClearChat}
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-red-500"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
