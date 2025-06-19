@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { trash } from "lucide-react";
+import { Trash } from "lucide-react";
 
 const ClearDataButton = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -80,7 +80,7 @@ const ClearDataButton = () => {
           size="sm"
           className="flex items-center gap-2"
         >
-          <trash className="w-4 h-4" />
+          <Trash className="w-4 h-4" />
           Clear All Data
         </Button>
       </AlertDialogTrigger>
