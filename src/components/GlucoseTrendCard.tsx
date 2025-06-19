@@ -30,12 +30,10 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   };
 
   const getBorderColor = () => {
-    if (trend === 'high' || trendDirection === 'down') {
+    if (trend === 'high' || trend === 'low') {
       return 'border-red-500';
     } else if (trend === 'normal') {
       return 'border-green-500';
-    } else if (trend === 'low') {
-      return 'border-red-500';
     }
     return 'border-gray-200';
   };
