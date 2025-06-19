@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Activity } from "lucide-react";
+import { Edit, Trash2, Activity, Wifi } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseUnit, type GlucoseTag, formatGlucoseValue, getGlucoseCategory } from "@/lib/glucoseUtils";
@@ -20,6 +20,7 @@ interface GlucoseReading {
   tag?: GlucoseTag | null;
   notes?: string | null;
   source: string;
+  is_sensor_reading: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +55,7 @@ const GlucoseReadingsList = () => {
         tag: row.tag as GlucoseTag | null,
         notes: row.notes,
         source: row.source,
+        is_sensor_reading: row.is_sensor_reading,
         created_at: row.created_at,
         updated_at: row.updated_at,
       }));
@@ -78,8 +80,26 @@ const GlucoseReadingsList = () => {
     const handleGlucoseChange = () => fetchReadings();
     window.addEventListener('glucoseReadingChanged', handleGlucoseChange);
 
+    // Set up real-time subscription for new sensor readings
+    const channel = supabase
+      .channel('glucose-readings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'glucose_readings'
+        },
+        (payload) => {
+          console.log('New glucose reading:', payload);
+          fetchReadings(); // Refresh the list when new readings are added
+        }
+      )
+      .subscribe();
+
     return () => {
       window.removeEventListener('glucoseReadingChanged', handleGlucoseChange);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -184,6 +204,12 @@ const GlucoseReadingsList = () => {
                       }`}>
                         {formatGlucoseValue(reading.value, reading.unit)} {reading.unit}
                       </div>
+                      {reading.is_sensor_reading && (
+                        <Badge variant="outline" className="text-xs flex items-center space-x-1">
+                          <Wifi className="w-3 h-3" />
+                          <span>Sensor</span>
+                        </Badge>
+                      )}
                       {reading.tag && (
                         <Badge variant="secondary" className="text-xs">
                           {reading.tag.replace('-', ' ')}
@@ -200,21 +226,25 @@ const GlucoseReadingsList = () => {
                     )}
                   </div>
                   <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingReading(reading)}
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(reading.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    {!reading.is_sensor_reading && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingReading(reading)}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(reading.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
