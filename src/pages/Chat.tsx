@@ -20,6 +20,7 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userName, setUserName] = useState("there");
   const [userId, setUserId] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -47,32 +48,27 @@ const Chat = () => {
         if (profile && profile.name) {
           const firstName = profile.name.split(' ')[0];
           setUserName(firstName);
-          
-          // Only set initial welcome message if there's no existing chat history
-          if (messages.length === 0) {
-            setMessages([{
-              id: '1',
-              type: 'bot',
-              content: `Hi ${firstName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
-              timestamp: new Date()
-            }]);
-          }
-        } else {
-          // Fallback welcome message only if no existing history
-          if (messages.length === 0) {
-            setMessages([{
-              id: '1',
-              type: 'bot',
-              content: "Hi there 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?",
-              timestamp: new Date()
-            }]);
-          }
         }
+        
+        setHasInitialized(true);
       }
     };
 
     fetchUserProfile();
-  }, [messages.length, setMessages]);
+  }, []);
+
+  // Set initial welcome message only after user profile is loaded and if no chat history exists
+  useEffect(() => {
+    if (hasInitialized && userId && messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: '1',
+        type: 'bot',
+        content: `Hi ${userName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [hasInitialized, userId, messages.length, userName, setMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
