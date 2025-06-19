@@ -2,7 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,23 +21,26 @@ interface GlucoseTrendChartProps {
   containerClassName?: string;
   showTimeRangeFilter?: boolean;
   defaultTimeRange?: string;
+  onDataUpdate?: (data: GlucoseReading[]) => void;
 }
 
 const GlucoseTrendChart = ({ 
   data: propData, 
   containerClassName, 
   showTimeRangeFilter = true,
-  defaultTimeRange = '3'
+  defaultTimeRange = '3',
+  onDataUpdate
 }: GlucoseTrendChartProps) => {
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchGlucoseReadings = async () => {
+  const fetchGlucoseReadings = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      console.log('Fetching glucose readings...');
       const { data, error } = await supabase
         .from('glucose_readings')
         .select('*')
@@ -65,13 +68,19 @@ const GlucoseTrendChart = ({
           source: reading.source
         }));
 
+      console.log('Transformed glucose data:', transformedData.length, 'readings');
       setGlucoseData(transformedData);
+      
+      // Notify parent component of data update
+      if (onDataUpdate) {
+        onDataUpdate(transformedData);
+      }
     } catch (error) {
       console.error('Error in fetchGlucoseReadings:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [onDataUpdate]);
 
   useEffect(() => {
     // If prop data is provided, use it; otherwise fetch from database
@@ -81,42 +90,49 @@ const GlucoseTrendChart = ({
     } else {
       fetchGlucoseReadings();
     }
-  }, [propData]);
+  }, [propData, fetchGlucoseReadings]);
 
   useEffect(() => {
     // Set up real-time subscription for glucose readings
+    console.log('Setting up real-time subscription for glucose readings...');
     const channel = supabase
-      .channel('chart-glucose-readings')
+      .channel('glucose-readings-realtime', {
+        config: {
+          broadcast: { self: true }
+        }
+      })
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'glucose_readings'
         },
         (payload) => {
-          console.log('New glucose reading received in chart:', payload);
-          // Refresh glucose readings when new ones are added
+          console.log('Real-time glucose reading change:', payload);
+          // Refresh glucose readings when any change occurs
           fetchGlucoseReadings();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Glucose readings subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up glucose readings subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchGlucoseReadings]);
 
-  // Ensure all useMemo hooks are called unconditionally and in the same order
-  const filteredData = useMemo(() => {
-    if (!glucoseData || glucoseData.length === 0) return [];
+  // Process data with useMemo to avoid unnecessary recalculations
+  const processedData = useMemo(() => {
+    if (!glucoseData || glucoseData.length === 0) return { finalData: [], dataWithLatestFlag: [] };
+    
     const now = Date.now();
     const hours = parseInt(timeRange);
     const fromTimestamp = now - hours * 60 * 60 * 1000;
-    return glucoseData.filter(d => d.timestamp >= fromTimestamp);
-  }, [glucoseData, timeRange]);
+    const filteredData = glucoseData.filter(d => d.timestamp >= fromTimestamp);
 
-  const processedData = useMemo(() => {
     if (filteredData.length < 2) {
       return { finalData: [], dataWithLatestFlag: [] };
     }
@@ -138,7 +154,7 @@ const GlucoseTrendChart = ({
     }));
 
     return { finalData, dataWithLatestFlag };
-  }, [filteredData]);
+  }, [glucoseData, timeRange]);
 
   const xTicks = useMemo(() => {
     const { dataWithLatestFlag } = processedData;

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,44 +30,6 @@ const Dashboard = () => {
     mealsGoal: 3
   });
 
-  const fetchGlucoseReadings = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch all readings for trend calculation
-      const { data, error } = await supabase
-        .from('glucose_readings')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('timestamp', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching glucose readings:', error);
-        return;
-      }
-
-      // Transform the data to match GlucoseReading interface
-      const transformedData: GlucoseReading[] = (data || [])
-        .reverse() // Reverse to get chronological order for the chart
-        .map((reading, index) => ({
-          time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
-          }),
-          value: Number(reading.value),
-          timestamp: new Date(reading.timestamp).getTime(),
-          trendIndex: index
-        }));
-
-      setGlucoseData(transformedData);
-    } catch (error) {
-      console.error('Error in fetchGlucoseReadings:', error);
-    }
-  };
-
   // Function to manually trigger glucose reading generation
   const generateSensorReading = async () => {
     try {
@@ -78,13 +41,17 @@ const Dashboard = () => {
         console.error('Error generating sensor reading:', error);
       } else {
         console.log('Sensor reading generated:', data);
-        // Refresh readings after generation
-        fetchGlucoseReadings();
       }
     } catch (error) {
       console.error('Error invoking generate-glucose-reading function:', error);
     }
   };
+
+  // Callback to handle glucose data updates from the chart component
+  const handleGlucoseDataUpdate = useCallback((data: GlucoseReading[]) => {
+    console.log('Dashboard received glucose data update:', data.length, 'readings');
+    setGlucoseData(data);
+  }, []);
 
   // Calculate latest value and trend direction from real data
   const latestReading = glucoseData[glucoseData.length - 1];
@@ -129,9 +96,7 @@ const Dashboard = () => {
       if (!session) {
         navigate("/");
       } else {
-        // Fetch initial glucose readings
-        fetchGlucoseReadings();
-        // Generate a sensor reading immediately
+        // Generate a sensor reading immediately on dashboard load
         generateSensorReading();
       }
     });
@@ -140,37 +105,11 @@ const Dashboard = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate("/");
-      } else {
-        fetchGlucoseReadings();
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  useEffect(() => {
-    // Set up real-time subscription for glucose readings
-    const channel = supabase
-      .channel('dashboard-glucose-readings')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'glucose_readings'
-        },
-        (payload) => {
-          console.log('New glucose reading received:', payload);
-          // Refresh glucose readings when new ones are added
-          fetchGlucoseReadings();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -238,13 +177,14 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Current Glucose - Chart will fetch its own data */}
+        {/* Current Glucose - Chart will fetch its own data and notify us of updates */}
         <GlucoseTrendCard 
           trend={calculateTrendCategory()}
           lastReading={new Date(latestReading?.timestamp || Date.now())}
           latestValue={latestReading?.value}
           trendDirection={calculateTrendDirection()}
-          glucoseData={[]} // Empty array since chart fetches its own data
+          glucoseData={glucoseData}
+          onDataUpdate={handleGlucoseDataUpdate}
         />
 
         {/* AI Suggestions */}

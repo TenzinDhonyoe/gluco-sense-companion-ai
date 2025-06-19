@@ -10,9 +10,10 @@ interface GlucoseTrendCardProps {
   latestValue?: number;
   trendDirection: 'up' | 'down' | 'flat';
   glucoseData: GlucoseReading[];
+  onDataUpdate?: (data: GlucoseReading[]) => void;
 }
 
-const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glucoseData }: GlucoseTrendCardProps) => {
+const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glucoseData, onDataUpdate }: GlucoseTrendCardProps) => {
   const getTrendInfo = (trend: string) => {
     switch (trend) {
       case 'low':
@@ -82,6 +83,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
                   containerClassName="pointer-events-none"
                   showTimeRangeFilter={false}
                   defaultTimeRange="6"
+                  onDataUpdate={onDataUpdate}
                 />
             </div>
         </Link>
