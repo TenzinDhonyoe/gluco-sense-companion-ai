@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,23 +30,6 @@ const Dashboard = () => {
     meals: 2,
     mealsGoal: 3
   });
-
-  // Function to manually trigger glucose reading generation
-  const generateSensorReading = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-glucose-reading', {
-        body: { manual: true }
-      });
-      
-      if (error) {
-        console.error('Error generating sensor reading:', error);
-      } else {
-        console.log('Sensor reading generated:', data);
-      }
-    } catch (error) {
-      console.error('Error invoking generate-glucose-reading function:', error);
-    }
-  };
 
   // Callback to handle glucose data updates from the chart component
   const handleGlucoseDataUpdate = useCallback((data: GlucoseReading[]) => {
@@ -101,9 +85,6 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/");
-      } else {
-        // Generate a sensor reading immediately on dashboard load
-        generateSensorReading();
       }
     });
 
