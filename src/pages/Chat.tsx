@@ -1,9 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Bot, User } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
@@ -96,95 +94,112 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
-      {/* Header */}
-      <div className="p-6 pb-0">
-        <h1 className="text-2xl font-bold text-gray-900">AI Coach</h1>
-        <p className="text-gray-600">Get personalized diabetes management advice</p>
-      </div>
-
-      {/* Messages Container - Takes up remaining space */}
-      <div className="flex-1 p-6 pt-4 pb-0 min-h-0">
-        <Card className="h-full bg-white/70 backdrop-blur-sm border-0 shadow-lg flex flex-col">
-          <CardContent className="flex-1 p-4 min-h-0">
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.type === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-2">
-                        {message.type === 'bot' && <Bot className="w-4 h-4 mt-1 text-blue-500" />}
-                        <div className="flex-1">
-                          <p className="text-sm">{message.content}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                          }`}>
-                            {message.timestamp.toLocaleTimeString('en-US', { 
-                              hour: 'numeric', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                        </div>
-                        {message.type === 'user' && <User className="w-4 h-4 mt-1 text-blue-100" />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <Bot className="w-4 h-4 text-blue-500" />
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Input Area - Fixed at bottom */}
-      <div className="p-6 pt-4">
-        <div className="flex space-x-2">
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask me about your glucose, meals, exercise..."
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!inputMessage.trim() || isLoading}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+    <div className="flex flex-col h-screen bg-white">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">AI Diabetes Coach</h1>
+            <p className="text-sm text-gray-500">Online</p>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="pb-20">
+      {/* Messages Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`px-4 py-6 ${message.type === 'bot' ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100`}
+            >
+              <div className="flex space-x-4">
+                <div className="flex-shrink-0">
+                  {message.type === 'bot' ? (
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 mb-1">
+                    {message.type === 'bot' ? 'AI Coach' : 'You'}
+                  </div>
+                  <div className="text-gray-800 leading-relaxed">
+                    {message.content}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {message.timestamp.toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {isLoading && (
+            <div className="px-4 py-6 bg-gray-50 border-b border-gray-100">
+              <div className="flex space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900 mb-1">AI Coach</div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-500">Typing...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 pb-24">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex space-x-3">
+            <div className="flex-1">
+              <Input
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Message AI Coach..."
+                className="border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isLoading}
+              />
+            </div>
+            <Button
+              onClick={sendMessage}
+              disabled={!inputMessage.trim() || isLoading}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation - Fixed */}
+      <div className="fixed bottom-0 left-0 right-0">
         <BottomNav />
       </div>
     </div>
