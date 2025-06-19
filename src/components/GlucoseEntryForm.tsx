@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Calendar, Save, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseUnit, type GlucoseTag, glucoseTags, convertGlucoseValue, getGlucoseCategory } from "@/lib/glucoseUtils";
 
@@ -35,7 +34,6 @@ interface FormData {
 }
 
 const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryFormProps) => {
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const isEditing = !!initialData?.id;
@@ -72,21 +70,13 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to save glucose readings.",
-          variant: "destructive",
-        });
+        console.error('Authentication required');
         return;
       }
 
       const value = parseFloat(data.value);
       if (isNaN(value) || value <= 0) {
-        toast({
-          title: "Invalid value",
-          description: "Please enter a valid glucose value.",
-          variant: "destructive",
-        });
+        console.error('Invalid glucose value');
         return;
       }
 
@@ -119,22 +109,12 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
         throw result.error;
       }
 
-      toast({
-        title: isEditing ? "Reading updated!" : "Reading saved!",
-        description: `Glucose level: ${value} ${data.unit}`,
-      });
-
       // Trigger a custom event to refresh glucose data in other components
       window.dispatchEvent(new CustomEvent('glucoseReadingChanged'));
       
       onSuccess?.();
     } catch (error) {
       console.error('Error saving glucose reading:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save glucose reading. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsSubmitting(false);
     }
