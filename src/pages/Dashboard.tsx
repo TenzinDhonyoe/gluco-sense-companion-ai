@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
 import DynamicAvatar from "@/components/DynamicAvatar";
+import ClearDataButton from "@/components/ClearDataButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -171,10 +171,13 @@ const Dashboard = () => {
               className="h-12 w-12"
             />
           </div>
-          <DynamicAvatar 
-            onClick={() => navigate("/profile")} 
-            size={48}
-          />
+          <div className="flex items-center gap-3">
+            <ClearDataButton />
+            <DynamicAvatar 
+              onClick={() => navigate("/profile")} 
+              size={48}
+            />
+          </div>
         </div>
 
         {/* Current Glucose - Chart will fetch its own data and notify us of updates */}
