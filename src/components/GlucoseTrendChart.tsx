@@ -107,79 +107,41 @@ const GlucoseTrendChart = ({
     };
   }, []);
 
+  // Ensure all useMemo hooks are called unconditionally and in the same order
   const filteredData = useMemo(() => {
-    if (!glucoseData) return [];
+    if (!glucoseData || glucoseData.length === 0) return [];
     const now = Date.now();
     const hours = parseInt(timeRange);
     const fromTimestamp = now - hours * 60 * 60 * 1000;
     return glucoseData.filter(d => d.timestamp >= fromTimestamp);
   }, [glucoseData, timeRange]);
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const point = payload[0].payload;
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
-          <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
-          <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
-          {point.source && (
-            <p className="text-xs text-gray-500 capitalize">{point.source}</p>
-          )}
-        </div>
-      );
+  const processedData = useMemo(() => {
+    if (filteredData.length < 2) {
+      return { finalData: [], dataWithLatestFlag: [] };
     }
-    return null;
-  };
 
-  const chartConfig = {
-    value: {
-      label: "Glucose (mg/dL)",
-      color: "#002D3A",
-    },
-  };
+    // DATA PIPELINE
+    const MAX_VISIBLE_POINTS = 48;
+    
+    const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
 
-  if (loading) {
-    return (
-      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
-        <div className="text-center">
-          <div className="text-gray-400 text-lg font-medium">Loading...</div>
-          <div className="text-gray-300 text-sm mt-1">Fetching glucose data</div>
-        </div>
-      </div>
-    );
-  }
+    const decimatedData = points.length > MAX_VISIBLE_POINTS
+      ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
+      : points;
 
-  if (filteredData.length < 2) {
-    return (
-      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
-        <div className="text-center">
-          <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
-          <div className="text-gray-300 text-sm mt-1">Need at least 2 readings to show trend</div>
-        </div>
-      </div>
-    );
-  }
+    const finalData = movingAverage(decimatedData, 3);
 
-  // DATA PIPELINE
-  const MAX_VISIBLE_POINTS = 48;
-  
-  const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
+    const dataWithLatestFlag = finalData.map((item, index) => ({
+      ...item,
+      isLatest: index === finalData.length - 1,
+    }));
 
-  const decimatedData = points.length > MAX_VISIBLE_POINTS
-    ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
-    : points;
-
-  const finalData = movingAverage(decimatedData, 3);
-
-  const dataWithLatestFlag = useMemo(() => finalData.map((item, index) => ({
-    ...item,
-    isLatest: index === finalData.length - 1,
-  })), [finalData]);
-
-  const yAxisDomain = [40, 280];
-  const yTicks = [40, 80, 120, 160, 200, 240, 280];
+    return { finalData, dataWithLatestFlag };
+  }, [filteredData]);
 
   const xTicks = useMemo(() => {
+    const { dataWithLatestFlag } = processedData;
     if (!dataWithLatestFlag || dataWithLatestFlag.length === 0) return [];
     
     const ticks: number[] = [];
@@ -199,7 +161,30 @@ const GlucoseTrendChart = ({
         ticks.push(lastTimestamp);
     }
     return ticks;
-  }, [dataWithLatestFlag]);
+  }, [processedData]);
+
+  const chartConfig = {
+    value: {
+      label: "Glucose (mg/dL)",
+      color: "#002D3A",
+    },
+  };
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const point = payload[0].payload;
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
+          <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
+          <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+          {point.source && (
+            <p className="text-xs text-gray-500 capitalize">{point.source}</p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   const CustomXAxisTick = (props: any) => {
     const { x, y, payload, index } = props;
@@ -223,9 +208,32 @@ const GlucoseTrendChart = ({
     }
   };
 
-  // Separate sensor and manual data for different styling
-  const sensorData = dataWithLatestFlag.filter(d => d.source === 'sensor');
-  const manualData = dataWithLatestFlag.filter(d => d.source === 'manual');
+  if (loading) {
+    return (
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg font-medium">Loading...</div>
+          <div className="text-gray-300 text-sm mt-1">Fetching glucose data</div>
+        </div>
+      </div>
+    );
+  }
+
+  const { dataWithLatestFlag } = processedData;
+
+  if (dataWithLatestFlag.length < 2) {
+    return (
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
+          <div className="text-gray-300 text-sm mt-1">Need at least 2 readings to show trend</div>
+        </div>
+      </div>
+    );
+  }
+
+  const yAxisDomain = [40, 280];
+  const yTicks = [40, 80, 120, 160, 200, 240, 280];
   
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
