@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get all users who have glucose readings (active users)
+    // Get all users who have glucose readings (active users) - limit to unique users only
     const { data: activeUsers, error: usersError } = await supabaseClient
       .from('glucose_readings')
       .select('user_id')
@@ -48,12 +49,12 @@ Deno.serve(async (req) => {
       throw usersError
     }
 
-    // Get unique user IDs
+    // Get unique user IDs only
     const uniqueUserIds = [...new Set(activeUsers?.map(reading => reading.user_id) || [])]
     
-    console.log(`Generating glucose readings for ${uniqueUserIds.length} active users`)
+    console.log(`Generating single glucose reading for ${uniqueUserIds.length} active users`)
 
-    // Generate readings for each active user
+    // Generate exactly ONE reading for each active user
     for (const userId of uniqueUserIds) {
       // Get the user's latest reading to make the new reading realistic
       const { data: latestReading } = await supabaseClient
@@ -69,8 +70,8 @@ Deno.serve(async (req) => {
         baseValue = latestReading.value
       }
 
-      // Generate a realistic glucose variation (-20 to +20 mg/dL from last reading)
-      const variation = (Math.random() - 0.5) * 40
+      // Generate a realistic glucose variation (-15 to +15 mg/dL from last reading)
+      const variation = (Math.random() - 0.5) * 30
       let newValue = baseValue + variation
 
       // Keep values within realistic bounds (70-300 mg/dL)
@@ -79,7 +80,7 @@ Deno.serve(async (req) => {
       // Round to nearest whole number
       newValue = Math.round(newValue)
 
-      // Insert the new reading
+      // Insert exactly one new reading per user
       const { error: insertError } = await supabaseClient
         .from('glucose_readings')
         .insert({
@@ -96,14 +97,14 @@ Deno.serve(async (req) => {
       if (insertError) {
         console.error(`Error inserting reading for user ${userId}:`, insertError)
       } else {
-        console.log(`Generated glucose reading ${newValue} mg/dL for user ${userId}`)
+        console.log(`Generated single glucose reading ${newValue} mg/dL for user ${userId}`)
       }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Generated readings for ${uniqueUserIds.length} users`,
+        message: `Generated single reading for ${uniqueUserIds.length} users`,
         timestamp: new Date().toISOString()
       }),
       { 
