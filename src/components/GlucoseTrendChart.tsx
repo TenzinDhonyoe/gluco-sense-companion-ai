@@ -38,9 +38,13 @@ const GlucoseTrendChart = ({
   const fetchGlucoseReadings = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No authenticated user found');
+        setLoading(false);
+        return;
+      }
 
-      console.log('Fetching glucose readings...');
+      console.log('Fetching glucose readings from glucose_readings table...');
       const { data, error } = await supabase
         .from('glucose_readings')
         .select('*')
@@ -50,25 +54,34 @@ const GlucoseTrendChart = ({
 
       if (error) {
         console.error('Error fetching glucose readings:', error);
+        setLoading(false);
         return;
       }
 
-      // Transform the data to match GlucoseReading interface
+      // Transform the data to match GlucoseReading interface, ensuring timestamp correlation
       const transformedData: GlucoseReading[] = (data || [])
         .reverse() // Reverse to get chronological order for the chart
-        .map((reading, index) => ({
-          time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit', 
-            hour12: true 
-          }),
-          value: Number(reading.value),
-          timestamp: new Date(reading.timestamp).getTime(),
-          trendIndex: index,
-          source: reading.source
-        }));
+        .map((reading, index) => {
+          const timestamp = new Date(reading.timestamp).getTime();
+          return {
+            time: new Date(timestamp).toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit', 
+              hour12: true 
+            }),
+            value: Number(reading.value),
+            timestamp: timestamp, // Ensure we're using the exact database timestamp
+            trendIndex: index,
+            source: reading.source || 'manual'
+          };
+        });
 
-      console.log('Transformed glucose data:', transformedData.length, 'readings');
+      console.log('Transformed glucose data from database:', transformedData.length, 'readings');
+      if (transformedData.length > 0) {
+        console.log('Latest reading timestamp:', new Date(transformedData[transformedData.length - 1].timestamp));
+        console.log('Latest reading value:', transformedData[transformedData.length - 1].value);
+      }
+      
       setGlucoseData(transformedData);
       
       // Notify parent component of data update
@@ -85,6 +98,7 @@ const GlucoseTrendChart = ({
   useEffect(() => {
     // If prop data is provided, use it; otherwise fetch from database
     if (propData && propData.length > 0) {
+      console.log('Using provided prop data:', propData.length, 'readings');
       setGlucoseData(propData);
       setLoading(false);
     } else {
@@ -93,31 +107,31 @@ const GlucoseTrendChart = ({
   }, [propData, fetchGlucoseReadings]);
 
   useEffect(() => {
-    // Set up real-time subscription for glucose readings
-    console.log('Setting up real-time subscription for glucose readings...');
+    // Set up real-time subscription for glucose readings with immediate updates
+    console.log('Setting up real-time subscription for glucose_readings table...');
     
     const channel = supabase
-      .channel('glucose-readings-changes')
+      .channel('glucose-readings-realtime')
       .on(
         'postgres_changes',
         {
           event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
-          table: 'glucose_readings'
+          table: 'glucose_readings' // Specifically listen to glucose_readings table
         },
         (payload) => {
-          console.log('Real-time glucose reading change detected:', payload);
-          // Immediately refresh data when any change occurs
+          console.log('Real-time glucose reading change detected in glucose_readings table:', payload);
+          // Immediately refresh data when any change occurs to glucose_readings
           fetchGlucoseReadings();
         }
       )
       .subscribe((status) => {
-        console.log('Glucose readings subscription status:', status);
+        console.log('Real-time subscription status for glucose_readings:', status);
       });
 
-    // Also listen for custom events from manual entry forms
+    // Also listen for custom events from manual entry forms and clear data button
     const handleGlucoseReadingChanged = () => {
-      console.log('Custom glucose reading changed event received');
+      console.log('Custom glucose reading changed event received - refreshing data');
       fetchGlucoseReadings();
     };
 
@@ -208,6 +222,7 @@ const GlucoseTrendChart = ({
         <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
           <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
           <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+          <p className="text-xs text-gray-500">{new Date(point.timestamp).toLocaleDateString()}</p>
           {point.source && (
             <p className="text-xs text-gray-500 capitalize">{point.source}</p>
           )}
@@ -244,7 +259,7 @@ const GlucoseTrendChart = ({
       <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Loading...</div>
-          <div className="text-gray-300 text-sm mt-1">Fetching glucose data</div>
+          <div className="text-gray-300 text-sm mt-1">Fetching glucose data from database</div>
         </div>
       </div>
     );

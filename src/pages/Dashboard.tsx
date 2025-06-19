@@ -53,7 +53,7 @@ const Dashboard = () => {
     setGlucoseData(data);
   }, []);
 
-  // Calculate latest value and trend direction from real data
+  // Calculate latest value and trend direction from real database data
   const latestReading = glucoseData[glucoseData.length - 1];
   const previousReading = glucoseData[glucoseData.length - 2];
   
@@ -72,7 +72,13 @@ const Dashboard = () => {
     return 'normal';
   };
 
-  // Mock log entries for demonstration
+  // Get the actual timestamp from the latest reading, not mock data
+  const getLastReadingTime = (): Date => {
+    if (!latestReading) return new Date();
+    return new Date(latestReading.timestamp);
+  };
+
+  // Mock log entries for demonstration - these should also come from database eventually
   const mockLogs: LogEntry[] = [
     {
       id: '1',
@@ -121,6 +127,7 @@ const Dashboard = () => {
   const sleepProgress = (todaysProgress.sleep / todaysProgress.sleepGoal) * 100;
   const mealsProgress = (todaysProgress.meals / todaysProgress.mealsGoal) * 100;
 
+  // CircularProgress component
   const CircularProgress = ({ value, size = 80, strokeWidth = 6, color = "text-blue-500" }) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
@@ -180,17 +187,17 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Current Glucose - Chart will fetch its own data and notify us of updates */}
+        {/* Current Glucose - Using real database data with automatic updates */}
         <GlucoseTrendCard 
           trend={calculateTrendCategory()}
-          lastReading={new Date(latestReading?.timestamp || Date.now())}
+          lastReading={getLastReadingTime()}
           latestValue={latestReading?.value}
           trendDirection={calculateTrendDirection()}
           glucoseData={glucoseData}
           onDataUpdate={handleGlucoseDataUpdate}
         />
 
-        {/* AI Suggestions */}
+        {/* AI Suggestions - Using real glucose data */}
         <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
 
         {/* Today's Progress */}
