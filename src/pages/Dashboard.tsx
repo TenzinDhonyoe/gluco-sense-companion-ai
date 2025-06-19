@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import DynamicAvatar from "@/components/DynamicAvatar";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [todaysProgress, setTodaysProgress] = useState({
     steps: 8432,
     stepsGoal: 10000,
@@ -28,22 +30,47 @@ const Dashboard = () => {
     mealsGoal: 3
   });
 
-  // Mock glucose data with more dramatic spikes and variations
-  const mockGlucoseData: GlucoseReading[] = [
-    { time: '8 min ago', value: 95, timestamp: Date.now() - 8 * 60 * 1000, trendIndex: 0 },
-    { time: '7 min ago', value: 145, timestamp: Date.now() - 7 * 60 * 1000, trendIndex: 1 },
-    { time: '6 min ago', value: 178, timestamp: Date.now() - 6 * 60 * 1000, trendIndex: 2 },
-    { time: '5 min ago', value: 165, timestamp: Date.now() - 5 * 60 * 1000, trendIndex: 3 },
-    { time: '4 min ago', value: 195, timestamp: Date.now() - 4 * 60 * 1000, trendIndex: 4 },
-    { time: '3 min ago', value: 210, timestamp: Date.now() - 3 * 60 * 1000, trendIndex: 5 },
-    { time: '2 min ago', value: 185, timestamp: Date.now() - 2 * 60 * 1000, trendIndex: 6 },
-    { time: '1 min ago', value: 155, timestamp: Date.now() - 1 * 60 * 1000, trendIndex: 7 },
-    { time: 'now', value: 142, timestamp: Date.now(), trendIndex: 8 },
-  ];
+  const fetchGlucoseReadings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  // Calculate latest value and trend direction from data
-  const latestReading = mockGlucoseData[mockGlucoseData.length - 1];
-  const previousReading = mockGlucoseData[mockGlucoseData.length - 2];
+      // Fetch the last 50 glucose readings for better chart data
+      const { data, error } = await supabase
+        .from('glucose_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching glucose readings:', error);
+        return;
+      }
+
+      // Transform the data to match GlucoseReading interface
+      const transformedData: GlucoseReading[] = (data || [])
+        .reverse() // Reverse to get chronological order for the chart
+        .map((reading, index) => ({
+          time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+          }),
+          value: Number(reading.value),
+          timestamp: new Date(reading.timestamp).getTime(),
+          trendIndex: index
+        }));
+
+      setGlucoseData(transformedData);
+    } catch (error) {
+      console.error('Error in fetchGlucoseReadings:', error);
+    }
+  };
+
+  // Calculate latest value and trend direction from real data
+  const latestReading = glucoseData[glucoseData.length - 1];
+  const previousReading = glucoseData[glucoseData.length - 2];
   
   const calculateTrendDirection = (): 'up' | 'down' | 'flat' => {
     if (!latestReading || !previousReading) return 'flat';
@@ -83,6 +110,9 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/");
+      } else {
+        // Fetch initial glucose readings
+        fetchGlucoseReadings();
       }
     });
 
@@ -90,11 +120,37 @@ const Dashboard = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate("/");
+      } else {
+        fetchGlucoseReadings();
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    // Set up real-time subscription for glucose readings
+    const channel = supabase
+      .channel('dashboard-glucose-readings')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'glucose_readings'
+        },
+        (payload) => {
+          console.log('New glucose reading received:', payload);
+          // Refresh glucose readings when new ones are added
+          fetchGlucoseReadings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -168,11 +224,11 @@ const Dashboard = () => {
           lastReading={new Date(latestReading?.timestamp || Date.now())}
           latestValue={latestReading?.value}
           trendDirection={calculateTrendDirection()}
-          glucoseData={mockGlucoseData}
+          glucoseData={glucoseData}
         />
 
         {/* AI Suggestions */}
-        <AISuggestionsCard glucoseData={mockGlucoseData} logs={mockLogs} />
+        <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
 
         {/* Today's Progress */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
