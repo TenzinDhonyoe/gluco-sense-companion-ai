@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -195,7 +194,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
 
   const calorieKingApiKey = Deno.env.get('CALORIEKING_API_KEY');
   if (!calorieKingApiKey) {
-    console.error('CalorieKing API key not configured');
+    console.log('CalorieKing API key not configured, skipping API call');
     return null;
   }
 
@@ -205,16 +204,19 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     searchParams.append('region', 'us');
     searchParams.append('query', foodName);
     searchParams.append('limit', '1');
-    searchParams.append('fields', '$detailed'); // Use detailed fieldset to get nutrients
+    searchParams.append('fields', '$detailed');
     
     const searchUrl = `https://api.calorieking.com/foods?${searchParams.toString()}`;
     
-    console.log(`Searching CalorieKing for: ${foodName}`);
+    console.log(`Attempting CalorieKing API call for: ${foodName}`);
     console.log(`Request URL: ${searchUrl}`);
     
     // Create basic auth header - access token as username, empty password
     const authHeader = `Basic ${btoa(calorieKingApiKey + ':')}`;
-    console.log(`Using auth header: Basic [token]:****`);
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
     const response = await fetch(searchUrl, {
       method: 'GET',
@@ -222,27 +224,29 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
         'Authorization': authHeader,
         'Accept': 'application/json',
         'User-Agent': 'Supabase-Edge-Function/1.0',
-      }
+      },
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     console.log(`CalorieKing API response status: ${response.status}`);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`CalorieKing API error for ${foodName}:`, response.status, errorText);
+      console.error(`CalorieKing API HTTP error for ${foodName}:`, response.status, errorText);
       return null;
     }
 
     const data = await response.json();
-    console.log(`CalorieKing API response:`, JSON.stringify(data, null, 2));
+    console.log(`CalorieKing API response structure:`, Object.keys(data));
     
     if (data.foods && data.foods.length > 0) {
       const food = data.foods[0];
-      console.log(`Found CalorieKing food for ${foodName}:`, food.name);
+      console.log(`Found CalorieKing food: ${food.name}`);
       
       // Extract nutrients from the CalorieKing response
       const nutrients = food.nutrients || {};
-      console.log(`Raw nutrients:`, nutrients);
+      console.log(`Available nutrients:`, Object.keys(nutrients));
       
       // Convert energy from kJ to calories (1 kJ = 0.239006 calories)
       const calories = nutrients.energy ? Math.round(nutrients.energy * 0.239006) : 0;
@@ -257,7 +261,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
         fiber_g: nutrients.fiber || 0,
       };
 
-      console.log(`Processed nutrition data:`, nutritionData);
+      console.log(`Successfully processed CalorieKing nutrition data:`, nutritionData);
 
       // Cache the result for consistency
       nutritionCache.set(cacheKey, nutritionData);
@@ -267,8 +271,15 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     console.log(`No CalorieKing data found for ${foodName}`);
     return null;
   } catch (error) {
-    console.error(`Error searching CalorieKing for ${foodName}:`, error);
-    console.error(`Error details:`, error.message, error.stack);
+    if (error.name === 'AbortError') {
+      console.error(`CalorieKing API timeout for ${foodName}`);
+    } else if (error.name === 'TypeError' && error.message.includes('error sending request')) {
+      console.error(`CalorieKing API network error for ${foodName} - likely connectivity issue from edge function`);
+    } else {
+      console.error(`CalorieKing API unexpected error for ${foodName}:`, error.name, error.message);
+    }
+    
+    // Don't throw error - let the function continue with AI estimation
     return null;
   }
 }
@@ -434,15 +445,15 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
   for (const item of parsedMeal.food_items) {
     console.log(`Processing food item: ${item.food_name} (${item.quantity} ${item.unit})`);
     
-    // Step 1: Try to get CalorieKing data
+    // Step 1: Try to get CalorieKing data (with timeout and error handling)
     const calorieKingFood = await searchCalorieKingFood(item.food_name);
     let partialNutrients: Partial<FoodNutrients> = {};
     
     if (calorieKingFood) {
       partialNutrients = extractNutrients(calorieKingFood);
-      console.log(`CalorieKing partial nutrients for ${item.food_name}:`, partialNutrients);
+      console.log(`Using CalorieKing data for ${item.food_name}:`, partialNutrients);
     } else {
-      console.log(`No CalorieKing data found for ${item.food_name}, will use AI estimation`);
+      console.log(`CalorieKing data unavailable for ${item.food_name}, using AI estimation only`);
     }
 
     // Step 2: Get complete nutrients (CalorieKing + AI estimation for missing values)
@@ -453,7 +464,7 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
       partialNutrients
     );
 
-    console.log(`Complete nutrients for ${item.food_name}:`, completeNutrients);
+    console.log(`Final nutrients for ${item.food_name}:`, completeNutrients);
 
     // Step 3: Insert food item with complete nutrition data
     const foodItemData = {
