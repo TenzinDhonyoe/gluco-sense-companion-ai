@@ -37,17 +37,14 @@ interface FoodNutrients {
   fiber: number;
 }
 
-interface USDAFood {
-  fdcId: number;
-  description: string;
-  foodNutrients?: Array<{
-    nutrient?: {
-      id?: number;
-      name?: string;
-      unitName?: string;
-    };
-    amount?: number;
-  }>;
+interface CalorieKingFood {
+  food_name: string;
+  serving_size_g?: number;
+  calories: number;
+  carbohydrates_total_g: number;
+  protein_g: number;
+  fat_total_g: number;
+  fiber_g: number;
 }
 
 serve(async (req) => {
@@ -180,91 +177,63 @@ Return only valid JSON, no explanations:`;
   }
 }
 
-async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
-  const usdaApiKey = Deno.env.get('USDA_API_KEY');
-  if (!usdaApiKey) {
-    console.error('USDA API key not configured');
+async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood | null> {
+  const calorieKingApiKey = Deno.env.get('CALORIEKING_API_KEY');
+  if (!calorieKingApiKey) {
+    console.error('CalorieKing API key not configured');
     return null;
   }
 
   try {
-    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&dataType=Survey%20%28FNDDS%29&api_key=${usdaApiKey}`;
+    const searchUrl = `https://api.calorieninjas.com/v1/nutrition?query=${encodeURIComponent(foodName)}`;
     
-    console.log(`Searching USDA for: ${foodName}`);
+    console.log(`Searching CalorieKing for: ${foodName}`);
     const response = await fetch(searchUrl, {
       headers: {
+        'X-Api-Key': calorieKingApiKey,
         'Content-Type': 'application/json',
       }
     });
 
     if (!response.ok) {
-      console.error(`USDA API error for ${foodName}:`, response.status);
-      // Try with broader search if first search fails
-      const broadSearchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=3&api_key=${usdaApiKey}`;
-      const broadResponse = await fetch(broadSearchUrl);
-      
-      if (!broadResponse.ok) {
-        console.error(`USDA broad search also failed for ${foodName}`);
-        return null;
-      }
-      
-      const broadData = await broadResponse.json();
-      if (broadData.foods && broadData.foods.length > 0) {
-        console.log(`Found USDA food via broad search for ${foodName}:`, broadData.foods[0].description);
-        return broadData.foods[0];
-      }
+      console.error(`CalorieKing API error for ${foodName}:`, response.status);
       return null;
     }
 
     const data = await response.json();
     
-    if (data.foods && data.foods.length > 0) {
-      const food = data.foods[0];
-      console.log(`Found USDA food for ${foodName}:`, food.description);
-      return food;
+    if (data.items && data.items.length > 0) {
+      const food = data.items[0];
+      console.log(`Found CalorieKing food for ${foodName}:`, food.name);
+      return {
+        food_name: food.name,
+        serving_size_g: food.serving_size_g,
+        calories: food.calories,
+        carbohydrates_total_g: food.carbohydrates_total_g,
+        protein_g: food.protein_g,
+        fat_total_g: food.fat_total_g,
+        fiber_g: food.fiber_g || 0,
+      };
     }
     
-    console.log(`No USDA data found for ${foodName}`);
+    console.log(`No CalorieKing data found for ${foodName}`);
     return null;
   } catch (error) {
-    console.error(`Error searching USDA for ${foodName}:`, error);
+    console.error(`Error searching CalorieKing for ${foodName}:`, error);
     return null;
   }
 }
 
-function extractNutrients(usdaFood: USDAFood): Partial<FoodNutrients> {
-  const nutrients: Partial<FoodNutrients> = {};
+function extractNutrients(calorieKingFood: CalorieKingFood): Partial<FoodNutrients> {
+  const nutrients: Partial<FoodNutrients> = {
+    calories: calorieKingFood.calories || 0,
+    carbs: calorieKingFood.carbohydrates_total_g || 0,
+    protein: calorieKingFood.protein_g || 0,
+    fat: calorieKingFood.fat_total_g || 0,
+    fiber: calorieKingFood.fiber_g || 0,
+  };
 
-  // Safety check for foodNutrients array
-  if (!usdaFood.foodNutrients || !Array.isArray(usdaFood.foodNutrients)) {
-    console.log('No foodNutrients array found in USDA response');
-    return nutrients;
-  }
-
-  for (const nutrientData of usdaFood.foodNutrients) {
-    // Safety checks for nested objects
-    if (!nutrientData || !nutrientData.nutrient || !nutrientData.nutrient.name) {
-      console.log('Skipping invalid nutrient data:', nutrientData);
-      continue;
-    }
-
-    const name = nutrientData.nutrient.name.toLowerCase();
-    const amount = nutrientData.amount || 0;
-
-    if (name.includes('energy') && nutrientData.nutrient.unitName === 'KCAL') {
-      nutrients.calories = amount;
-    } else if (name.includes('carbohydrate')) {
-      nutrients.carbs = amount;
-    } else if (name.includes('protein')) {
-      nutrients.protein = amount;
-    } else if (name.includes('total lipid') || name.includes('fat')) {
-      nutrients.fat = amount;
-    } else if (name.includes('fiber')) {
-      nutrients.fiber = amount;
-    }
-  }
-
-  console.log(`Extracted nutrients from USDA:`, nutrients);
+  console.log(`Extracted nutrients from CalorieKing:`, nutrients);
   return nutrients;
 }
 
@@ -277,7 +246,7 @@ async function estimateNutrientsWithAI(foodName: string, quantity: number, unit:
 
   const hasPartialData = partialData && Object.keys(partialData).length > 0;
   const prompt = hasPartialData 
-    ? `You have partial USDA nutrition data for "${foodName}" per ${unit}: ${JSON.stringify(partialData)}
+    ? `You have partial CalorieKing nutrition data for "${foodName}" per ${unit}: ${JSON.stringify(partialData)}
 
 Fill in ALL missing nutrition values to complete the data. Be realistic and conservative with estimates based on typical foods.
 
@@ -344,7 +313,7 @@ Be realistic and conservative with estimates. Consider typical serving sizes.`;
       fiber: Number(estimated.fiber) || 1,
     };
 
-    // Merge with partial USDA data, preferring USDA when available
+    // Merge with partial CalorieKing data, preferring CalorieKing when available
     if (partialData) {
       Object.keys(partialData).forEach(key => {
         if (partialData[key] !== null && partialData[key] !== undefined) {
@@ -371,7 +340,7 @@ function getFallbackNutrients(partialData?: Partial<FoodNutrients>): FoodNutrien
     fiber: 1,
   };
 
-  // Use any partial USDA data we have
+  // Use any partial CalorieKing data we have
   if (partialData) {
     Object.keys(partialData).forEach(key => {
       if (partialData[key] !== null && partialData[key] !== undefined) {
@@ -416,18 +385,18 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
   for (const item of parsedMeal.food_items) {
     console.log(`Processing food item: ${item.food_name} (${item.quantity} ${item.unit})`);
     
-    // Step 1: Try to get USDA data
-    const usdaFood = await searchUSDAFood(item.food_name);
+    // Step 1: Try to get CalorieKing data
+    const calorieKingFood = await searchCalorieKingFood(item.food_name);
     let partialNutrients: Partial<FoodNutrients> = {};
     
-    if (usdaFood) {
-      partialNutrients = extractNutrients(usdaFood);
-      console.log(`USDA partial nutrients for ${item.food_name}:`, partialNutrients);
+    if (calorieKingFood) {
+      partialNutrients = extractNutrients(calorieKingFood);
+      console.log(`CalorieKing partial nutrients for ${item.food_name}:`, partialNutrients);
     } else {
-      console.log(`No USDA data found for ${item.food_name}, will use AI estimation`);
+      console.log(`No CalorieKing data found for ${item.food_name}, will use AI estimation`);
     }
 
-    // Step 2: Get complete nutrients (USDA + AI estimation for missing values)
+    // Step 2: Get complete nutrients (CalorieKing + AI estimation for missing values)
     const completeNutrients = await estimateNutrientsWithAI(
       item.food_name,
       item.quantity,
