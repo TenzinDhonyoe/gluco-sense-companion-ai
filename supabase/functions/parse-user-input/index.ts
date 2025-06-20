@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -47,8 +48,18 @@ interface CalorieKingFood {
   fiber_g: number;
 }
 
-// Cache for CalorieKing results to ensure consistency
-const nutritionCache = new Map<string, CalorieKingFood>();
+interface USDAFood {
+  food_name: string;
+  serving_size_g?: number;
+  calories: number;
+  carbohydrates_total_g: number;
+  protein_g: number;
+  fat_total_g: number;
+  fiber_g: number;
+}
+
+// Cache for nutrition results to ensure consistency
+const nutritionCache = new Map<string, CalorieKingFood | USDAFood>();
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -189,12 +200,12 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
   const cacheKey = foodName.toLowerCase().trim();
   if (nutritionCache.has(cacheKey)) {
     console.log(`Using cached data for: ${foodName}`);
-    return nutritionCache.get(cacheKey)!;
+    return nutritionCache.get(cacheKey)! as CalorieKingFood;
   }
 
   const calorieKingApiKey = Deno.env.get('CALORIEKING_API_KEY');
   if (!calorieKingApiKey) {
-    console.log('CalorieKing API key not configured, skipping API call');
+    console.log('CalorieKing API key not configured, skipping CalorieKing API call');
     return null;
   }
 
@@ -216,7 +227,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     
     // Create AbortController for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
     
     const response = await fetch(searchUrl, {
       method: 'GET',
@@ -234,7 +245,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`CalorieKing API HTTP error for ${foodName}:`, response.status, errorText);
-      return null;
+      throw new Error(`CalorieKing API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -269,31 +280,175 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     }
     
     console.log(`No CalorieKing data found for ${foodName}`);
-    return null;
+    throw new Error('No CalorieKing data found');
+    
   } catch (error) {
     if (error.name === 'AbortError') {
       console.error(`CalorieKing API timeout for ${foodName}`);
-    } else if (error.name === 'TypeError' && error.message.includes('error sending request')) {
-      console.error(`CalorieKing API network error for ${foodName} - likely connectivity issue from edge function`);
     } else {
-      console.error(`CalorieKing API unexpected error for ${foodName}:`, error.name, error.message);
+      console.error(`CalorieKing API error for ${foodName}:`, error.message);
     }
     
-    // Don't throw error - let the function continue with AI estimation
+    // Throw error to trigger USDA fallback
+    throw error;
+  }
+}
+
+async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
+  // Check cache first for consistency
+  const cacheKey = `usda_${foodName.toLowerCase().trim()}`;
+  if (nutritionCache.has(cacheKey)) {
+    console.log(`Using cached USDA data for: ${foodName}`);
+    return nutritionCache.get(cacheKey)! as USDAFood;
+  }
+
+  const usdaApiKey = Deno.env.get('USDA_API_KEY');
+  if (!usdaApiKey) {
+    console.log('USDA API key not configured, skipping USDA API call');
+    return null;
+  }
+
+  try {
+    // USDA FoodData Central API search endpoint
+    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&api_key=${usdaApiKey}`;
+    
+    console.log(`Attempting USDA API call for: ${foodName}`);
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
+    const response = await fetch(searchUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Supabase-Edge-Function/1.0',
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    console.log(`USDA API response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`USDA API HTTP error for ${foodName}:`, response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`USDA API response structure:`, Object.keys(data));
+    
+    if (data.foods && data.foods.length > 0) {
+      const food = data.foods[0];
+      console.log(`Found USDA food: ${food.description}`);
+      
+      // Extract nutrients from USDA response
+      const nutrients = food.foodNutrients || [];
+      console.log(`Available USDA nutrients count:`, nutrients.length);
+      
+      // Map USDA nutrient IDs to our structure
+      const nutrientMap = {
+        1008: 'calories',      // Energy (kcal)
+        1005: 'carbs',         // Carbohydrate, by difference
+        1003: 'protein',       // Protein
+        1004: 'fat',           // Total lipid (fat)
+        1079: 'fiber',         // Fiber, total dietary
+      };
+      
+      const nutritionData: USDAFood = {
+        food_name: food.description,
+        calories: 0,
+        carbohydrates_total_g: 0,
+        protein_g: 0,
+        fat_total_g: 0,
+        fiber_g: 0,
+      };
+
+      // Extract nutrients based on nutrient IDs
+      nutrients.forEach((nutrient: any) => {
+        const nutrientId = nutrient.nutrientId;
+        const value = nutrient.value || 0;
+        
+        switch (nutrientId) {
+          case 1008: // Energy (kcal)
+            nutritionData.calories = Math.round(value);
+            break;
+          case 1005: // Carbohydrate
+            nutritionData.carbohydrates_total_g = Math.round(value * 100) / 100;
+            break;
+          case 1003: // Protein
+            nutritionData.protein_g = Math.round(value * 100) / 100;
+            break;
+          case 1004: // Fat
+            nutritionData.fat_total_g = Math.round(value * 100) / 100;
+            break;
+          case 1079: // Fiber
+            nutritionData.fiber_g = Math.round(value * 100) / 100;
+            break;
+        }
+      });
+
+      console.log(`Successfully processed USDA nutrition data:`, nutritionData);
+
+      // Cache the result for consistency
+      nutritionCache.set(cacheKey, nutritionData);
+      return nutritionData;
+    }
+    
+    console.log(`No USDA data found for ${foodName}`);
+    return null;
+    
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`USDA API timeout for ${foodName}`);
+    } else {
+      console.error(`USDA API error for ${foodName}:`, error.message);
+    }
+    
     return null;
   }
 }
 
-function extractNutrients(calorieKingFood: CalorieKingFood): Partial<FoodNutrients> {
+async function searchNutritionData(foodName: string): Promise<CalorieKingFood | USDAFood | null> {
+  console.log(`Starting nutrition search for: ${foodName}`);
+  
+  try {
+    // Try CalorieKing first
+    const calorieKingData = await searchCalorieKingFood(foodName);
+    if (calorieKingData) {
+      console.log(`Successfully found CalorieKing data for: ${foodName}`);
+      return calorieKingData;
+    }
+  } catch (error) {
+    console.log(`CalorieKing failed for ${foodName}, trying USDA fallback`);
+  }
+  
+  try {
+    // Fallback to USDA
+    const usdaData = await searchUSDAFood(foodName);
+    if (usdaData) {
+      console.log(`Successfully found USDA data for: ${foodName}`);
+      return usdaData;
+    }
+  } catch (error) {
+    console.error(`USDA also failed for ${foodName}:`, error.message);
+  }
+  
+  console.log(`No nutrition data found from any source for: ${foodName}`);
+  return null;
+}
+
+function extractNutrients(nutritionData: CalorieKingFood | USDAFood): Partial<FoodNutrients> {
   const nutrients: Partial<FoodNutrients> = {
-    calories: calorieKingFood.calories || 0,
-    carbs: calorieKingFood.carbohydrates_total_g || 0,
-    protein: calorieKingFood.protein_g || 0,
-    fat: calorieKingFood.fat_total_g || 0,
-    fiber: calorieKingFood.fiber_g || 0,
+    calories: nutritionData.calories || 0,
+    carbs: nutritionData.carbohydrates_total_g || 0,
+    protein: nutritionData.protein_g || 0,
+    fat: nutritionData.fat_total_g || 0,
+    fiber: nutritionData.fiber_g || 0,
   };
 
-  console.log(`Extracted nutrients from CalorieKing:`, nutrients);
+  console.log(`Extracted nutrients from API data:`, nutrients);
   return nutrients;
 }
 
@@ -445,18 +600,18 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
   for (const item of parsedMeal.food_items) {
     console.log(`Processing food item: ${item.food_name} (${item.quantity} ${item.unit})`);
     
-    // Step 1: Try to get CalorieKing data (with timeout and error handling)
-    const calorieKingFood = await searchCalorieKingFood(item.food_name);
+    // Step 1: Try to get nutrition data from CalorieKing or USDA
+    const nutritionData = await searchNutritionData(item.food_name);
     let partialNutrients: Partial<FoodNutrients> = {};
     
-    if (calorieKingFood) {
-      partialNutrients = extractNutrients(calorieKingFood);
-      console.log(`Using CalorieKing data for ${item.food_name}:`, partialNutrients);
+    if (nutritionData) {
+      partialNutrients = extractNutrients(nutritionData);
+      console.log(`Using API data for ${item.food_name}:`, partialNutrients);
     } else {
-      console.log(`CalorieKing data unavailable for ${item.food_name}, using AI estimation only`);
+      console.log(`API data unavailable for ${item.food_name}, using AI estimation only`);
     }
 
-    // Step 2: Get complete nutrients (CalorieKing + AI estimation for missing values)
+    // Step 2: Get complete nutrients (API + AI estimation for missing values)
     const completeNutrients = await estimateNutrientsWithAI(
       item.food_name,
       item.quantity,
