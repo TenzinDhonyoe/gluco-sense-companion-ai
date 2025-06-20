@@ -209,14 +209,13 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
   }
 
   try {
-    // Use the correct CalorieKing API endpoint format from documentation
+    // Use the correct CalorieKing API endpoint and format
     const searchParams = new URLSearchParams();
-    searchParams.append('region', 'us');
     searchParams.append('query', foodName);
     searchParams.append('limit', '1');
-    searchParams.append('fields', '$detailed');
     
-    const searchUrl = `https://api.calorieking.com/foods?${searchParams.toString()}`;
+    // Use the correct CalorieKing API v1 endpoint
+    const searchUrl = `http://foodapi.calorieking.com/v1/foods/search?${searchParams.toString()}`;
     
     console.log(`Attempting CalorieKing API call for: ${foodName}`);
     console.log(`Request URL: ${searchUrl}`);
@@ -250,25 +249,20 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     const data = await response.json();
     console.log(`CalorieKing API response structure:`, Object.keys(data));
     
-    if (data.foods && data.foods.length > 0) {
-      const food = data.foods[0];
-      console.log(`Found CalorieKing food: ${food.name}`);
+    if (data.results && data.results.length > 0) {
+      const food = data.results[0];
+      console.log(`Found CalorieKing food: ${food.name || food.description}`);
       
       // Extract nutrients from the CalorieKing response
-      const nutrients = food.nutrients || {};
-      console.log(`Available nutrients:`, Object.keys(nutrients));
-      
-      // Convert energy from kJ to calories (1 kJ = 0.239006 calories)
-      const calories = nutrients.energy ? Math.round(nutrients.energy * 0.239006) : 0;
-      
+      // Note: CalorieKing API structure may vary, adjust based on actual response
       const nutritionData: CalorieKingFood = {
-        food_name: food.name,
-        serving_size_g: food.mass || undefined,
-        calories: calories,
-        carbohydrates_total_g: nutrients.totalCarbs || 0,
-        protein_g: nutrients.protein || 0,
-        fat_total_g: nutrients.fat || 0,
-        fiber_g: nutrients.fiber || 0,
+        food_name: food.name || food.description,
+        serving_size_g: food.serving_weight_grams || undefined,
+        calories: food.calories || 0,
+        carbohydrates_total_g: food.carbohydrate || 0,
+        protein_g: food.protein || 0,
+        fat_total_g: food.fat || 0,
+        fiber_g: food.fiber || 0,
       };
 
       console.log(`Successfully processed CalorieKing nutrition data:`, nutritionData);
