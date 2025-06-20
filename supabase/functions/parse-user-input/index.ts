@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -170,7 +169,7 @@ Return only valid JSON, no explanations:`;
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'mistralai/mistral-7b-instruct:free',
+      model: 'anthropic/claude-3.5-sonnet',
       messages: [
         { role: 'system', content: 'You are a nutrition and fitness expert. Parse user input into structured JSON data with consistent food naming. Always return valid JSON only.' },
         { role: 'user', content: prompt }
@@ -461,7 +460,7 @@ async function estimateNutrientsWithAI(foodName: string, quantity: number, unit:
 
   const hasPartialData = partialData && Object.keys(partialData).length > 0;
   const prompt = hasPartialData 
-    ? `You have partial CalorieKing nutrition data for "${foodName}" per ${unit}: ${JSON.stringify(partialData)}
+    ? `You have partial nutrition data for "${foodName}" per ${unit}: ${JSON.stringify(partialData)}
 
 Fill in ALL missing nutrition values to complete the data. Be realistic and conservative with estimates based on typical foods.
 
@@ -473,9 +472,17 @@ Return ONLY this JSON format with ALL values filled:
   "fat": ${partialData.fat || 'estimated_grams'},
   "fiber": ${partialData.fiber || 'estimated_grams'}
 }`
-    : `Estimate complete nutritional values per ${unit} for "${foodName}".
+    : `As a nutrition expert, provide complete and accurate nutritional values per ${unit} for "${foodName}".
 
-Return ONLY this JSON format:
+Use your extensive knowledge of food composition, USDA data, and nutrition databases to provide the most accurate estimates possible.
+
+Consider:
+- Brand variations (if applicable)
+- Typical preparation methods
+- Standard serving sizes
+- Nutritional density of similar foods
+
+Return ONLY this JSON format with realistic values:
 {
   "calories": estimated_number,
   "carbs": estimated_grams,
@@ -484,7 +491,7 @@ Return ONLY this JSON format:
   "fiber": estimated_grams
 }
 
-Be realistic and conservative with estimates. Consider typical serving sizes.`;
+Be precise and conservative with estimates. Base your response on established nutritional data.`;
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -494,9 +501,9 @@ Be realistic and conservative with estimates. Consider typical serving sizes.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'mistralai/mistral-7b-instruct:free',
+        model: 'anthropic/claude-3.5-sonnet',
         messages: [
-          { role: 'system', content: 'You are a nutrition expert. Provide realistic nutritional estimates. Return only valid JSON with all required numeric values.' },
+          { role: 'system', content: 'You are a professional nutritionist and dietitian with extensive knowledge of food composition databases, USDA nutritional data, and food science. Provide accurate, evidence-based nutritional estimates. Return only valid JSON with all required numeric values.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
@@ -528,7 +535,7 @@ Be realistic and conservative with estimates. Consider typical serving sizes.`;
       fiber: Number(estimated.fiber) || 1,
     };
 
-    // Merge with partial CalorieKing data, preferring CalorieKing when available
+    // Merge with partial API data, preferring API data when available
     if (partialData) {
       Object.keys(partialData).forEach(key => {
         if (partialData[key] !== null && partialData[key] !== undefined) {
@@ -555,7 +562,7 @@ function getFallbackNutrients(partialData?: Partial<FoodNutrients>): FoodNutrien
     fiber: 1,
   };
 
-  // Use any partial CalorieKing data we have
+  // Use any partial API data we have
   if (partialData) {
     Object.keys(partialData).forEach(key => {
       if (partialData[key] !== null && partialData[key] !== undefined) {
@@ -767,7 +774,7 @@ Return ONLY the number of calories burned as an integer. Be realistic based on e
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'mistralai/mistral-7b-instruct:free',
+        model: 'anthropic/claude-3.5-sonnet',
         messages: [
           { role: 'system', content: 'You are a fitness expert. Estimate calories burned and return only the number.' },
           { role: 'user', content: prompt }
