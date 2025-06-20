@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -199,7 +200,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
   }
 
   try {
-    // Use the correct CalorieKing API endpoint with proper authentication and fields
+    // Use the correct CalorieKing API endpoint format from documentation
     const searchParams = new URLSearchParams();
     searchParams.append('region', 'us');
     searchParams.append('query', foodName);
@@ -209,20 +210,31 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     const searchUrl = `https://api.calorieking.com/foods?${searchParams.toString()}`;
     
     console.log(`Searching CalorieKing for: ${foodName}`);
+    console.log(`Request URL: ${searchUrl}`);
+    
+    // Create basic auth header - access token as username, empty password
+    const authHeader = `Basic ${btoa(calorieKingApiKey + ':')}`;
+    console.log(`Using auth header: Basic [token]:****`);
+    
     const response = await fetch(searchUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${btoa(calorieKingApiKey + ':')}`, // HTTP Basic Auth with empty password
-        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'User-Agent': 'Supabase-Edge-Function/1.0',
       }
     });
 
+    console.log(`CalorieKing API response status: ${response.status}`);
+    
     if (!response.ok) {
-      console.error(`CalorieKing API error for ${foodName}:`, response.status, await response.text());
+      const errorText = await response.text();
+      console.error(`CalorieKing API error for ${foodName}:`, response.status, errorText);
       return null;
     }
 
     const data = await response.json();
+    console.log(`CalorieKing API response:`, JSON.stringify(data, null, 2));
     
     if (data.foods && data.foods.length > 0) {
       const food = data.foods[0];
@@ -230,6 +242,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
       
       // Extract nutrients from the CalorieKing response
       const nutrients = food.nutrients || {};
+      console.log(`Raw nutrients:`, nutrients);
       
       // Convert energy from kJ to calories (1 kJ = 0.239006 calories)
       const calories = nutrients.energy ? Math.round(nutrients.energy * 0.239006) : 0;
@@ -244,6 +257,8 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
         fiber_g: nutrients.fiber || 0,
       };
 
+      console.log(`Processed nutrition data:`, nutritionData);
+
       // Cache the result for consistency
       nutritionCache.set(cacheKey, nutritionData);
       return nutritionData;
@@ -253,6 +268,7 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
     return null;
   } catch (error) {
     console.error(`Error searching CalorieKing for ${foodName}:`, error);
+    console.error(`Error details:`, error.message, error.stack);
     return null;
   }
 }
