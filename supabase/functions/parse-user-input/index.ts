@@ -47,6 +47,9 @@ interface CalorieKingFood {
   fiber_g: number;
 }
 
+// Cache for CalorieKing results to ensure consistency
+const nutritionCache = new Map<string, CalorieKingFood>();
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -122,9 +125,9 @@ For MEALS, return JSON in this format:
   "meal_name": "descriptive name",
   "food_items": [
     {
-      "food_name": "standardized food name",
+      "food_name": "standardized food name (be consistent with naming)",
       "quantity": number,
-      "unit": "slices|cups|grams|ounces|pieces|cans|etc"
+      "unit": "slices|cups|grams|ounces|pieces|cans|medium|large|small|etc"
     }
   ],
   "timestamp": "now"
@@ -141,6 +144,10 @@ For EXERCISES, return JSON in this format:
   "timestamp": "now"
 }
 
+IMPORTANT: For food names, be consistent. For example:
+- "mcdonalds fries" or "mcdonald french fries" should always become "McDonald's French Fries"
+- Use standardized brand names and food descriptions
+
 User input: "${input}"
 
 Return only valid JSON, no explanations:`;
@@ -154,7 +161,7 @@ Return only valid JSON, no explanations:`;
     body: JSON.stringify({
       model: 'mistralai/mistral-7b-instruct:free',
       messages: [
-        { role: 'system', content: 'You are a nutrition and fitness expert. Parse user input into structured JSON data. Always return valid JSON only.' },
+        { role: 'system', content: 'You are a nutrition and fitness expert. Parse user input into structured JSON data with consistent food naming. Always return valid JSON only.' },
         { role: 'user', content: prompt }
       ],
       temperature: 0.1,
@@ -178,6 +185,13 @@ Return only valid JSON, no explanations:`;
 }
 
 async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood | null> {
+  // Check cache first for consistency
+  const cacheKey = foodName.toLowerCase().trim();
+  if (nutritionCache.has(cacheKey)) {
+    console.log(`Using cached data for: ${foodName}`);
+    return nutritionCache.get(cacheKey)!;
+  }
+
   const calorieKingApiKey = Deno.env.get('CALORIEKING_API_KEY');
   if (!calorieKingApiKey) {
     console.error('CalorieKing API key not configured');
@@ -185,35 +199,47 @@ async function searchCalorieKingFood(foodName: string): Promise<CalorieKingFood 
   }
 
   try {
-    const searchUrl = `https://api.calorieninjas.com/v1/nutrition?query=${encodeURIComponent(foodName)}`;
+    // Use the correct CalorieKing API endpoint
+    const searchUrl = `https://api.calorieking.com/v1/search`;
     
     console.log(`Searching CalorieKing for: ${foodName}`);
     const response = await fetch(searchUrl, {
+      method: 'POST',
       headers: {
-        'X-Api-Key': calorieKingApiKey,
+        'Authorization': `Bearer ${calorieKingApiKey}`,
         'Content-Type': 'application/json',
-      }
+      },
+      body: JSON.stringify({
+        query: foodName,
+        limit: 1,
+        include_nutrition: true
+      })
     });
 
     if (!response.ok) {
-      console.error(`CalorieKing API error for ${foodName}:`, response.status);
+      console.error(`CalorieKing API error for ${foodName}:`, response.status, await response.text());
       return null;
     }
 
     const data = await response.json();
     
-    if (data.items && data.items.length > 0) {
-      const food = data.items[0];
+    if (data.foods && data.foods.length > 0) {
+      const food = data.foods[0];
       console.log(`Found CalorieKing food for ${foodName}:`, food.name);
-      return {
+      
+      const nutritionData: CalorieKingFood = {
         food_name: food.name,
-        serving_size_g: food.serving_size_g,
-        calories: food.calories,
-        carbohydrates_total_g: food.carbohydrates_total_g,
-        protein_g: food.protein_g,
-        fat_total_g: food.fat_total_g,
-        fiber_g: food.fiber_g || 0,
+        serving_size_g: food.serving_weight_grams,
+        calories: food.nutrition.calories || 0,
+        carbohydrates_total_g: food.nutrition.carbohydrate || 0,
+        protein_g: food.nutrition.protein || 0,
+        fat_total_g: food.nutrition.fat || 0,
+        fiber_g: food.nutrition.fiber || 0,
       };
+
+      // Cache the result for consistency
+      nutritionCache.set(cacheKey, nutritionData);
+      return nutritionData;
     }
     
     console.log(`No CalorieKing data found for ${foodName}`);
