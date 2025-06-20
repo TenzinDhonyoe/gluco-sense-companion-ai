@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,12 +75,12 @@ const ClearDataButton = () => {
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button 
-          variant="destructive" 
+          variant="ghost" 
           size="sm"
-          className="flex items-center gap-2"
+          className="text-gray-500 hover:text-red-500 hover:bg-red-50 text-xs"
         >
-          <Trash className="w-4 h-4" />
-          Clear All Data
+          <Trash className="w-3 h-3 mr-1" />
+          Clear Data
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

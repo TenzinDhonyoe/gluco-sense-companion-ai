@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -160,7 +159,6 @@ const Dashboard = () => {
             />
           </div>
           <div className="flex items-center gap-3">
-            <ClearDataButton />
             <DynamicAvatar 
               onClick={() => navigate("/profile")} 
               size={48}
@@ -238,6 +236,11 @@ const Dashboard = () => {
 
         {/* Rewards */}
         <RewardsCard />
+
+        {/* Clear Data Button - Moved to bottom in a subtle location */}
+        <div className="flex justify-center pt-4 border-t border-gray-200">
+          <ClearDataButton />
+        </div>
       </div>
 
       {/* Quick Add Button - Fixed position bottom right */}
