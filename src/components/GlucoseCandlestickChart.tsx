@@ -33,6 +33,50 @@ interface GlucoseCandlestickChartProps {
   onDataUpdate?: (data: GlucoseReading[]) => void;
 }
 
+// Sample data for demonstration
+const getSampleGlucoseData = (): GlucoseReading[] => {
+  const now = Date.now();
+  const sampleData: GlucoseReading[] = [];
+  
+  // Generate data for the past 10 days
+  for (let day = 9; day >= 0; day--) {
+    const dayStart = now - (day * 24 * 60 * 60 * 1000);
+    
+    // Generate 3-8 readings per day at different times
+    const readingsCount = Math.floor(Math.random() * 6) + 3;
+    
+    for (let i = 0; i < readingsCount; i++) {
+      const timeOffset = Math.floor(Math.random() * 24 * 60 * 60 * 1000); // Random time within the day
+      const timestamp = dayStart + timeOffset;
+      
+      // Generate realistic glucose values with some daily patterns
+      let baseValue = 120; // Normal range center
+      
+      // Add some daily variation
+      if (i === 0) baseValue += Math.random() * 20 - 10; // Morning variation
+      else if (i === readingsCount - 1) baseValue += Math.random() * 30 - 15; // Evening variation
+      else baseValue += Math.random() * 40 - 20; // General variation
+      
+      // Ensure values stay in reasonable range
+      const value = Math.max(60, Math.min(250, baseValue + (Math.random() * 20 - 10)));
+      
+      sampleData.push({
+        time: new Date(timestamp).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit', 
+          hour12: true 
+        }),
+        value: Math.round(value),
+        timestamp,
+        trendIndex: sampleData.length,
+        source: 'sample'
+      });
+    }
+  }
+  
+  return sampleData.sort((a, b) => a.timestamp - b.timestamp);
+};
+
 const GlucoseCandlestickChart = ({ 
   data: propData, 
   containerClassName, 
@@ -48,7 +92,12 @@ const GlucoseCandlestickChart = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('No authenticated user found');
+        console.log('No authenticated user found, using sample data');
+        const sampleData = getSampleGlucoseData();
+        setGlucoseData(sampleData);
+        if (onDataUpdate) {
+          onDataUpdate(sampleData);
+        }
         setLoading(false);
         return;
       }
@@ -63,6 +112,23 @@ const GlucoseCandlestickChart = ({
 
       if (error) {
         console.error('Error fetching glucose readings:', error);
+        // Fallback to sample data
+        const sampleData = getSampleGlucoseData();
+        setGlucoseData(sampleData);
+        if (onDataUpdate) {
+          onDataUpdate(sampleData);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('No glucose readings found, using sample data');
+        const sampleData = getSampleGlucoseData();
+        setGlucoseData(sampleData);
+        if (onDataUpdate) {
+          onDataUpdate(sampleData);
+        }
         setLoading(false);
         return;
       }
@@ -92,6 +158,12 @@ const GlucoseCandlestickChart = ({
       }
     } catch (error) {
       console.error('Error in fetchGlucoseReadings:', error);
+      // Fallback to sample data
+      const sampleData = getSampleGlucoseData();
+      setGlucoseData(sampleData);
+      if (onDataUpdate) {
+        onDataUpdate(sampleData);
+      }
     } finally {
       setLoading(false);
     }
