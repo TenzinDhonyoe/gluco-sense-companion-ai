@@ -1,0 +1,467 @@
+
+import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Cell } from "recharts";
+import { ChartContainer } from "@/components/ui/chart";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface GlucoseReading {
+  time: string;
+  value: number;
+  timestamp: number;
+  trendIndex: number;
+  source?: string;
+}
+
+interface CandlestickData {
+  date: string;
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  count: number;
+}
+
+interface GlucoseCandlestickChartProps {
+  data?: GlucoseReading[];
+  trendDirection?: 'up' | 'down' | 'flat';
+  containerClassName?: string;
+  showTimeRangeFilter?: boolean;
+  defaultTimeRange?: string;
+  onDataUpdate?: (data: GlucoseReading[]) => void;
+}
+
+const GlucoseCandlestickChart = ({ 
+  data: propData, 
+  containerClassName, 
+  showTimeRangeFilter = true,
+  defaultTimeRange = 'daily',
+  onDataUpdate
+}: GlucoseCandlestickChartProps) => {
+  const [timeRange, setTimeRange] = useState(defaultTimeRange);
+  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchGlucoseReadings = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No authenticated user found');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching glucose readings from glucose_readings table...');
+      const { data, error } = await supabase
+        .from('glucose_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(1000);
+
+      if (error) {
+        console.error('Error fetching glucose readings:', error);
+        setLoading(false);
+        return;
+      }
+
+      const transformedData: GlucoseReading[] = (data || [])
+        .reverse()
+        .map((reading, index) => {
+          const timestamp = new Date(reading.timestamp).getTime();
+          return {
+            time: new Date(timestamp).toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit', 
+              hour12: true 
+            }),
+            value: Number(reading.value),
+            timestamp: timestamp,
+            trendIndex: index,
+            source: reading.source || 'manual'
+          };
+        });
+
+      console.log('Transformed glucose data from database:', transformedData.length, 'readings');
+      setGlucoseData(transformedData);
+      
+      if (onDataUpdate) {
+        onDataUpdate(transformedData);
+      }
+    } catch (error) {
+      console.error('Error in fetchGlucoseReadings:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [onDataUpdate]);
+
+  useEffect(() => {
+    if (propData && propData.length > 0) {
+      console.log('Using provided prop data:', propData.length, 'readings');
+      setGlucoseData(propData);
+      setLoading(false);
+    } else {
+      fetchGlucoseReadings();
+    }
+  }, [propData, fetchGlucoseReadings]);
+
+  useEffect(() => {
+    console.log('Setting up real-time subscription for glucose_readings table...');
+    
+    const channel = supabase
+      .channel('glucose-readings-candlestick', {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'glucose-candlestick' }
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'glucose_readings'
+        },
+        (payload) => {
+          console.log('Real-time glucose reading change detected:', payload.eventType, payload);
+          setTimeout(() => {
+            fetchGlucoseReadings();
+          }, 100);
+        }
+      )
+      .subscribe();
+
+    const intervalId = setInterval(() => {
+      console.log('Periodic refresh of glucose data');
+      fetchGlucoseReadings();
+    }, 30000);
+
+    const handleGlucoseReadingChanged = () => {
+      console.log('Custom glucose reading changed event received - refreshing data');
+      fetchGlucoseReadings();
+    };
+
+    window.addEventListener('glucoseReadingChanged', handleGlucoseReadingChanged);
+
+    return () => {
+      console.log('Cleaning up glucose readings subscription and event listeners');
+      clearInterval(intervalId);
+      supabase.removeChannel(channel);
+      window.removeEventListener('glucoseReadingChanged', handleGlucoseReadingChanged);
+    };
+  }, [fetchGlucoseReadings]);
+
+  const processedData = useMemo(() => {
+    if (!glucoseData || glucoseData.length === 0) {
+      return { candlestickData: [], xTicks: [] };
+    }
+    
+    const now = Date.now();
+    let daysBack: number;
+    
+    switch (timeRange) {
+      case 'weekly':
+        daysBack = 7;
+        break;
+      case 'monthly':
+        daysBack = 30;
+        break;
+      default: // daily
+        daysBack = 7; // Show 7 days of daily candles
+    }
+    
+    const fromTimestamp = now - daysBack * 24 * 60 * 60 * 1000;
+    const filteredData = glucoseData.filter(d => d.timestamp >= fromTimestamp);
+
+    if (filteredData.length < 2) {
+      return { candlestickData: [], xTicks: [] };
+    }
+
+    // Group data by period
+    const groupedData = new Map<string, GlucoseReading[]>();
+    
+    filteredData.forEach(reading => {
+      let groupKey: string;
+      const date = new Date(reading.timestamp);
+      
+      if (timeRange === 'daily') {
+        // Group by day
+        groupKey = date.toISOString().split('T')[0];
+      } else if (timeRange === 'weekly') {
+        // Group by week (Monday as start of week)
+        const monday = new Date(date);
+        monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+        groupKey = monday.toISOString().split('T')[0] + '-week';
+      } else {
+        // Group by month
+        groupKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      }
+      
+      if (!groupedData.has(groupKey)) {
+        groupedData.set(groupKey, []);
+      }
+      groupedData.get(groupKey)!.push(reading);
+    });
+
+    // Convert to candlestick format
+    const candlestickData: CandlestickData[] = [];
+    
+    groupedData.forEach((readings, key) => {
+      if (readings.length === 0) return;
+      
+      const sortedReadings = readings.sort((a, b) => a.timestamp - b.timestamp);
+      const values = sortedReadings.map(r => r.value);
+      
+      const open = sortedReadings[0].value;
+      const close = sortedReadings[sortedReadings.length - 1].value;
+      const high = Math.max(...values);
+      const low = Math.min(...values);
+      
+      let displayDate: string;
+      let timestamp: number;
+      
+      if (timeRange === 'daily') {
+        displayDate = new Date(sortedReadings[0].timestamp).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        timestamp = new Date(key).getTime();
+      } else if (timeRange === 'weekly') {
+        const weekStart = new Date(key.replace('-week', ''));
+        displayDate = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        timestamp = weekStart.getTime();
+      } else {
+        const [year, month] = key.split('-');
+        displayDate = new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { 
+          month: 'short', 
+          year: 'numeric' 
+        });
+        timestamp = new Date(parseInt(year), parseInt(month) - 1).getTime();
+      }
+      
+      candlestickData.push({
+        date: displayDate,
+        timestamp,
+        open,
+        high,
+        low,
+        close,
+        count: readings.length
+      });
+    });
+
+    candlestickData.sort((a, b) => a.timestamp - b.timestamp);
+
+    const xTicks = candlestickData.map(d => d.timestamp);
+
+    return { candlestickData, xTicks };
+  }, [glucoseData, timeRange]);
+
+  const CustomCandlestick = (props: any) => {
+    const { payload, x, y, width, height } = props;
+    if (!payload) return null;
+    
+    const { open, high, low, close } = payload;
+    const isGreen = close >= open;
+    const color = isGreen ? '#22c55e' : '#ef4444';
+    
+    const candleHeight = Math.abs(close - open);
+    const candleY = Math.min(open, close);
+    
+    // Scale values to chart coordinates
+    const yScale = height / (280 - 40); // Based on our Y domain
+    const baseY = y + height;
+    
+    const highY = baseY - ((high - 40) * yScale);
+    const lowY = baseY - ((low - 40) * yScale);
+    const openY = baseY - ((open - 40) * yScale);
+    const closeY = baseY - ((close - 40) * yScale);
+    
+    const candleTop = Math.min(openY, closeY);
+    const candleBottom = Math.max(openY, closeY);
+    const bodyHeight = Math.max(candleBottom - candleTop, 2); // Minimum height of 2px
+    
+    return (
+      <g>
+        {/* Wick (high-low line) */}
+        <line
+          x1={x + width / 2}
+          y1={highY}
+          x2={x + width / 2}
+          y2={lowY}
+          stroke={color}
+          strokeWidth={1}
+        />
+        {/* Body (open-close rectangle) */}
+        <rect
+          x={x + width * 0.2}
+          y={candleTop}
+          width={width * 0.6}
+          height={bodyHeight}
+          fill={isGreen ? color : 'white'}
+          stroke={color}
+          strokeWidth={1}
+        />
+      </g>
+    );
+  };
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+          <p className="font-medium text-gray-900 mb-2">{data.date}</p>
+          <div className="space-y-1 text-sm">
+            <p><span className="text-gray-600">Open:</span> <span className="font-medium">{data.open} mg/dL</span></p>
+            <p><span className="text-gray-600">High:</span> <span className="font-medium text-red-500">{data.high} mg/dL</span></p>
+            <p><span className="text-gray-600">Low:</span> <span className="font-medium text-amber-500">{data.low} mg/dL</span></p>
+            <p><span className="text-gray-600">Close:</span> <span className="font-medium">{data.close} mg/dL</span></p>
+            <p className="text-xs text-gray-500">{data.count} readings</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const handleTimeRangeChange = (value: string | undefined) => {
+    if (value) {
+      setTimeRange(value);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg font-medium">Loading...</div>
+          <div className="text-gray-300 text-sm mt-1">Fetching glucose data</div>
+        </div>
+      </div>
+    );
+  }
+
+  const { candlestickData, xTicks } = processedData;
+
+  if (candlestickData.length === 0) {
+    return (
+      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+        <div className="text-center">
+          <div className="text-gray-400 text-lg font-medium">Not enough data</div>
+          <div className="text-gray-300 text-sm mt-1">Need readings across multiple {timeRange === 'daily' ? 'days' : timeRange === 'weekly' ? 'weeks' : 'months'}</div>
+        </div>
+      </div>
+    );
+  }
+
+  const yAxisDomain = [40, 280];
+  const yTicks = [40, 80, 120, 160, 200, 240, 280];
+
+  return (
+    <div className={cn("h-60 w-full relative", containerClassName)}>
+      {showTimeRangeFilter && (
+        <div 
+          className="absolute top-3 right-3 z-10"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ToggleGroup 
+            type="single" 
+            value={timeRange}
+            onValueChange={handleTimeRangeChange}
+            size="sm" 
+            className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
+          >
+            <ToggleGroupItem 
+              value="daily" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Daily
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="weekly" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Weekly
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="monthly" 
+              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Monthly
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
+      <ChartContainer config={{ glucose: { label: "Glucose (mg/dL)", color: "#002D3A" } }} className="h-full w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart 
+            data={candlestickData} 
+            margin={{ top: 20, right: 15, left: 20, bottom: 15 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/50" />
+            
+            <XAxis 
+              dataKey="timestamp" 
+              type="number"
+              domain={['dataMin', 'dataMax']}
+              ticks={xTicks}
+              tick={{ fontSize: 11, fill: "#6B7280" }}
+              axisLine={false}
+              tickLine={true}
+              tickFormatter={(value) => {
+                const data = candlestickData.find(d => d.timestamp === value);
+                return data?.date || '';
+              }}
+            />
+            
+            <YAxis 
+              orientation="left"
+              domain={yAxisDomain}
+              ticks={yTicks}
+              tick={{ fontSize: 11, fill: "#6B7280" }}
+              axisLine={false}
+              tickLine={true}
+              width={40}
+              tickFormatter={(value) => `${value}`}
+            >
+              <Label
+                value="mg/dL"
+                angle={-90}
+                position="insideLeft"
+                style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12 }}
+                offset={-5}
+              />
+            </YAxis>
+            
+            {/* Glucose Zones */}
+            <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
+            <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
+            <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
+
+            <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
+            <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
+            
+            <Tooltip content={<CustomTooltip />} />
+            
+            {/* Custom candlestick renderer */}
+            {candlestickData.map((entry, index) => (
+              <CustomCandlestick key={index} {...entry} />
+            ))}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    </div>
+  );
+};
+
+export default GlucoseCandlestickChart;

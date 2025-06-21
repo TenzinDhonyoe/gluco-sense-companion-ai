@@ -1,7 +1,7 @@
 
 import { useLocation, Link } from "react-router-dom";
-import { type GlucoseReading } from "@/components/GlucoseTrendChart";
-import GlucoseTrendChart from "@/components/GlucoseTrendChart";
+import { type GlucoseReading } from "@/components/GlucoseCandlestickChart";
+import GlucoseCandlestickChart from "@/components/GlucoseCandlestickChart";
 import { ArrowLeft } from "lucide-react";
 
 const FullScreenInsights = () => {
@@ -23,12 +23,12 @@ const FullScreenInsights = () => {
           </Link>
         </header>
         <main className="flex-grow pt-2">
-          <GlucoseTrendChart
+          <GlucoseCandlestickChart
             data={glucoseData}
             trendDirection={trendDirection}
             containerClassName="h-full"
             showTimeRangeFilter={true}
-            defaultTimeRange="6"
+            defaultTimeRange="daily"
           />
         </main>
       </div>
