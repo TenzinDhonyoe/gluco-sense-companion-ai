@@ -1,4 +1,4 @@
-import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Bar } from "recharts";
+import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Bar, Line } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -23,6 +23,7 @@ interface CandlestickData {
   low: number;
   close: number;
   count: number;
+  trendValue?: number;
 }
 
 interface GlucoseCandlestickChartProps {
@@ -299,6 +300,22 @@ const GlucoseCandlestickChart = ({
 
     candlestickData.sort((a, b) => a.timestamp - b.timestamp);
 
+    // Calculate trend line using linear regression
+    if (candlestickData.length >= 2) {
+      const n = candlestickData.length;
+      const sumX = candlestickData.reduce((sum, _, i) => sum + i, 0);
+      const sumY = candlestickData.reduce((sum, d) => sum + d.close, 0);
+      const sumXY = candlestickData.reduce((sum, d, i) => sum + i * d.close, 0);
+      const sumXX = candlestickData.reduce((sum, _, i) => sum + i * i, 0);
+      
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / n;
+      
+      candlestickData.forEach((d, i) => {
+        d.trendValue = slope * i + intercept;
+      });
+    }
+
     const xTicks = candlestickData.map(d => d.timestamp);
 
     // Calculate dynamic Y domain based on actual data
@@ -321,8 +338,8 @@ const GlucoseCandlestickChart = ({
           <p className="font-medium text-gray-900 mb-2">{data.date}</p>
           <div className="space-y-1 text-sm">
             <p><span className="text-gray-600">Open:</span> <span className="font-medium">{data.open} mg/dL</span></p>
-            <p><span className="text-gray-600">High:</span> <span className="font-medium text-red-500">{data.high} mg/dL</span></p>
-            <p><span className="text-gray-600">Low:</span> <span className="font-medium text-amber-500">{data.low} mg/dL</span></p>
+            <p><span className="text-gray-600">High:</span> <span className="font-medium text-green-600">{data.high} mg/dL</span></p>
+            <p><span className="text-gray-600">Low:</span> <span className="font-medium text-green-500">{data.low} mg/dL</span></p>
             <p><span className="text-gray-600">Close:</span> <span className="font-medium">{data.close} mg/dL</span></p>
             <p className="text-xs text-gray-500">{data.count} readings</p>
           </div>
@@ -336,8 +353,8 @@ const GlucoseCandlestickChart = ({
     if (!payload) return null;
     
     const { open, high, low, close } = payload;
-    const isGreen = close >= open;
-    const color = isGreen ? '#22c55e' : '#ef4444';
+    // Always use green color
+    const color = '#22c55e';
     
     // Calculate positions using dynamic Y domain
     const centerX = x + width / 2;
@@ -367,13 +384,13 @@ const GlucoseCandlestickChart = ({
           stroke={color}
           strokeWidth={1}
         />
-        {/* Body (open-close rectangle) */}
+        {/* Body (open-close rectangle) - always green fill */}
         <rect
           x={x + width * 0.25}
           y={candleTop}
           width={width * 0.5}
           height={bodyHeight}
-          fill={isGreen ? color : 'white'}
+          fill={color}
           stroke={color}
           strokeWidth={2}
         />
@@ -528,6 +545,16 @@ const GlucoseCandlestickChart = ({
             )}
             
             <Tooltip content={<CustomTooltip />} />
+            
+            {/* Trend Line */}
+            <Line 
+              type="monotone" 
+              dataKey="trendValue" 
+              stroke="#2563eb" 
+              strokeWidth={2} 
+              dot={false} 
+              strokeDasharray="5 5"
+            />
             
             {/* Invisible bars for positioning */}
             <Bar 
