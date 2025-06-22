@@ -39,8 +39,13 @@ serve(async (req) => {
 
     const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
     if (!openRouterApiKey) {
+      console.error('OpenRouter API key not found in environment');
       throw new Error('OpenRouter API key not configured');
     }
+
+    // Add logging to check if API key is present (without exposing the key)
+    console.log('OpenRouter API key is present:', !!openRouterApiKey);
+    console.log('API key length:', openRouterApiKey?.length || 0);
 
     const glucose_series = glucoseData.slice(-20).map((d: any) => `${d.value} at ${d.time}`).join(', ');
     
@@ -73,11 +78,15 @@ serve(async (req) => {
     Vitals: ${sleep_hours}h sleep, ${steps} steps
     ---`;
 
+    console.log('Making request to OpenRouter API...');
+
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://your-app.lovable.app', // Optional: helps with rate limiting
+        'X-Title': 'Glucose Tracker AI Suggestions', // Optional: for OpenRouter dashboard
       },
       body: JSON.stringify({
         model: 'deepseek/deepseek-v3',
@@ -90,8 +99,12 @@ serve(async (req) => {
       }),
     });
 
+    console.log('OpenRouter API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenRouter API error response:', errorText);
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
