@@ -80,7 +80,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
+        model: 'deepseek/deepseek-v3',
         messages: [
           { role: 'system', content: 'You are a certified diabetes educator. Provide exactly 3 bullet-point suggestions, each 75 characters or less, starting with •' },
           { role: 'user', content: prompt }
