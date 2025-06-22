@@ -1,4 +1,3 @@
-
 import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Bar } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -199,7 +198,7 @@ const GlucoseCandlestickChart = ({
 
   const processedData = useMemo(() => {
     if (!glucoseData || glucoseData.length === 0) {
-      return { candlestickData: [], xTicks: [] };
+      return { candlestickData: [], xTicks: [], yDomain: [40, 280] };
     }
     
     const now = Date.now();
@@ -220,7 +219,7 @@ const GlucoseCandlestickChart = ({
     const filteredData = glucoseData.filter(d => d.timestamp >= fromTimestamp);
 
     if (filteredData.length < 2) {
-      return { candlestickData: [], xTicks: [] };
+      return { candlestickData: [], xTicks: [], yDomain: [40, 280] };
     }
 
     // Group data by period
@@ -251,12 +250,14 @@ const GlucoseCandlestickChart = ({
 
     // Convert to candlestick format
     const candlestickData: CandlestickData[] = [];
+    let allValues: number[] = [];
     
     groupedData.forEach((readings, key) => {
       if (readings.length === 0) return;
       
       const sortedReadings = readings.sort((a, b) => a.timestamp - b.timestamp);
       const values = sortedReadings.map(r => r.value);
+      allValues = [...allValues, ...values];
       
       const open = sortedReadings[0].value;
       const close = sortedReadings[sortedReadings.length - 1].value;
@@ -300,7 +301,16 @@ const GlucoseCandlestickChart = ({
 
     const xTicks = candlestickData.map(d => d.timestamp);
 
-    return { candlestickData, xTicks };
+    // Calculate dynamic Y domain based on actual data
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const padding = (maxValue - minValue) * 0.1; // 10% padding
+    const yDomain = [
+      Math.max(40, Math.floor(minValue - padding)), 
+      Math.min(280, Math.ceil(maxValue + padding))
+    ];
+
+    return { candlestickData, xTicks, yDomain };
   }, [glucoseData, timeRange]);
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -329,16 +339,18 @@ const GlucoseCandlestickChart = ({
     const isGreen = close >= open;
     const color = isGreen ? '#22c55e' : '#ef4444';
     
-    // Calculate positions
+    // Calculate positions using dynamic Y domain
     const centerX = x + width / 2;
-    const yScale = height / (280 - 40); // Based on our Y domain
+    const { yDomain } = processedData;
+    const yRange = yDomain[1] - yDomain[0];
+    const yScale = height / yRange;
     const baseY = y + height;
     
     // Convert glucose values to Y coordinates
-    const highY = baseY - ((high - 40) * yScale);
-    const lowY = baseY - ((low - 40) * yScale);
-    const openY = baseY - ((open - 40) * yScale);
-    const closeY = baseY - ((close - 40) * yScale);
+    const highY = baseY - ((high - yDomain[0]) * yScale);
+    const lowY = baseY - ((low - yDomain[0]) * yScale);
+    const openY = baseY - ((open - yDomain[0]) * yScale);
+    const closeY = baseY - ((close - yDomain[0]) * yScale);
     
     const candleTop = Math.min(openY, closeY);
     const candleBottom = Math.max(openY, closeY);
@@ -386,7 +398,7 @@ const GlucoseCandlestickChart = ({
     );
   }
 
-  const { candlestickData, xTicks } = processedData;
+  const { candlestickData, xTicks, yDomain } = processedData;
 
   if (candlestickData.length === 0) {
     return (
@@ -407,8 +419,12 @@ const GlucoseCandlestickChart = ({
     );
   }
 
-  const yAxisDomain = [40, 280];
-  const yTicks = [40, 80, 120, 160, 200, 240, 280];
+  // Create dynamic Y ticks based on the domain
+  const yTickCount = 6;
+  const yTickInterval = (yDomain[1] - yDomain[0]) / (yTickCount - 1);
+  const yTicks = Array.from({ length: yTickCount }, (_, i) => 
+    Math.round(yDomain[0] + (i * yTickInterval))
+  );
 
   return (
     <div className={cn("h-60 w-full relative", containerClassName)}>
@@ -476,7 +492,7 @@ const GlucoseCandlestickChart = ({
             
             <YAxis 
               orientation="left"
-              domain={yAxisDomain}
+              domain={yDomain}
               ticks={yTicks}
               tick={{ fontSize: 11, fill: "#6B7280" }}
               axisLine={false}
@@ -493,13 +509,23 @@ const GlucoseCandlestickChart = ({
               />
             </YAxis>
             
-            {/* Glucose Zones */}
-            <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
-            <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
-            <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
+            {/* Glucose Zones - only show if they're within our domain */}
+            {yDomain[0] < 70 && (
+              <ReferenceArea y1={yDomain[0]} y2={Math.min(70, yDomain[1])} fill="#f59e0b" fillOpacity={0.1} />
+            )}
+            {yDomain[0] < 180 && yDomain[1] > 70 && (
+              <ReferenceArea y1={Math.max(70, yDomain[0])} y2={Math.min(180, yDomain[1])} fill="#22c55e" fillOpacity={0.1} />
+            )}
+            {yDomain[1] > 180 && (
+              <ReferenceArea y1={Math.max(180, yDomain[0])} y2={yDomain[1]} fill="#ef4444" fillOpacity={0.1} />
+            )}
 
-            <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
-            <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
+            {yDomain[0] <= 70 && yDomain[1] >= 70 && (
+              <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
+            )}
+            {yDomain[0] <= 180 && yDomain[1] >= 180 && (
+              <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
+            )}
             
             <Tooltip content={<CustomTooltip />} />
             
