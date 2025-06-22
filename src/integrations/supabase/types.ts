@@ -288,7 +288,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      insert_sample_glucose_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       exercise_intensity: "low" | "moderate" | "high" | "very_high"
