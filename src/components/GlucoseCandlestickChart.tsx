@@ -1,4 +1,5 @@
-import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Cell } from "recharts";
+
+import { ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, Bar } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -302,55 +303,6 @@ const GlucoseCandlestickChart = ({
     return { candlestickData, xTicks };
   }, [glucoseData, timeRange]);
 
-  const CustomCandlestick = (props: any) => {
-    const { payload, x, y, width, height } = props;
-    if (!payload) return null;
-    
-    const { open, high, low, close } = payload;
-    const isGreen = close >= open;
-    const color = isGreen ? '#22c55e' : '#ef4444';
-    
-    const candleHeight = Math.abs(close - open);
-    const candleY = Math.min(open, close);
-    
-    // Scale values to chart coordinates
-    const yScale = height / (280 - 40); // Based on our Y domain
-    const baseY = y + height;
-    
-    const highY = baseY - ((high - 40) * yScale);
-    const lowY = baseY - ((low - 40) * yScale);
-    const openY = baseY - ((open - 40) * yScale);
-    const closeY = baseY - ((close - 40) * yScale);
-    
-    const candleTop = Math.min(openY, closeY);
-    const candleBottom = Math.max(openY, closeY);
-    const bodyHeight = Math.max(candleBottom - candleTop, 2); // Minimum height of 2px
-    
-    return (
-      <g>
-        {/* Wick (high-low line) */}
-        <line
-          x1={x + width / 2}
-          y1={highY}
-          x2={x + width / 2}
-          y2={lowY}
-          stroke={color}
-          strokeWidth={1}
-        />
-        {/* Body (open-close rectangle) */}
-        <rect
-          x={x + width * 0.2}
-          y={candleTop}
-          width={width * 0.6}
-          height={bodyHeight}
-          fill={isGreen ? color : 'white'}
-          stroke={color}
-          strokeWidth={1}
-        />
-      </g>
-    );
-  };
-
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -368,6 +320,53 @@ const GlucoseCandlestickChart = ({
       );
     }
     return null;
+  };
+
+  const CustomCandlestick = ({ payload, x, y, width, height }: any) => {
+    if (!payload) return null;
+    
+    const { open, high, low, close } = payload;
+    const isGreen = close >= open;
+    const color = isGreen ? '#22c55e' : '#ef4444';
+    
+    // Calculate positions
+    const centerX = x + width / 2;
+    const yScale = height / (280 - 40); // Based on our Y domain
+    const baseY = y + height;
+    
+    // Convert glucose values to Y coordinates
+    const highY = baseY - ((high - 40) * yScale);
+    const lowY = baseY - ((low - 40) * yScale);
+    const openY = baseY - ((open - 40) * yScale);
+    const closeY = baseY - ((close - 40) * yScale);
+    
+    const candleTop = Math.min(openY, closeY);
+    const candleBottom = Math.max(openY, closeY);
+    const bodyHeight = Math.max(candleBottom - candleTop, 2); // Minimum height of 2px
+    
+    return (
+      <g>
+        {/* Wick (high-low line) */}
+        <line
+          x1={centerX}
+          y1={highY}
+          x2={centerX}
+          y2={lowY}
+          stroke={color}
+          strokeWidth={1}
+        />
+        {/* Body (open-close rectangle) */}
+        <rect
+          x={x + width * 0.25}
+          y={candleTop}
+          width={width * 0.5}
+          height={bodyHeight}
+          fill={isGreen ? color : 'white'}
+          stroke={color}
+          strokeWidth={2}
+        />
+      </g>
+    );
   };
 
   const handleTimeRangeChange = (value: string | undefined) => {
@@ -504,10 +503,13 @@ const GlucoseCandlestickChart = ({
             
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Custom candlestick renderer */}
-            {candlestickData.map((entry, index) => (
-              <CustomCandlestick key={index} {...entry} />
-            ))}
+            {/* Invisible bars for positioning */}
+            <Bar 
+              dataKey="high" 
+              fill="transparent"
+              stroke="transparent"
+              shape={(props: any) => <CustomCandlestick {...props} />}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartContainer>
