@@ -26,11 +26,11 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
 
     try {
       // Transform glucose data to AI format
-      const aiGlucoseReadings: AIGlucoseReading[] = glucoseData.map(reading => ({
-        id: reading.id || String(reading.timestamp),
+      const aiGlucoseReadings: AIGlucoseReading[] = glucoseData.map((reading, index) => ({
+        id: String(reading.timestamp || index), // Use timestamp as ID or fallback to index
         value: reading.value,
         timestamp: new Date(reading.timestamp).toISOString(),
-        tag: reading.timestamp ? 'general' : undefined
+        tag: 'general'
       }));
 
       // Transform logs to AI format
@@ -39,9 +39,9 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
         .map(log => ({
           id: log.id,
           description: log.description,
-          timestamp: new Date(log.timestamp).toISOString(),
-          calories: log.calories || undefined,
-          carbs: log.carbs || undefined
+          timestamp: new Date(log.time).toISOString(), // Use 'time' property from LogEntry
+          calories: undefined, // LogEntry doesn't have calories property
+          carbs: undefined // LogEntry doesn't have carbs property
         }));
 
       const exercises: ExerciseLog[] = logs
@@ -49,9 +49,9 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
         .map(log => ({
           id: log.id,
           description: log.description,
-          timestamp: new Date(log.timestamp).toISOString(),
-          duration: log.duration || undefined,
-          intensity: log.intensity as 'low' | 'moderate' | 'high' | 'very_high' || undefined
+          timestamp: new Date(log.time).toISOString(), // Use 'time' property from LogEntry
+          duration: undefined, // LogEntry doesn't have duration property
+          intensity: undefined // LogEntry doesn't have intensity property
         }));
 
       // Generate suggestions using rule-based engine
