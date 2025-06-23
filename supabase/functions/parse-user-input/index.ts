@@ -77,8 +77,8 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    // Parse input using OpenRouter AI
-    const parsedData = await parseInputWithAI(input);
+    // Parse input using rule-based system
+    const parsedData = parseInputWithRules(input);
     console.log('Parsed data:', parsedData);
 
     let result;
@@ -110,77 +110,121 @@ serve(async (req) => {
   }
 });
 
-async function parseInputWithAI(input: string): Promise<ParsedMeal | ParsedExercise> {
-  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-  if (!openRouterApiKey) {
-    throw new Error('OpenRouter API key not configured');
-  }
-
-  const prompt = `Parse the following user input into structured JSON data. Determine if it's describing a meal or exercise activity.
-
-For MEALS, return JSON in this format:
-{
-  "type": "meal",
-  "meal_type": "breakfast|lunch|dinner|snack|other",
-  "meal_name": "descriptive name",
-  "food_items": [
-    {
-      "food_name": "standardized food name (be consistent with naming)",
-      "quantity": number,
-      "unit": "slices|cups|grams|ounces|pieces|cans|medium|large|small|etc"
-    }
-  ],
-  "timestamp": "now"
-}
-
-For EXERCISES, return JSON in this format:
-{
-  "type": "exercise", 
-  "exercise_name": "standardized exercise name",
-  "exercise_type": "cardio|strength|flexibility|sports|walking|running|cycling|swimming|yoga|other",
-  "duration_minutes": number,
-  "intensity": "low|moderate|high|very_high",
-  "calories_burned": estimated_calories_or_null,
-  "timestamp": "now"
-}
-
-IMPORTANT: For food names, be consistent. For example:
-- "mcdonalds fries" or "mcdonald french fries" should always become "McDonald's French Fries"
-- Use standardized brand names and food descriptions
-
-User input: "${input}"
-
-Return only valid JSON, no explanations:`;
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openRouterApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'anthropic/claude-3.5-sonnet',
-      messages: [
-        { role: 'system', content: 'You are a nutrition and fitness expert. Parse user input into structured JSON data with consistent food naming. Always return valid JSON only.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.1,
-      max_tokens: 1000,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0].message.content.trim();
+function parseInputWithRules(input: string): ParsedMeal | ParsedExercise {
+  const cleanInput = input.toLowerCase().trim();
   
-  try {
-    return JSON.parse(content);
-  } catch (parseError) {
-    console.error('Failed to parse AI response:', content);
-    throw new Error('AI returned invalid JSON');
+  // Food keywords database
+  const FOOD_KEYWORDS = [
+    'pizza', 'burger', 'sandwich', 'salad', 'pasta', 'rice', 'chicken', 'fish', 'beef',
+    'apple', 'banana', 'orange', 'bread', 'eggs', 'milk', 'cheese', 'yogurt', 'cereal',
+    'soup', 'fries', 'potato', 'broccoli', 'carrots', 'spinach', 'nuts', 'cookie',
+    'cake', 'ice cream', 'chocolate', 'coffee', 'tea', 'water', 'juice', 'soda'
+  ];
+  
+  // Exercise keywords database
+  const EXERCISE_KEYWORDS = [
+    'walk', 'run', 'jog', 'bike', 'swim', 'gym', 'workout', 'exercise', 'yoga',
+    'pilates', 'dance', 'tennis', 'soccer', 'basketball', 'football', 'baseball',
+    'hiking', 'climbing', 'lifting', 'weights', 'cardio', 'strength', 'training'
+  ];
+  
+  // Check for exercise keywords
+  const hasExerciseKeywords = EXERCISE_KEYWORDS.some(keyword => cleanInput.includes(keyword));
+  const hasFoodKeywords = FOOD_KEYWORDS.some(keyword => cleanInput.includes(keyword));
+  
+  // Extract quantities
+  const quantityMatch = cleanInput.match(/(\d+)\s*(slice|slices|piece|pieces|cup|cups|bowl|bowls|min|minutes|hour|hours)?/);
+  const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+  
+  if (hasExerciseKeywords || (!hasFoodKeywords && (cleanInput.includes('min') || cleanInput.includes('hour')))) {
+    // Parse as exercise
+    let exerciseName = input;
+    let exerciseType = 'other';
+    let duration = 30; // default
+    let intensity: 'low' | 'moderate' | 'high' | 'very_high' = 'moderate';
+    
+    // Extract duration
+    if (quantityMatch && (quantityMatch[2]?.includes('min') || quantityMatch[2]?.includes('hour'))) {
+      duration = quantityMatch[2]?.includes('hour') ? quantity * 60 : quantity;
+    }
+    
+    // Determine exercise type and intensity
+    if (cleanInput.includes('walk')) {
+      exerciseType = 'cardio';
+      intensity = 'low';
+      exerciseName = 'Walking';
+    } else if (cleanInput.includes('run') || cleanInput.includes('jog')) {
+      exerciseType = 'cardio';
+      intensity = 'high';
+      exerciseName = cleanInput.includes('run') ? 'Running' : 'Jogging';
+    } else if (cleanInput.includes('bike') || cleanInput.includes('cycling')) {
+      exerciseType = 'cardio';
+      intensity = 'moderate';
+      exerciseName = 'Cycling';
+    } else if (cleanInput.includes('swim')) {
+      exerciseType = 'cardio';
+      intensity = 'moderate';
+      exerciseName = 'Swimming';
+    } else if (cleanInput.includes('yoga')) {
+      exerciseType = 'flexibility';
+      intensity = 'low';
+      exerciseName = 'Yoga';
+    } else if (cleanInput.includes('weights') || cleanInput.includes('lifting')) {
+      exerciseType = 'strength';
+      intensity = 'moderate';
+      exerciseName = 'Weight Training';
+    }
+    
+    return {
+      type: 'exercise',
+      exercise_name: exerciseName,
+      exercise_type: exerciseType,
+      duration_minutes: duration,
+      intensity,
+      timestamp: new Date().toISOString()
+    };
+  } else {
+    // Parse as meal
+    const hour = new Date().getHours();
+    let mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'snack';
+    
+    if (cleanInput.includes('breakfast') || (hour >= 5 && hour < 11)) {
+      mealType = 'breakfast';
+    } else if (cleanInput.includes('lunch') || (hour >= 11 && hour < 16)) {
+      mealType = 'lunch';
+    } else if (cleanInput.includes('dinner') || (hour >= 16 && hour < 22)) {
+      mealType = 'dinner';
+    }
+    
+    // Extract food items
+    const foodItems = [];
+    for (const food of FOOD_KEYWORDS) {
+      if (cleanInput.includes(food)) {
+        foodItems.push({
+          food_name: food.charAt(0).toUpperCase() + food.slice(1),
+          quantity: quantity,
+          unit: quantityMatch?.[2] || 'serving'
+        });
+        break; // Take first match for simplicity
+      }
+    }
+    
+    // If no specific food found, use the input as is
+    if (foodItems.length === 0) {
+      foodItems.push({
+        food_name: input,
+        quantity: 1,
+        unit: 'serving'
+      });
+    }
+    
+    return {
+      type: 'meal',
+      meal_type: mealType,
+      meal_name: input,
+      food_items: foodItems,
+      timestamp: new Date().toISOString()
+    };
   }
 }
 
@@ -304,108 +348,6 @@ function extractNutrients(nutritionData: USDAFood): Partial<FoodNutrients> {
   return nutrients;
 }
 
-async function estimateNutrientsWithAI(foodName: string, quantity: number, unit: string, partialData?: Partial<FoodNutrients>): Promise<FoodNutrients> {
-  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-  if (!openRouterApiKey) {
-    console.log('OpenRouter API key not configured, using fallback estimates');
-    return getFallbackNutrients(partialData);
-  }
-
-  const hasPartialData = partialData && Object.keys(partialData).length > 0;
-  const prompt = hasPartialData 
-    ? `You have partial nutrition data for "${foodName}" per ${unit}: ${JSON.stringify(partialData)}
-
-Fill in ALL missing nutrition values to complete the data. Be realistic and conservative with estimates based on typical foods.
-
-Return ONLY this JSON format with ALL values filled:
-{
-  "calories": ${partialData.calories || 'estimated_number'},
-  "carbs": ${partialData.carbs || 'estimated_grams'},
-  "protein": ${partialData.protein || 'estimated_grams'},
-  "fat": ${partialData.fat || 'estimated_grams'},
-  "fiber": ${partialData.fiber || 'estimated_grams'}
-}`
-    : `As a nutrition expert, provide complete and accurate nutritional values per ${unit} for "${foodName}".
-
-Use your extensive knowledge of food composition, USDA data, and nutrition databases to provide the most accurate estimates possible.
-
-Consider:
-- Brand variations (if applicable)
-- Typical preparation methods
-- Standard serving sizes
-- Nutritional density of similar foods
-
-Return ONLY this JSON format with realistic values:
-{
-  "calories": estimated_number,
-  "carbs": estimated_grams,
-  "protein": estimated_grams,
-  "fat": estimated_grams,
-  "fiber": estimated_grams
-}
-
-Be precise and conservative with estimates. Base your response on established nutritional data.`;
-
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [
-          { role: 'system', content: 'You are a professional nutritionist and dietitian with extensive knowledge of food composition databases, USDA nutritional data, and food science. Provide accurate, evidence-based nutritional estimates. Return only valid JSON with all required numeric values.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1,
-        max_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error(`AI estimation failed: ${response.status}`);
-      return getFallbackNutrients(partialData);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content.trim();
-    
-    // Clean up the response to extract just the JSON
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const jsonString = jsonMatch ? jsonMatch[0] : content;
-    
-    const estimated = JSON.parse(jsonString);
-    console.log(`AI estimated nutrients for ${foodName}:`, estimated);
-    
-    // Ensure all required fields are present and numeric
-    const completeNutrients: FoodNutrients = {
-      calories: Number(estimated.calories) || 100,
-      carbs: Number(estimated.carbs) || 15,
-      protein: Number(estimated.protein) || 3,
-      fat: Number(estimated.fat) || 2,
-      fiber: Number(estimated.fiber) || 1,
-    };
-
-    // Merge with partial API data, preferring API data when available
-    if (partialData) {
-      Object.keys(partialData).forEach(key => {
-        if (partialData[key] !== null && partialData[key] !== undefined) {
-          completeNutrients[key] = partialData[key];
-        }
-      });
-    }
-
-    console.log(`Final complete nutrients for ${foodName}:`, completeNutrients);
-    return completeNutrients;
-    
-  } catch (error) {
-    console.error(`Error estimating nutrients for ${foodName}:`, error);
-    return getFallbackNutrients(partialData);
-  }
-}
-
 function getFallbackNutrients(partialData?: Partial<FoodNutrients>): FoodNutrients {
   const fallbackNutrients: FoodNutrients = {
     calories: 100,
@@ -468,16 +410,11 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
       partialNutrients = extractNutrients(nutritionData);
       console.log(`Using USDA data for ${item.food_name}:`, partialNutrients);
     } else {
-      console.log(`USDA data unavailable for ${item.food_name}, using AI estimation only`);
+      console.log(`USDA data unavailable for ${item.food_name}, using fallback estimates`);
     }
 
-    // Get complete nutrients (USDA + AI estimation for missing values)
-    const completeNutrients = await estimateNutrientsWithAI(
-      item.food_name,
-      item.quantity,
-      item.unit,
-      partialNutrients
-    );
+    // Get complete nutrients (USDA + fallback for missing values)
+    const completeNutrients = getFallbackNutrients(partialNutrients);
 
     console.log(`Final nutrients for ${item.food_name}:`, completeNutrients);
 
@@ -552,15 +489,17 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
 async function processExercise(parsedExercise: ParsedExercise, userId: string, supabase: any) {
   console.log('Processing exercise:', parsedExercise.exercise_name);
 
-  // Estimate calories burned if not provided by AI parsing
+  // Simple calorie estimation based on exercise type and duration
   let caloriesBurned = parsedExercise.calories_burned;
   if (!caloriesBurned || caloriesBurned <= 0) {
-    caloriesBurned = await estimateCaloriesBurnedWithAI(
-      parsedExercise.exercise_name,
-      parsedExercise.exercise_type,
-      parsedExercise.duration_minutes,
-      parsedExercise.intensity
-    );
+    const baseRates = {
+      'low': 4,
+      'moderate': 6,
+      'high': 8,
+      'very_high': 10
+    };
+    const rate = baseRates[parsedExercise.intensity] || 6;
+    caloriesBurned = Math.round(rate * parsedExercise.duration_minutes);
   }
 
   const exerciseData = {
@@ -589,90 +528,6 @@ async function processExercise(parsedExercise: ParsedExercise, userId: string, s
   await linkGlucoseReadings(exercise.timestamp, userId, 'exercise', exercise.id, supabase);
 
   return exercise;
-}
-
-async function estimateCaloriesBurnedWithAI(
-  exerciseName: string,
-  exerciseType: string,
-  durationMinutes: number,
-  intensity: string
-): Promise<number> {
-  const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-  if (!openRouterApiKey) {
-    // Enhanced fallback calculation
-    const baseRates = {
-      'low': 4,
-      'moderate': 6,
-      'high': 8,
-      'very_high': 10
-    };
-    const rate = baseRates[intensity] || 6;
-    return Math.round(rate * durationMinutes);
-  }
-
-  const prompt = `Estimate calories burned for this exercise for an average adult (70kg/154lbs):
-
-Exercise: ${exerciseName}
-Type: ${exerciseType}
-Duration: ${durationMinutes} minutes
-Intensity: ${intensity}
-
-Return ONLY the number of calories burned as an integer. Be realistic based on exercise science.`;
-
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [
-          { role: 'system', content: 'You are a fitness expert. Estimate calories burned and return only the number.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1,
-        max_tokens: 100,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`AI estimation failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content.trim();
-    
-    const calories = parseInt(content.match(/\d+/)?.[0] || '0');
-    console.log(`AI estimated calories for ${exerciseName}: ${calories}`);
-    
-    if (calories > 0) {
-      return calories;
-    }
-    
-    // Fallback if AI returns invalid number
-    const baseRates = {
-      'low': 4,
-      'moderate': 6,
-      'high': 8,
-      'very_high': 10
-    };
-    const rate = baseRates[intensity] || 6;
-    return Math.round(rate * durationMinutes);
-    
-  } catch (error) {
-    console.error(`Error estimating calories for ${exerciseName}:`, error);
-    // Enhanced fallback calculation
-    const baseRates = {
-      'low': 4,
-      'moderate': 6,
-      'high': 8,
-      'very_high': 10
-    };
-    const rate = baseRates[intensity] || 6;
-    return Math.round(rate * durationMinutes);
-  }
 }
 
 async function linkGlucoseReadings(eventTimestamp: string, userId: string, eventType: string, eventId: string, supabase: any) {
