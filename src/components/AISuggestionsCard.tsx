@@ -1,13 +1,11 @@
 
-import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
-import { supabase } from "@/integrations/supabase/client";
+import { getSuggestions, type Suggestion, type GlucoseReading as AIGlucoseReading, type MealLog, type ExerciseLog } from "@/lib/ai";
 
 interface AISuggestionsCardProps {
   glucoseData: GlucoseReading[];
@@ -15,54 +13,74 @@ interface AISuggestionsCardProps {
 }
 
 const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
-  const { toast } = useToast();
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    data: suggestions,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['ai-suggestions', logs],
-    queryFn: async () => {
-      if (glucoseData.length === 0) return [];
+  const generateSuggestions = () => {
+    if (glucoseData.length === 0) {
+      setSuggestions([]);
+      return;
+    }
 
-      const { data, error } = await supabase.functions.invoke('ai-suggestions', {
-        body: {
-          glucoseData: glucoseData,
-          logs: logs
-        }
-      });
+    setIsLoading(true);
 
-      if (error) {
-        throw new Error(error.message);
-      }
+    try {
+      // Transform glucose data to AI format
+      const aiGlucoseReadings: AIGlucoseReading[] = glucoseData.map(reading => ({
+        id: reading.id || String(reading.timestamp),
+        value: reading.value,
+        timestamp: new Date(reading.timestamp).toISOString(),
+        tag: reading.timestamp ? 'general' : undefined
+      }));
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      // Transform logs to AI format
+      const meals: MealLog[] = logs
+        .filter(log => log.type === 'meal')
+        .map(log => ({
+          id: log.id,
+          description: log.description,
+          timestamp: new Date(log.timestamp).toISOString(),
+          calories: log.calories || undefined,
+          carbs: log.carbs || undefined
+        }));
 
-      return data?.suggestions || [];
-    },
-    enabled: glucoseData.length > 0,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+      const exercises: ExerciseLog[] = logs
+        .filter(log => log.type === 'exercise')
+        .map(log => ({
+          id: log.id,
+          description: log.description,
+          timestamp: new Date(log.timestamp).toISOString(),
+          duration: log.duration || undefined,
+          intensity: log.intensity as 'low' | 'moderate' | 'high' | 'very_high' || undefined
+        }));
+
+      // Generate suggestions using rule-based engine
+      const newSuggestions = getSuggestions(aiGlucoseReadings, meals, exercises);
+      setSuggestions(newSuggestions);
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (isError) {
-        console.error("Error fetching AI suggestions:", error);
-        let description = "Failed to fetch AI suggestions. Please try again.";
-        if (error instanceof Error && (error.message.includes('API key not valid') || error.message.includes('quota'))) {
-            description = "There was an issue with the AI service. Please try again later.";
-        }
-        toast({ title: "Error", description, variant: "destructive" });
-    }
-  }, [isError, error, toast]);
+    generateSuggestions();
+  }, [glucoseData, logs]);
 
-  const showLoading = isLoading || isFetching;
+  const getSuggestionColor = (level: string) => {
+    switch (level) {
+      case 'high':
+        return 'border-red-400 bg-red-50';
+      case 'medium':
+        return 'border-yellow-400 bg-yellow-50';
+      case 'low':
+        return 'border-blue-400 bg-blue-50';
+      default:
+        return 'border-blue-400 bg-blue-50';
+    }
+  };
 
   return (
     <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
@@ -73,34 +91,45 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
             <span className="text-gray-900">AI Suggestions</span>
           </div>
           <Button
-            onClick={() => refetch()}
-            disabled={showLoading}
+            onClick={generateSuggestions}
+            disabled={isLoading}
             variant="ghost"
             size="sm"
             className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
           >
-            <RefreshCw className={`w-4 h-4 ${showLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {showLoading ? (
+        {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
             ))}
           </div>
-        ) : (suggestions && suggestions.length > 0) ? (
-          suggestions.map((suggestion: string, index: number) => (
+        ) : suggestions.length > 0 ? (
+          suggestions.map((suggestion, index) => (
             <div
               key={index}
-              className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400"
+              className={`p-3 rounded-lg border-l-4 ${getSuggestionColor(suggestion.level)}`}
             >
-              <p className="text-sm text-gray-700">{suggestion}</p>
+              <p className="text-sm text-gray-700">{suggestion.text}</p>
+              <span className={`text-xs font-medium ${
+                suggestion.level === 'high' ? 'text-red-600' :
+                suggestion.level === 'medium' ? 'text-yellow-600' :
+                'text-blue-600'
+              }`}>
+                {suggestion.category} • {suggestion.level} priority
+              </span>
             </div>
           ))
         ) : (
-          <p className="text-sm text-gray-600">{isError ? "Could not load AI suggestions. Please try refreshing." : "No suggestions available."}</p>
+          <p className="text-sm text-gray-600">
+            {glucoseData.length === 0 
+              ? "Add some glucose readings to get personalized suggestions." 
+              : "No suggestions available based on your recent data."}
+          </p>
         )}
       </CardContent>
     </Card>
