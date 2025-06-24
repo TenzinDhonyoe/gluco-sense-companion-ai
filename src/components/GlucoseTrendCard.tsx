@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
-import GlucoseCandlestickChart, { type GlucoseReading } from "./GlucoseCandlestickChart";
+import GlucoseTrendChart, { type GlucoseReading } from "./GlucoseTrendChart";
 import { Link } from "react-router-dom";
 
 interface GlucoseTrendCardProps {
@@ -78,11 +78,11 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
       <CardContent className="space-y-4 p-0">
         <Link to="/insights/full" state={{ trendDirection }}>
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
-                <GlucoseCandlestickChart 
+                <GlucoseTrendChart 
                   trendDirection={trendDirection} 
                   containerClassName="pointer-events-none"
                   showTimeRangeFilter={false}
-                  defaultTimeRange="daily"
+                  defaultTimeRange="12"
                   onDataUpdate={onDataUpdate}
                 />
             </div>
