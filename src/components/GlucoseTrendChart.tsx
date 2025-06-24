@@ -1,9 +1,11 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, ReferenceDot } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
+import { Label as UILabel } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +36,38 @@ const GlucoseTrendChart = ({
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showHealthyTrend, setShowHealthyTrend] = useState(false);
+  const [showMealLogs, setShowMealLogs] = useState(true);
+  const [highlightSpikes, setHighlightSpikes] = useState(true);
+
+  // Generate healthy person average data for comparison
+  const generateHealthyTrendData = (timestamps: number[]) => {
+    return timestamps.map(timestamp => {
+      const hour = new Date(timestamp).getHours();
+      let healthyValue: number;
+      
+      // Simulate healthy glucose patterns throughout the day
+      if (hour >= 6 && hour <= 8) {
+        healthyValue = 90; // Morning fasting
+      } else if (hour >= 12 && hour <= 14) {
+        healthyValue = 120; // Post-lunch
+      } else if (hour >= 18 && hour <= 20) {
+        healthyValue = 110; // Post-dinner
+      } else if (hour >= 22 || hour <= 5) {
+        healthyValue = 85; // Night/early morning
+      } else {
+        healthyValue = 95; // Default daytime
+      }
+      
+      // Add slight variation for realism
+      healthyValue += Math.sin(hour * 0.5) * 5;
+      
+      return {
+        timestamp,
+        healthyValue: Math.round(healthyValue)
+      };
+    });
+  };
 
   const fetchGlucoseReadings = useCallback(async () => {
     try {
@@ -58,9 +92,8 @@ const GlucoseTrendChart = ({
         return;
       }
 
-      // Transform the data to match GlucoseReading interface, ensuring timestamp correlation
       const transformedData: GlucoseReading[] = (data || [])
-        .reverse() // Reverse to get chronological order for the chart
+        .reverse()
         .map((reading, index) => {
           const timestamp = new Date(reading.timestamp).getTime();
           return {
@@ -70,7 +103,7 @@ const GlucoseTrendChart = ({
               hour12: true 
             }),
             value: Number(reading.value),
-            timestamp: timestamp, // Ensure we're using the exact database timestamp
+            timestamp: timestamp,
             trendIndex: index,
             source: reading.source || 'manual'
           };
@@ -84,7 +117,6 @@ const GlucoseTrendChart = ({
       
       setGlucoseData(transformedData);
       
-      // Notify parent component of data update
       if (onDataUpdate) {
         onDataUpdate(transformedData);
       }
@@ -96,7 +128,6 @@ const GlucoseTrendChart = ({
   }, [onDataUpdate]);
 
   useEffect(() => {
-    // If prop data is provided, use it; otherwise fetch from database
     if (propData && propData.length > 0) {
       console.log('Using provided prop data:', propData.length, 'readings');
       setGlucoseData(propData);
@@ -107,7 +138,6 @@ const GlucoseTrendChart = ({
   }, [propData, fetchGlucoseReadings]);
 
   useEffect(() => {
-    // Set up real-time subscription with better error handling
     console.log('Setting up real-time subscription for glucose_readings table...');
     
     const channel = supabase
@@ -120,16 +150,15 @@ const GlucoseTrendChart = ({
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'glucose_readings'
         },
         (payload) => {
           console.log('Real-time glucose reading change detected:', payload.eventType, payload);
-          // Force immediate refresh when any change occurs
           setTimeout(() => {
             fetchGlucoseReadings();
-          }, 100); // Small delay to ensure database consistency
+          }, 100);
         }
       )
       .subscribe((status) => {
@@ -138,21 +167,17 @@ const GlucoseTrendChart = ({
           console.log('Successfully subscribed to glucose_readings changes');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('Subscription issue, retrying...', status);
-          // Retry subscription after a delay
           setTimeout(() => {
             channel.unsubscribe();
-            // The useEffect will re-run and create a new subscription
           }, 2000);
         }
       });
 
-    // Set up periodic refresh as fallback for real-time updates
     const intervalId = setInterval(() => {
       console.log('Periodic refresh of glucose data');
       fetchGlucoseReadings();
-    }, 30000); // Refresh every 30 seconds as backup
+    }, 30000);
 
-    // Also listen for custom events from manual entry forms and clear data button
     const handleGlucoseReadingChanged = () => {
       console.log('Custom glucose reading changed event received - refreshing data');
       fetchGlucoseReadings();
@@ -168,13 +193,14 @@ const GlucoseTrendChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Process data with useMemo to avoid unnecessary recalculations
   const processedData = useMemo(() => {
     if (!glucoseData || glucoseData.length === 0) {
       return { 
         finalData: [], 
         dataWithLatestFlag: [],
-        xTicks: []
+        xTicks: [],
+        healthyTrendData: [],
+        spikes: []
       };
     }
     
@@ -187,66 +213,102 @@ const GlucoseTrendChart = ({
       return { 
         finalData: [], 
         dataWithLatestFlag: [],
-        xTicks: []
+        xTicks: [],
+        healthyTrendData: [],
+        spikes: []
       };
     }
 
-    // DATA PIPELINE
     const MAX_VISIBLE_POINTS = 48;
-    
     const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
-
     const decimatedData = points.length > MAX_VISIBLE_POINTS
       ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
       : points;
 
-    const finalData = movingAverage(decimatedData, 3);
+    // Use cubic spline-like smoothing for better visual appeal
+    const finalData = movingAverage(decimatedData, 5);
 
     const dataWithLatestFlag = finalData.map((item, index) => ({
       ...item,
       isLatest: index === finalData.length - 1,
     }));
 
-    // Calculate x-axis ticks
+    // Generate healthy trend data
+    const timestamps = dataWithLatestFlag.map(d => d.timestamp);
+    const healthyTrendData = generateHealthyTrendData(timestamps);
+
+    // Merge data with healthy trend
+    const mergedData = dataWithLatestFlag.map((item, index) => ({
+      ...item,
+      healthyValue: healthyTrendData[index]?.healthyValue || 95
+    }));
+
+    // Identify spikes (readings > 160 mg/dL)
+    const spikes = mergedData.filter(d => d.value > 160);
+
+    // Calculate x-axis ticks - show every 2 hours for better readability
     const ticks: number[] = [];
     const addedHours: { [key: number]: boolean } = {};
 
-    dataWithLatestFlag.forEach(d => {
-        const date = new Date(d.timestamp);
-        const hour = date.getHours();
-        if (!addedHours[hour]) {
-            ticks.push(d.timestamp);
-            addedHours[hour] = true;
-        }
+    mergedData.forEach(d => {
+      const date = new Date(d.timestamp);
+      const hour = date.getHours();
+      if (hour % 2 === 0 && !addedHours[hour]) {
+        ticks.push(d.timestamp);
+        addedHours[hour] = true;
+      }
     });
 
-    const lastTimestamp = dataWithLatestFlag[dataWithLatestFlag.length - 1].timestamp;
+    const lastTimestamp = mergedData[mergedData.length - 1].timestamp;
     if (!ticks.includes(lastTimestamp)) {
-        ticks.push(lastTimestamp);
+      ticks.push(lastTimestamp);
     }
 
     return { 
-      finalData, 
-      dataWithLatestFlag,
-      xTicks: ticks
+      finalData: mergedData, 
+      dataWithLatestFlag: mergedData,
+      xTicks: ticks,
+      healthyTrendData,
+      spikes
     };
   }, [glucoseData, timeRange]);
 
   const chartConfig = {
     value: {
-      label: "Glucose (mg/dL)",
-      color: "#002D3A",
+      label: "Your Glucose (mg/dL)",
+      color: "#3B82F6", // Soft blue instead of harsh colors
     },
+    healthy: {
+      label: "Healthy Range",
+      color: "#8B5CF6", // Soft purple
+    }
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload;
+      const hour = new Date(point.timestamp).getHours();
+      
+      // Add lifestyle context based on time
+      let lifestyleNote = "";
+      if (hour >= 7 && hour <= 9) {
+        lifestyleNote = "Morning time";
+      } else if (hour >= 12 && hour <= 14) {
+        lifestyleNote = "Lunch time";
+      } else if (hour >= 18 && hour <= 20) {
+        lifestyleNote = "Dinner time";
+      } else if (hour >= 22 || hour <= 6) {
+        lifestyleNote = "Sleep time";
+      }
+
       return (
-        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
-          <p className="font-medium text-gray-900">{`${point.value} mg/dL`}</p>
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-xl">
+          <p className="font-semibold text-gray-900 mb-1">{`${point.value} mg/dL`}</p>
           <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
           <p className="text-xs text-gray-500">{new Date(point.timestamp).toLocaleDateString()}</p>
+          {lifestyleNote && (
+            <p className="text-xs text-blue-600 font-medium mt-1">{lifestyleNote}</p>
+          )}
           {point.source && (
             <p className="text-xs text-gray-500 capitalize">{point.source}</p>
           )}
@@ -259,16 +321,28 @@ const GlucoseTrendChart = ({
   const CustomXAxisTick = (props: any) => {
     const { x, y, payload, index } = props;
     const isLast = index === processedData.xTicks.length - 1;
-    const label = isLast 
-        ? "Now" 
-        : new Date(payload.value).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(/\s/g, '');
+    const date = new Date(payload.value);
+    const hour = date.getHours();
+    
+    let label;
+    if (isLast) {
+      label = "Now";
+    } else if (hour === 0) {
+      label = "12AM";
+    } else if (hour === 12) {
+      label = "12PM";
+    } else if (hour > 12) {
+      label = `${hour - 12}PM`;
+    } else {
+      label = `${hour}AM`;
+    }
     
     return (
-        <g transform={`translate(${x},${y})`}>
-            <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={12}>
-                {label}
-            </text>
-        </g>
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight={500}>
+          {label}
+        </text>
+      </g>
     );
   };
 
@@ -278,9 +352,16 @@ const GlucoseTrendChart = ({
     }
   };
 
+  const getGlucoseColor = (value: number) => {
+    if (value < 70) return "#F97316"; // Orange for low (more accessible than red)
+    if (value > 160) return "#EF4444"; // Red for high
+    if (value > 140) return "#F59E0B"; // Amber for elevated
+    return "#22C55E"; // Green for normal
+  };
+
   if (loading) {
     return (
-      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+      <div className={cn("h-80 w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Loading...</div>
           <div className="text-gray-300 text-sm mt-1">Fetching glucose data from database</div>
@@ -289,11 +370,11 @@ const GlucoseTrendChart = ({
     );
   }
 
-  const { dataWithLatestFlag, xTicks } = processedData;
+  const { dataWithLatestFlag, xTicks, spikes } = processedData;
 
   if (dataWithLatestFlag.length < 2) {
     return (
-      <div className={cn("h-60 w-full flex items-center justify-center bg-gray-50 rounded-lg", containerClassName)}>
+      <div className={cn("h-80 w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
         <div className="text-center">
           <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
           <div className="text-gray-300 text-sm mt-1">Need at least 2 readings to show trend</div>
@@ -302,163 +383,194 @@ const GlucoseTrendChart = ({
     );
   }
 
-  const yAxisDomain = [40, 280];
-  const yTicks = [40, 80, 120, 160, 200, 240, 280];
+  const yAxisDomain = [60, 200];
+  const yTicks = [70, 100, 130, 160, 190];
   
   return (
-    <div className={cn("h-60 w-full relative", containerClassName)}>
-      {showTimeRangeFilter && (
-        <div 
-          className="absolute top-3 right-3 z-10"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
+    <div className={cn("h-80 w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4", containerClassName)}>
+      {/* Interactive Controls */}
+      <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+            <Switch
+              id="healthy-trend"
+              checked={showHealthyTrend}
+              onCheckedChange={setShowHealthyTrend}
+            />
+            <UILabel htmlFor="healthy-trend" className="text-xs font-medium">Healthy Trend</UILabel>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+            <Switch
+              id="highlight-spikes"
+              checked={highlightSpikes}
+              onCheckedChange={setHighlightSpikes}
+            />
+            <UILabel htmlFor="highlight-spikes" className="text-xs font-medium">Highlight Spikes</UILabel>
+          </div>
+        </div>
+
+        {showTimeRangeFilter && (
           <ToggleGroup 
             type="single" 
             value={timeRange}
             onValueChange={handleTimeRangeChange}
             size="sm" 
-            className="bg-gray-500/10 backdrop-blur-sm rounded-lg p-1 border border-gray-200/30"
+            className="bg-white/80 backdrop-blur-sm rounded-lg p-1"
           >
-            <ToggleGroupItem 
-              value="3" 
-              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              3H
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="6" 
-              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              6H
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="12" 
-              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              12H
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="24" 
-              className="px-2.5 py-1 h-auto text-xs text-gray-600 rounded-md border-transparent bg-transparent data-[state=on]:bg-white data-[state=on]:text-gray-900 data-[state=on]:shadow-sm"
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              24H
-            </ToggleGroupItem>
+            <ToggleGroupItem value="3" className="text-xs px-3 py-1">3H</ToggleGroupItem>
+            <ToggleGroupItem value="6" className="text-xs px-3 py-1">6H</ToggleGroupItem>
+            <ToggleGroupItem value="12" className="text-xs px-3 py-1">12H</ToggleGroupItem>
+            <ToggleGroupItem value="24" className="text-xs px-3 py-1">24H</ToggleGroupItem>
           </ToggleGroup>
-        </div>
-      )}
-      <ChartContainer config={chartConfig} className="h-full w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
-            data={dataWithLatestFlag} 
-            margin={{ top: 20, right: 15, left: 20, bottom: 15 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/50" />
-            
-            <XAxis 
-              dataKey="timestamp" 
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              ticks={xTicks}
-              tick={<CustomXAxisTick />}
-              axisLine={false}
-              tickLine={true}
-              padding={{ left: 10, right: 10 }}
-            />
-            
-            <YAxis 
-              orientation="left"
-              domain={yAxisDomain}
-              ticks={yTicks}
-              tick={{ fontSize: 11, fill: "#6B7280" }}
-              axisLine={false}
-              tickLine={true}
-              width={40}
-              tickFormatter={(value) => `${value}`}
-            >
-              <Label
-                value="mg/dL"
-                angle={-90}
-                position="insideLeft"
-                style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12 }}
-                offset={-5}
-              />
-            </YAxis>
-            
-            {/* Glucose Zones */}
-            <ReferenceArea y1={yAxisDomain[0]} y2={70} fill="#f59e0b" fillOpacity={0.1} />
-            <ReferenceArea y1={70} y2={180} fill="#22c55e" fillOpacity={0.1} />
-            <ReferenceArea y1={180} y2={yAxisDomain[1]} fill="#ef4444" fillOpacity={0.1} />
+        )}
+      </div>
 
-            <ReferenceLine y={70} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" />
-            <ReferenceLine y={180} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" />
-            
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}/>
-            
-            {/* Main line for all data */}
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#002D3A"
-              strokeWidth={2.5}
-              dot={(props) => {
-                const { cx, cy, payload } = props;
-                if (!payload) return null;
-                
-                // Different colors for sensor vs manual readings
-                const color = payload.source === 'sensor' ? '#002D3A' : '#0066CC';
-                const size = payload.source === 'sensor' ? 3 : 4;
-                
-                return (
-                  <circle 
-                    cx={cx} 
-                    cy={cy} 
-                    r={size} 
-                    fill={color}
-                    stroke="white"
-                    strokeWidth={1}
-                  />
-                );
-              }}
-              activeDot={{ r: 5 }}
-            />
-            
-            {/* Highlight latest reading */}
-            <Line 
-              type="monotone" 
-              dataKey="value"
-              stroke="transparent"
-              strokeWidth={0}
-              activeDot={false}
-              dot={(props) => {
-                const { cx, cy, payload, index } = props;
-                if (payload?.isLatest) {
+      <div className="h-full pt-16">
+        <ChartContainer config={chartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart 
+              data={dataWithLatestFlag} 
+              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+            >
+              <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+              
+              <XAxis 
+                dataKey="timestamp" 
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                ticks={xTicks}
+                tick={<CustomXAxisTick />}
+                axisLine={false}
+                tickLine={false}
+                padding={{ left: 10, right: 10 }}
+              />
+              
+              <YAxis 
+                orientation="left"
+                domain={yAxisDomain}
+                ticks={yTicks}
+                tick={{ fontSize: 11, fill: "#6B7280", fontWeight: 500 }}
+                axisLine={false}
+                tickLine={false}
+                width={50}
+                tickFormatter={(value) => `${value}`}
+              >
+                <Label
+                  value="mg/dL"
+                  angle={-90}
+                  position="insideLeft"
+                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12, fontWeight: 600 }}
+                  offset={-10}
+                />
+              </YAxis>
+              
+              {/* Soft, accessible glucose zones */}
+              <ReferenceArea y1={60} y2={70} fill="#F97316" fillOpacity={0.08} />
+              <ReferenceArea y1={70} y2={140} fill="#22C55E" fillOpacity={0.08} />
+              <ReferenceArea y1={140} y2={160} fill="#F59E0B" fillOpacity={0.08} />
+              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.08} />
+
+              {/* Softer reference lines */}
+              <ReferenceLine y={70} stroke="#F97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
+              <ReferenceLine y={140} stroke="#F59E0B" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
+              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
+              
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '2 2', opacity: 0.7 }}/>
+              
+              {/* Healthy trend line (optional) */}
+              {showHealthyTrend && (
+                <Line 
+                  type="monotone" 
+                  dataKey="healthyValue" 
+                  stroke="#8B5CF6"
+                  strokeWidth={2}
+                  strokeDasharray="6 6"
+                  dot={false}
+                  name="Healthy Average"
+                />
+              )}
+              
+              {/* Main glucose line with rounded joins */}
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#3B82F6"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (!payload) return null;
+                  
+                  const color = getGlucoseColor(payload.value);
+                  const size = payload.source === 'sensor' ? 4 : 5;
+                  
                   return (
-                      <circle 
-                        key={`latest-${index}`}
-                        cx={cx} 
-                        cy={cy} 
-                        r={6} 
-                        fill="white" 
-                        stroke="#002D3A" 
-                        strokeWidth={3}
-                      />
+                    <circle 
+                      cx={cx} 
+                      cy={cy} 
+                      r={size} 
+                      fill={color}
+                      stroke="white"
+                      strokeWidth={2}
+                    />
                   );
-                }
-                return null;
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+                }}
+                activeDot={{ r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+              />
+              
+              {/* Spike highlights */}
+              {highlightSpikes && spikes.map((spike, index) => (
+                <ReferenceDot 
+                  key={`spike-${index}`}
+                  x={spike.timestamp} 
+                  y={spike.value} 
+                  r={8} 
+                  fill="#EF4444" 
+                  fillOpacity={0.3}
+                  stroke="#EF4444"
+                  strokeWidth={2}
+                  strokeOpacity={0.6}
+                />
+              ))}
+              
+              {/* Latest reading highlight */}
+              <Line 
+                type="monotone" 
+                dataKey="value"
+                stroke="transparent"
+                strokeWidth={0}
+                activeDot={false}
+                dot={(props) => {
+                  const { cx, cy, payload, index } = props;
+                  if (payload?.isLatest) {
+                    return (
+                      <g key={`latest-${index}`}>
+                        <circle 
+                          cx={cx} 
+                          cy={cy} 
+                          r={8} 
+                          fill="white" 
+                          stroke="#3B82F6" 
+                          strokeWidth={3}
+                        />
+                        <circle 
+                          cx={cx} 
+                          cy={cy} 
+                          r={4} 
+                          fill="#3B82F6" 
+                        />
+                      </g>
+                    );
+                  }
+                  return null;
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
     </div>
   );
 };
