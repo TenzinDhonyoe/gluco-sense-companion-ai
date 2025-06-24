@@ -30,14 +30,13 @@ const GlucoseTrendChart = ({
   data: propData, 
   containerClassName, 
   showTimeRangeFilter = true,
-  defaultTimeRange = '3',
+  defaultTimeRange = '7',
   onDataUpdate
 }: GlucoseTrendChartProps) => {
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [showHealthyTrend, setShowHealthyTrend] = useState(false);
-  const [showMealLogs, setShowMealLogs] = useState(true);
   const [highlightSpikes, setHighlightSpikes] = useState(true);
 
   // Generate healthy person average data for comparison
@@ -97,10 +96,9 @@ const GlucoseTrendChart = ({
         .map((reading, index) => {
           const timestamp = new Date(reading.timestamp).getTime();
           return {
-            time: new Date(timestamp).toLocaleTimeString('en-US', { 
-              hour: 'numeric', 
-              minute: '2-digit', 
-              hour12: true 
+            time: new Date(timestamp).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric'
             }),
             value: Number(reading.value),
             timestamp: timestamp,
@@ -205,8 +203,8 @@ const GlucoseTrendChart = ({
     }
     
     const now = Date.now();
-    const hours = parseInt(timeRange);
-    const fromTimestamp = now - hours * 60 * 60 * 1000;
+    const days = parseInt(timeRange);
+    const fromTimestamp = now - days * 24 * 60 * 60 * 1000;
     const filteredData = glucoseData.filter(d => d.timestamp >= fromTimestamp);
 
     if (filteredData.length < 2) {
@@ -219,14 +217,14 @@ const GlucoseTrendChart = ({
       };
     }
 
-    const MAX_VISIBLE_POINTS = 48;
+    const MAX_VISIBLE_POINTS = 50;
     const points = filteredData.map(d => ({ ...d, x: d.timestamp, y: d.value }));
     const decimatedData = points.length > MAX_VISIBLE_POINTS
       ? downsampleLTTB(points, MAX_VISIBLE_POINTS)
       : points;
 
     // Use cubic spline-like smoothing for better visual appeal
-    const finalData = movingAverage(decimatedData, 5);
+    const finalData = movingAverage(decimatedData, 3);
 
     const dataWithLatestFlag = finalData.map((item, index) => ({
       ...item,
@@ -246,23 +244,18 @@ const GlucoseTrendChart = ({
     // Identify spikes (readings > 160 mg/dL)
     const spikes = mergedData.filter(d => d.value > 160);
 
-    // Calculate x-axis ticks - show every 2 hours for better readability
+    // Calculate x-axis ticks - show dates every day or two
     const ticks: number[] = [];
-    const addedHours: { [key: number]: boolean } = {};
-
+    const seenDates: { [key: string]: boolean } = {};
+    
     mergedData.forEach(d => {
       const date = new Date(d.timestamp);
-      const hour = date.getHours();
-      if (hour % 2 === 0 && !addedHours[hour]) {
+      const dateKey = date.toDateString();
+      if (!seenDates[dateKey]) {
         ticks.push(d.timestamp);
-        addedHours[hour] = true;
+        seenDates[dateKey] = true;
       }
     });
-
-    const lastTimestamp = mergedData[mergedData.length - 1].timestamp;
-    if (!ticks.includes(lastTimestamp)) {
-      ticks.push(lastTimestamp);
-    }
 
     return { 
       finalData: mergedData, 
@@ -287,7 +280,8 @@ const GlucoseTrendChart = ({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload;
-      const hour = new Date(point.timestamp).getHours();
+      const date = new Date(point.timestamp);
+      const hour = date.getHours();
       
       // Add lifestyle context based on time
       let lifestyleNote = "";
@@ -304,8 +298,7 @@ const GlucoseTrendChart = ({
       return (
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-xl">
           <p className="font-semibold text-gray-900 mb-1">{`${point.value} mg/dL`}</p>
-          <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
-          <p className="text-xs text-gray-500">{new Date(point.timestamp).toLocaleDateString()}</p>
+          <p className="text-sm text-gray-600">{date.toLocaleString()}</p>
           {lifestyleNote && (
             <p className="text-xs text-blue-600 font-medium mt-1">{lifestyleNote}</p>
           )}
@@ -319,23 +312,9 @@ const GlucoseTrendChart = ({
   };
 
   const CustomXAxisTick = (props: any) => {
-    const { x, y, payload, index } = props;
-    const isLast = index === processedData.xTicks.length - 1;
+    const { x, y, payload } = props;
     const date = new Date(payload.value);
-    const hour = date.getHours();
-    
-    let label;
-    if (isLast) {
-      label = "Now";
-    } else if (hour === 0) {
-      label = "12AM";
-    } else if (hour === 12) {
-      label = "12PM";
-    } else if (hour > 12) {
-      label = `${hour - 12}PM`;
-    } else {
-      label = `${hour}AM`;
-    }
+    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
     return (
       <g transform={`translate(${x},${y})`}>
@@ -388,50 +367,13 @@ const GlucoseTrendChart = ({
   
   return (
     <div className={cn("h-80 w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4", containerClassName)}>
-      {/* Interactive Controls */}
-      <div className="absolute top-4 left-4 right-4 z-10 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
-            <Switch
-              id="healthy-trend"
-              checked={showHealthyTrend}
-              onCheckedChange={setShowHealthyTrend}
-            />
-            <UILabel htmlFor="healthy-trend" className="text-xs font-medium">Healthy Trend</UILabel>
-          </div>
-          
-          <div className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
-            <Switch
-              id="highlight-spikes"
-              checked={highlightSpikes}
-              onCheckedChange={setHighlightSpikes}
-            />
-            <UILabel htmlFor="highlight-spikes" className="text-xs font-medium">Highlight Spikes</UILabel>
-          </div>
-        </div>
-
-        {showTimeRangeFilter && (
-          <ToggleGroup 
-            type="single" 
-            value={timeRange}
-            onValueChange={handleTimeRangeChange}
-            size="sm" 
-            className="bg-white/80 backdrop-blur-sm rounded-lg p-1"
-          >
-            <ToggleGroupItem value="3" className="text-xs px-3 py-1">3H</ToggleGroupItem>
-            <ToggleGroupItem value="6" className="text-xs px-3 py-1">6H</ToggleGroupItem>
-            <ToggleGroupItem value="12" className="text-xs px-3 py-1">12H</ToggleGroupItem>
-            <ToggleGroupItem value="24" className="text-xs px-3 py-1">24H</ToggleGroupItem>
-          </ToggleGroup>
-        )}
-      </div>
-
-      <div className="h-full pt-16">
+      {/* Chart Content */}
+      <div className="h-full">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={dataWithLatestFlag} 
-              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              margin={{ top: 40, right: 20, left: 20, bottom: 40 }}
             >
               <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
               
@@ -570,6 +512,46 @@ const GlucoseTrendChart = ({
             </LineChart>
           </ResponsiveContainer>
         </ChartContainer>
+      </div>
+
+      {/* Interactive Controls - Better positioned at bottom */}
+      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-gray-200/50">
+            <Switch
+              id="healthy-trend"
+              checked={showHealthyTrend}
+              onCheckedChange={setShowHealthyTrend}
+              className="scale-75"
+            />
+            <UILabel htmlFor="healthy-trend" className="text-xs font-medium text-gray-700">Healthy Trend</UILabel>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-gray-200/50">
+            <Switch
+              id="highlight-spikes"
+              checked={highlightSpikes}
+              onCheckedChange={setHighlightSpikes}
+              className="scale-75"
+            />
+            <UILabel htmlFor="highlight-spikes" className="text-xs font-medium text-gray-700">Highlight Spikes</UILabel>
+          </div>
+        </div>
+
+        {showTimeRangeFilter && (
+          <ToggleGroup 
+            type="single" 
+            value={timeRange}
+            onValueChange={handleTimeRangeChange}
+            size="sm" 
+            className="bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-sm border border-gray-200/50"
+          >
+            <ToggleGroupItem value="3" className="text-xs px-2 py-1">3D</ToggleGroupItem>
+            <ToggleGroupItem value="7" className="text-xs px-2 py-1">7D</ToggleGroupItem>
+            <ToggleGroupItem value="14" className="text-xs px-2 py-1">14D</ToggleGroupItem>
+            <ToggleGroupItem value="30" className="text-xs px-2 py-1">30D</ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
     </div>
   );

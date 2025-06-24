@@ -76,17 +76,15 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-0">
-        <Link to="/insights/full" state={{ trendDirection }}>
-            <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white cursor-pointer hover:shadow-xl transition-shadow">
-                <GlucoseTrendChart 
-                  trendDirection={trendDirection} 
-                  containerClassName="pointer-events-none"
-                  showTimeRangeFilter={false}
-                  defaultTimeRange="12"
-                  onDataUpdate={onDataUpdate}
-                />
-            </div>
-        </Link>
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white">
+          <GlucoseTrendChart 
+            trendDirection={trendDirection} 
+            containerClassName=""
+            showTimeRangeFilter={false}
+            defaultTimeRange="7"
+            onDataUpdate={onDataUpdate}
+          />
+        </div>
         <div className="text-center pt-2">
           <p className="text-sm text-gray-600 mb-1">{trendInfo.description}</p>
           <div className="flex items-center justify-center space-x-1.5 text-xs">
