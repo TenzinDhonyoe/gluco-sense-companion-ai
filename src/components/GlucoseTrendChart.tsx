@@ -1,11 +1,8 @@
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Label, Tooltip, ReferenceDot } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Switch } from "@/components/ui/switch";
-import { Label as UILabel } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,37 +33,6 @@ const GlucoseTrendChart = ({
   const [timeRange, setTimeRange] = useState(defaultTimeRange);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showHealthyTrend, setShowHealthyTrend] = useState(false);
-  const [highlightSpikes, setHighlightSpikes] = useState(true);
-
-  // Generate healthy person average data for comparison
-  const generateHealthyTrendData = (timestamps: number[]) => {
-    return timestamps.map(timestamp => {
-      const hour = new Date(timestamp).getHours();
-      let healthyValue: number;
-      
-      // Simulate healthy glucose patterns throughout the day
-      if (hour >= 6 && hour <= 8) {
-        healthyValue = 90; // Morning fasting
-      } else if (hour >= 12 && hour <= 14) {
-        healthyValue = 120; // Post-lunch
-      } else if (hour >= 18 && hour <= 20) {
-        healthyValue = 110; // Post-dinner
-      } else if (hour >= 22 || hour <= 5) {
-        healthyValue = 85; // Night/early morning
-      } else {
-        healthyValue = 95; // Default daytime
-      }
-      
-      // Add slight variation for realism
-      healthyValue += Math.sin(hour * 0.5) * 5;
-      
-      return {
-        timestamp,
-        healthyValue: Math.round(healthyValue)
-      };
-    });
-  };
 
   const fetchGlucoseReadings = useCallback(async () => {
     try {
@@ -196,9 +162,7 @@ const GlucoseTrendChart = ({
       return { 
         finalData: [], 
         dataWithLatestFlag: [],
-        xTicks: [],
-        healthyTrendData: [],
-        spikes: []
+        xTicks: []
       };
     }
     
@@ -211,9 +175,7 @@ const GlucoseTrendChart = ({
       return { 
         finalData: [], 
         dataWithLatestFlag: [],
-        xTicks: [],
-        healthyTrendData: [],
-        spikes: []
+        xTicks: []
       };
     }
 
@@ -231,24 +193,11 @@ const GlucoseTrendChart = ({
       isLatest: index === finalData.length - 1,
     }));
 
-    // Generate healthy trend data
-    const timestamps = dataWithLatestFlag.map(d => d.timestamp);
-    const healthyTrendData = generateHealthyTrendData(timestamps);
-
-    // Merge data with healthy trend
-    const mergedData = dataWithLatestFlag.map((item, index) => ({
-      ...item,
-      healthyValue: healthyTrendData[index]?.healthyValue || 95
-    }));
-
-    // Identify spikes (readings > 160 mg/dL)
-    const spikes = mergedData.filter(d => d.value > 160);
-
     // Calculate x-axis ticks - show dates every day or two
     const ticks: number[] = [];
     const seenDates: { [key: string]: boolean } = {};
     
-    mergedData.forEach(d => {
+    dataWithLatestFlag.forEach(d => {
       const date = new Date(d.timestamp);
       const dateKey = date.toDateString();
       if (!seenDates[dateKey]) {
@@ -258,11 +207,9 @@ const GlucoseTrendChart = ({
     });
 
     return { 
-      finalData: mergedData, 
-      dataWithLatestFlag: mergedData,
-      xTicks: ticks,
-      healthyTrendData,
-      spikes
+      finalData: dataWithLatestFlag, 
+      dataWithLatestFlag: dataWithLatestFlag,
+      xTicks: ticks
     };
   }, [glucoseData, timeRange]);
 
@@ -270,10 +217,6 @@ const GlucoseTrendChart = ({
     value: {
       label: "Your Glucose (mg/dL)",
       color: "#3B82F6", // Soft blue instead of harsh colors
-    },
-    healthy: {
-      label: "Healthy Range",
-      color: "#8B5CF6", // Soft purple
     }
   };
 
@@ -349,7 +292,7 @@ const GlucoseTrendChart = ({
     );
   }
 
-  const { dataWithLatestFlag, xTicks, spikes } = processedData;
+  const { dataWithLatestFlag, xTicks } = processedData;
 
   if (dataWithLatestFlag.length < 2) {
     return (
@@ -366,14 +309,14 @@ const GlucoseTrendChart = ({
   const yTicks = [70, 100, 130, 160, 190];
   
   return (
-    <div className={cn("h-80 w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4", containerClassName)}>
+    <div className={cn("h-80 w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
       {/* Chart Content */}
-      <div className="h-full">
+      <div className="h-full p-2">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={dataWithLatestFlag} 
-              margin={{ top: 40, right: 20, left: 20, bottom: 40 }}
+              margin={{ top: 10, right: 10, left: 10, bottom: 30 }}
             >
               <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
               
@@ -385,7 +328,7 @@ const GlucoseTrendChart = ({
                 tick={<CustomXAxisTick />}
                 axisLine={false}
                 tickLine={false}
-                padding={{ left: 10, right: 10 }}
+                padding={{ left: 5, right: 5 }}
               />
               
               <YAxis 
@@ -395,7 +338,7 @@ const GlucoseTrendChart = ({
                 tick={{ fontSize: 11, fill: "#6B7280", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={40}
                 tickFormatter={(value) => `${value}`}
               >
                 <Label
@@ -403,7 +346,7 @@ const GlucoseTrendChart = ({
                   angle={-90}
                   position="insideLeft"
                   style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12, fontWeight: 600 }}
-                  offset={-10}
+                  offset={-5}
                 />
               </YAxis>
               
@@ -419,19 +362,6 @@ const GlucoseTrendChart = ({
               <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
               
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '2 2', opacity: 0.7 }}/>
-              
-              {/* Healthy trend line (optional) */}
-              {showHealthyTrend && (
-                <Line 
-                  type="monotone" 
-                  dataKey="healthyValue" 
-                  stroke="#8B5CF6"
-                  strokeWidth={2}
-                  strokeDasharray="6 6"
-                  dot={false}
-                  name="Healthy Average"
-                />
-              )}
               
               {/* Main glucose line with rounded joins */}
               <Line 
@@ -461,21 +391,6 @@ const GlucoseTrendChart = ({
                 }}
                 activeDot={{ r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
               />
-              
-              {/* Spike highlights */}
-              {highlightSpikes && spikes.map((spike, index) => (
-                <ReferenceDot 
-                  key={`spike-${index}`}
-                  x={spike.timestamp} 
-                  y={spike.value} 
-                  r={8} 
-                  fill="#EF4444" 
-                  fillOpacity={0.3}
-                  stroke="#EF4444"
-                  strokeWidth={2}
-                  strokeOpacity={0.6}
-                />
-              ))}
               
               {/* Latest reading highlight */}
               <Line 
@@ -514,31 +429,9 @@ const GlucoseTrendChart = ({
         </ChartContainer>
       </div>
 
-      {/* Interactive Controls - Better positioned at bottom */}
-      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-gray-200/50">
-            <Switch
-              id="healthy-trend"
-              checked={showHealthyTrend}
-              onCheckedChange={setShowHealthyTrend}
-              className="scale-75"
-            />
-            <UILabel htmlFor="healthy-trend" className="text-xs font-medium text-gray-700">Healthy Trend</UILabel>
-          </div>
-          
-          <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm border border-gray-200/50">
-            <Switch
-              id="highlight-spikes"
-              checked={highlightSpikes}
-              onCheckedChange={setHighlightSpikes}
-              className="scale-75"
-            />
-            <UILabel htmlFor="highlight-spikes" className="text-xs font-medium text-gray-700">Highlight Spikes</UILabel>
-          </div>
-        </div>
-
-        {showTimeRangeFilter && (
+      {/* Time Range Filter - Positioned at bottom right */}
+      {showTimeRangeFilter && (
+        <div className="absolute bottom-2 right-2">
           <ToggleGroup 
             type="single" 
             value={timeRange}
@@ -551,8 +444,8 @@ const GlucoseTrendChart = ({
             <ToggleGroupItem value="14" className="text-xs px-2 py-1">14D</ToggleGroupItem>
             <ToggleGroupItem value="30" className="text-xs px-2 py-1">30D</ToggleGroupItem>
           </ToggleGroup>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
