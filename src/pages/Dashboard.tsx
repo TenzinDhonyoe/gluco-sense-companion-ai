@@ -16,6 +16,7 @@ import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
 import DynamicAvatar from "@/components/DynamicAvatar";
 import ClearDataButton from "@/components/ClearDataButton";
+import GlucoseScatterChart from "@/components/GlucoseScatterChart";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -175,6 +176,17 @@ const Dashboard = () => {
           glucoseData={glucoseData}
           onDataUpdate={handleGlucoseDataUpdate}
         />
+
+        {/* New Scatter Plot Chart */}
+        <div className="bg-white/70 backdrop-blur-sm border-0 shadow-lg rounded-xl p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Glucose Trend</h3>
+          <GlucoseScatterChart 
+            data={glucoseData}
+            onDataUpdate={handleGlucoseDataUpdate}
+            showTimeRangeFilter={true}
+            defaultTimeRange="12"
+          />
+        </div>
 
         {/* AI Suggestions - Using real glucose data */}
         <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
