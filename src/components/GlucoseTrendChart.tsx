@@ -239,9 +239,9 @@ const GlucoseTrendChart = ({
       }
 
       return (
-        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-xl">
-          <p className="font-semibold text-gray-900 mb-1">{`${point.value} mg/dL`}</p>
-          <p className="text-sm text-gray-600">{date.toLocaleString()}</p>
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-2 sm:p-3 shadow-xl max-w-xs">
+          <p className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">{`${point.value} mg/dL`}</p>
+          <p className="text-xs sm:text-sm text-gray-600">{date.toLocaleString()}</p>
           {lifestyleNote && (
             <p className="text-xs text-blue-600 font-medium mt-1">{lifestyleNote}</p>
           )}
@@ -261,7 +261,7 @@ const GlucoseTrendChart = ({
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight={500}>
+        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={10} fontWeight={500} className="sm:text-xs">
           {label}
         </text>
       </g>
@@ -283,10 +283,10 @@ const GlucoseTrendChart = ({
 
   if (loading) {
     return (
-      <div className={cn("h-80 w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
-        <div className="text-center">
-          <div className="text-gray-400 text-lg font-medium">Loading...</div>
-          <div className="text-gray-300 text-sm mt-1">Fetching glucose data from database</div>
+      <div className={cn("h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
+        <div className="text-center px-4">
+          <div className="text-gray-400 text-base sm:text-lg font-medium">Loading...</div>
+          <div className="text-gray-300 text-xs sm:text-sm mt-1">Fetching glucose data from database</div>
         </div>
       </div>
     );
@@ -296,10 +296,10 @@ const GlucoseTrendChart = ({
 
   if (dataWithLatestFlag.length < 2) {
     return (
-      <div className={cn("h-80 w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
-        <div className="text-center">
-          <div className="text-gray-400 text-lg font-medium">Not enough data yet</div>
-          <div className="text-gray-300 text-sm mt-1">Need at least 2 readings to show trend</div>
+      <div className={cn("h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
+        <div className="text-center px-4">
+          <div className="text-gray-400 text-base sm:text-lg font-medium">Not enough data yet</div>
+          <div className="text-gray-300 text-xs sm:text-sm mt-1">Need at least 2 readings to show trend</div>
         </div>
       </div>
     );
@@ -309,14 +309,14 @@ const GlucoseTrendChart = ({
   const yTicks = [70, 100, 130, 160, 190];
   
   return (
-    <div className={cn("h-80 w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
+    <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
       {/* Chart Content */}
-      <div className="h-full p-2">
+      <div className="h-full w-full p-1 sm:p-2">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={dataWithLatestFlag} 
-              margin={{ top: 10, right: 10, left: 10, bottom: 30 }}
+              margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
               
@@ -335,18 +335,18 @@ const GlucoseTrendChart = ({
                 orientation="left"
                 domain={yAxisDomain}
                 ticks={yTicks}
-                tick={{ fontSize: 11, fill: "#6B7280", fontWeight: 500 }}
+                tick={{ fontSize: 10, fill: "#6B7280", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
-                width={40}
+                width={30}
                 tickFormatter={(value) => `${value}`}
               >
                 <Label
                   value="mg/dL"
                   angle={-90}
                   position="insideLeft"
-                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 12, fontWeight: 600 }}
-                  offset={-5}
+                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 10, fontWeight: 600 }}
+                  offset={-2}
                 />
               </YAxis>
               
@@ -368,7 +368,7 @@ const GlucoseTrendChart = ({
                 type="monotone" 
                 dataKey="value" 
                 stroke="#3B82F6"
-                strokeWidth={3}
+                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 dot={(props) => {
@@ -376,7 +376,7 @@ const GlucoseTrendChart = ({
                   if (!payload) return null;
                   
                   const color = getGlucoseColor(payload.value);
-                  const size = payload.source === 'sensor' ? 4 : 5;
+                  const size = payload.source === 'sensor' ? 3 : 4;
                   
                   return (
                     <circle 
@@ -385,11 +385,11 @@ const GlucoseTrendChart = ({
                       r={size} 
                       fill={color}
                       stroke="white"
-                      strokeWidth={2}
+                      strokeWidth={1}
                     />
                   );
                 }}
-                activeDot={{ r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
               />
               
               {/* Latest reading highlight */}
@@ -407,15 +407,15 @@ const GlucoseTrendChart = ({
                         <circle 
                           cx={cx} 
                           cy={cy} 
-                          r={8} 
+                          r={6} 
                           fill="white" 
                           stroke="#3B82F6" 
-                          strokeWidth={3}
+                          strokeWidth={2}
                         />
                         <circle 
                           cx={cx} 
                           cy={cy} 
-                          r={4} 
+                          r={3} 
                           fill="#3B82F6" 
                         />
                       </g>
@@ -431,7 +431,7 @@ const GlucoseTrendChart = ({
 
       {/* Time Range Filter - Positioned at bottom right */}
       {showTimeRangeFilter && (
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2">
           <ToggleGroup 
             type="single" 
             value={timeRange}
@@ -439,10 +439,10 @@ const GlucoseTrendChart = ({
             size="sm" 
             className="bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-sm border border-gray-200/50"
           >
-            <ToggleGroupItem value="3" className="text-xs px-2 py-1">3D</ToggleGroupItem>
-            <ToggleGroupItem value="7" className="text-xs px-2 py-1">7D</ToggleGroupItem>
-            <ToggleGroupItem value="14" className="text-xs px-2 py-1">14D</ToggleGroupItem>
-            <ToggleGroupItem value="30" className="text-xs px-2 py-1">30D</ToggleGroupItem>
+            <ToggleGroupItem value="3" className="text-xs px-1.5 py-1 sm:px-2">3D</ToggleGroupItem>
+            <ToggleGroupItem value="7" className="text-xs px-1.5 py-1 sm:px-2">7D</ToggleGroupItem>
+            <ToggleGroupItem value="14" className="text-xs px-1.5 py-1 sm:px-2">14D</ToggleGroupItem>
+            <ToggleGroupItem value="30" className="text-xs px-1.5 py-1 sm:px-2">30D</ToggleGroupItem>
           </ToggleGroup>
         </div>
       )}

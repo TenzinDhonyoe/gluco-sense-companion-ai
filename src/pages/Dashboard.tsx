@@ -108,7 +108,7 @@ const Dashboard = () => {
   const mealsProgress = (todaysProgress.meals / todaysProgress.mealsGoal) * 100;
 
   // CircularProgress component
-  const CircularProgress = ({ value, size = 80, strokeWidth = 6, color = "text-blue-500" }) => {
+  const CircularProgress = ({ value, size = 60, strokeWidth = 4, color = "text-blue-500" }) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const offset = circumference - (value / 100) * circumference;
@@ -147,53 +147,72 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20"
+      style={{ 
+        paddingTop: 'env(safe-area-inset-top)', 
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' 
+      }}
+    >
+      <div className="px-3 sm:px-4 lg:px-6 space-y-3 sm:space-y-4">
+        {/* Header - Responsive with proper spacing */}
+        <div className="flex justify-between items-center py-2 sm:py-3">
+          <div className="flex items-center flex-shrink-0">
             <img 
               src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
               alt="Logo" 
-              className="h-12 w-12"
+              className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
             <DynamicAvatar 
               onClick={() => navigate("/profile")} 
-              size={48}
+              size={32}
+              className="sm:w-10 sm:h-10 lg:w-12 lg:h-12"
             />
           </div>
         </div>
 
-        {/* Current Glucose - Using real database data with automatic updates */}
-        <GlucoseTrendCard 
-          trend={calculateTrendCategory()}
-          lastReading={getLastReadingTime()}
-          latestValue={latestReading?.value}
-          trendDirection={calculateTrendDirection()}
-          glucoseData={glucoseData}
-          onDataUpdate={handleGlucoseDataUpdate}
-        />
+        {/* Current Glucose - Full width responsive */}
+        <div className="w-full">
+          <GlucoseTrendCard 
+            trend={calculateTrendCategory()}
+            lastReading={getLastReadingTime()}
+            latestValue={latestReading?.value}
+            trendDirection={calculateTrendDirection()}
+            glucoseData={glucoseData}
+            onDataUpdate={handleGlucoseDataUpdate}
+          />
+        </div>
 
-        {/* AI Suggestions - Using real glucose data */}
-        <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
+        {/* AI Suggestions - Responsive card */}
+        <div className="w-full">
+          <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
+        </div>
 
-        {/* Today's Progress */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center space-x-2 text-lg">
-              <TrendingUp className="w-5 h-5 text-blue-500" />
+        {/* Today's Progress - Responsive grid */}
+        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg w-full">
+          <CardHeader className="pb-2 px-3 sm:px-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="flex flex-col items-center space-y-2">
+          <CardContent className="pt-2 px-3 sm:px-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
                 <div className="relative">
-                  <CircularProgress value={stepsProgress} color="text-teal-500" size={70} strokeWidth={5} />
+                  <CircularProgress 
+                    value={stepsProgress} 
+                    color="text-teal-500" 
+                    size={50} 
+                    strokeWidth={4}
+                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
+                  />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">{Math.round(todaysProgress.steps / 1000)}k</span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                      {Math.round(todaysProgress.steps / 1000)}k
+                    </span>
                     <span className="text-xs text-gray-500 leading-none">steps</span>
                   </div>
                 </div>
@@ -203,11 +222,19 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-2">
+              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
                 <div className="relative">
-                  <CircularProgress value={sleepProgress} color="text-purple-500" size={70} strokeWidth={5} />
+                  <CircularProgress 
+                    value={sleepProgress} 
+                    color="text-purple-500" 
+                    size={50} 
+                    strokeWidth={4}
+                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
+                  />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">{todaysProgress.sleep}h</span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                      {todaysProgress.sleep}h
+                    </span>
                     <span className="text-xs text-gray-500 leading-none">sleep</span>
                   </div>
                 </div>
@@ -217,11 +244,19 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-2">
+              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
                 <div className="relative">
-                  <CircularProgress value={mealsProgress} color="text-orange-500" size={70} strokeWidth={5} />
+                  <CircularProgress 
+                    value={mealsProgress} 
+                    color="text-orange-500" 
+                    size={50} 
+                    strokeWidth={4}
+                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
+                  />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">{todaysProgress.meals}</span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                      {todaysProgress.meals}
+                    </span>
                     <span className="text-xs text-gray-500 leading-none">meals</span>
                   </div>
                 </div>
@@ -234,17 +269,22 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Rewards */}
-        <RewardsCard />
+        {/* Rewards - Responsive card */}
+        <div className="w-full">
+          <RewardsCard />
+        </div>
 
-        {/* Clear Data Button - Moved to bottom in a subtle location */}
-        <div className="flex justify-center pt-4 border-t border-gray-200">
+        {/* Clear Data Button - Responsive positioning */}
+        <div className="flex justify-center pt-3 sm:pt-4 border-t border-gray-200">
           <ClearDataButton />
         </div>
       </div>
 
-      {/* Quick Add Button - Fixed position bottom right */}
-      <div className="fixed bottom-24 right-6 z-10">
+      {/* Quick Add Button - Responsive fixed position */}
+      <div 
+        className="fixed bottom-24 right-3 sm:right-4 lg:right-6 z-10"
+        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+      >
         <QuickAddDrawer />
       </div>
 
