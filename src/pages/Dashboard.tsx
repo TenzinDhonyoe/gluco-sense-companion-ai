@@ -207,7 +207,6 @@ const Dashboard = () => {
                     color="text-teal-500" 
                     size={50} 
                     strokeWidth={4}
-                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
@@ -229,7 +228,6 @@ const Dashboard = () => {
                     color="text-purple-500" 
                     size={50} 
                     strokeWidth={4}
-                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
@@ -251,7 +249,6 @@ const Dashboard = () => {
                     color="text-orange-500" 
                     size={50} 
                     strokeWidth={4}
-                    className="sm:w-16 sm:h-16 lg:w-20 lg:h-20"
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
