@@ -63,16 +63,16 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   return (
     <Card className="bg-transparent border-0 shadow-none p-0 w-full">
       <CardHeader className="p-0 pb-4 sm:pb-6 flex flex-row justify-center items-center">
-        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full p-2 sm:p-3 space-x-2 sm:space-x-3 shadow-sm w-full max-w-xs sm:max-w-sm`}>
-          <div className="text-center flex-1 min-w-0">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 truncate">
+        <div className={`relative bg-white border-4 ${getBorderColor()} rounded-full w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 flex items-center justify-center shadow-lg`}>
+          <div className="text-center">
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">
               {latestValue ?? '...'}
             </p>
-            <p className="text-xs sm:text-sm text-gray-500 -mt-1">mg/dL</p>
+            <p className="text-sm sm:text-base text-gray-500 -mt-1">mg/dL</p>
           </div>
           {TrendIcon && (
-            <div className={`p-1.5 sm:p-2 rounded-full ${iconBgColor} flex-shrink-0`}>
-              <TrendIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+            <div className={`absolute bottom-2 right-2 p-2 rounded-full ${iconBgColor}`}>
+              <TrendIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
           )}
         </div>
