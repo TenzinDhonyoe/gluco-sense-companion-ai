@@ -1,3 +1,5 @@
+
+
 import * as React from "react";
 import {
   Drawer,
@@ -167,12 +169,9 @@ const QuickAddDrawer = () => {
           }
       }}>
         <DrawerTrigger asChild>
-          <div className="flex flex-col items-center space-y-1">
-            <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
-              <Plus className="h-5 w-5" />
-            </Button>
-            <span className="text-xs font-medium text-gray-700">Log</span>
-          </div>
+          <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
+            <Plus className="h-5 w-5" />
+          </Button>
         </DrawerTrigger>
         <DrawerContent>
           {loggingStep === 0 ? (
@@ -249,3 +248,4 @@ const QuickAddDrawer = () => {
 };
 
 export default QuickAddDrawer;
+
