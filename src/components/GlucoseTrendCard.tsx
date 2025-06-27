@@ -63,7 +63,7 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   return (
     <Card className="bg-transparent border-0 shadow-none p-0 w-full">
       <CardHeader className="p-0 pb-4 sm:pb-6 flex flex-row justify-center items-center">
-        <div className={`relative bg-white border-4 ${getBorderColor()} rounded-full w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 flex items-center justify-center shadow-lg`}>
+        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full px-4 py-3 sm:px-6 sm:py-4 space-x-3 sm:space-x-4 shadow-lg`}>
           <div className="text-center">
             <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">
               {latestValue ?? '...'}
@@ -71,8 +71,8 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
             <p className="text-sm sm:text-base text-gray-500 -mt-1">mg/dL</p>
           </div>
           {TrendIcon && (
-            <div className={`absolute bottom-2 right-2 p-2 rounded-full ${iconBgColor}`}>
-              <TrendIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className={`p-2 sm:p-3 rounded-full ${iconBgColor}`}>
+              <TrendIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
           )}
         </div>
