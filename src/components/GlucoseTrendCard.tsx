@@ -32,12 +32,21 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   };
 
   const getBorderColor = () => {
-    if (trend === 'high' || trend === 'low') {
-      return 'border-red-500';
-    } else if (trend === 'normal') {
-      return 'border-green-500';
-    }
-    return 'border-gray-200';
+    if (!latestValue) return 'border-gray-300';
+    
+    if (latestValue < 80) return 'border-orange-400';
+    if (latestValue > 160) return 'border-red-400';
+    if (latestValue > 130) return 'border-yellow-400';
+    return 'border-green-400';
+  };
+
+  const getBackgroundColor = () => {
+    if (!latestValue) return 'bg-white';
+    
+    if (latestValue < 80) return 'bg-gradient-to-r from-orange-50 to-orange-100';
+    if (latestValue > 160) return 'bg-gradient-to-r from-red-50 to-red-100';
+    if (latestValue > 130) return 'bg-gradient-to-r from-yellow-50 to-yellow-100';
+    return 'bg-gradient-to-r from-green-50 to-green-100';
   };
 
   const trendInfo = getTrendInfo(trend);
@@ -45,15 +54,18 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
 
   let TrendIcon;
   let iconBgColor;
+  let iconAnimation = '';
   
   switch (trendDirection) {
     case 'up':
       TrendIcon = TrendingUp;
       iconBgColor = "bg-red-500";
+      iconAnimation = "animate-bounce";
       break;
     case 'down':
       TrendIcon = TrendingDown;
       iconBgColor = "bg-amber-500";
+      iconAnimation = "animate-bounce";
       break;
     default:
       TrendIcon = Minus;
@@ -63,15 +75,15 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
   return (
     <Card className="bg-transparent border-0 shadow-none p-0 w-full">
       <CardHeader className="p-0 pb-6 flex flex-row justify-center items-center">
-        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-2xl px-6 py-4 gap-4 shadow-md`}>
+        <div className={`flex items-center ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-2xl px-6 py-4 gap-4 shadow-lg transition-all duration-300`}>
           <div className="text-center">
-            <p className="text-3xl font-bold text-gray-800">
+            <p className="text-4xl font-bold text-gray-800 leading-none">
               {latestValue ?? '...'}
             </p>
-            <p className="text-sm text-gray-500 -mt-1">mg/dL</p>
+            <p className="text-sm text-gray-600 font-medium">mg/dL</p>
           </div>
           {TrendIcon && (
-            <div className={`p-3 rounded-full ${iconBgColor}`}>
+            <div className={`p-3 rounded-full ${iconBgColor} shadow-md ${iconAnimation}`}>
               <TrendIcon className="w-6 h-6 text-white" />
             </div>
           )}
