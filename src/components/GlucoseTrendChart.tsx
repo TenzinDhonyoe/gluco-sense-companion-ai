@@ -193,18 +193,32 @@ const GlucoseTrendChart = ({
       isLatest: index === finalData.length - 1,
     }));
 
-    // Calculate x-axis ticks - show dates every day or two
+    // Calculate x-axis ticks - show time labels at key hours
     const ticks: number[] = [];
-    const seenDates: { [key: string]: boolean } = {};
+    const currentTime = Date.now();
+    const timeRangeDays = parseInt(timeRange);
     
-    dataWithLatestFlag.forEach(d => {
-      const date = new Date(d.timestamp);
-      const dateKey = date.toDateString();
-      if (!seenDates[dateKey]) {
-        ticks.push(d.timestamp);
-        seenDates[dateKey] = true;
-      }
-    });
+    // For shorter time ranges, show hourly markers
+    if (timeRangeDays <= 1) {
+      // Show every 4 hours for daily view
+      const hourlyTicks = [8, 12, 16, 20]; // 8 AM, 12 PM, 4 PM, 8 PM
+      hourlyTicks.forEach(hour => {
+        const today = new Date();
+        today.setHours(hour, 0, 0, 0);
+        if (today.getTime() >= currentTime - timeRangeDays * 24 * 60 * 60 * 1000) {
+          ticks.push(today.getTime());
+        }
+      });
+    } else {
+      // For longer ranges, show daily markers
+      dataWithLatestFlag.forEach(d => {
+        const date = new Date(d.timestamp);
+        const dateKey = date.toDateString();
+        if (ticks.length === 0 || Math.abs(ticks[ticks.length - 1] - d.timestamp) > 24 * 60 * 60 * 1000) {
+          ticks.push(d.timestamp);
+        }
+      });
+    }
 
     return { 
       finalData: dataWithLatestFlag, 
@@ -270,18 +284,23 @@ const GlucoseTrendChart = ({
     const { x, y, payload } = props;
     const date = new Date(payload.value);
     const hour = date.getHours();
+    const timeRangeDays = parseInt(timeRange);
     
-    // Show time labels for better clarity
+    // Show time labels for daily view, date labels for longer ranges
     let label = "";
-    if (hour === 8) label = "8 AM";
-    else if (hour === 12) label = "12 PM";
-    else if (hour === 16) label = "4 PM";
-    else if (hour === 20) label = "8 PM";
-    else label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (timeRangeDays <= 1) {
+      if (hour === 8) label = "8 AM";
+      else if (hour === 12) label = "12 PM";
+      else if (hour === 16) label = "4 PM";
+      else if (hour === 20) label = "8 PM";
+      else label = `${hour > 12 ? hour - 12 : hour || 12}${hour >= 12 ? 'PM' : 'AM'}`;
+    } else {
+      label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight={500} className="sm:text-xs">
+        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight={500}>
           {label}
         </text>
       </g>
@@ -329,14 +348,14 @@ const GlucoseTrendChart = ({
   const yTicks = [70, 100, 130, 160, 190];
   
     return (
-      <div className={cn("aspect-video w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100", containerClassName)}>
+      <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100", containerClassName)}>
         {/* Chart Content */}
         <div className="h-full w-full p-4">
           <ChartContainer config={chartConfig} className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                 data={dataWithLatestFlag} 
-                margin={{ top: 10, right: 15, left: 15, bottom: 30 }}
+                margin={{ top: 10, right: 15, left: 15, bottom: 40 }}
               >
               <CartesianGrid strokeDasharray="none" className="stroke-gray-200/30" horizontal={true} vertical={false} />
               
@@ -346,9 +365,10 @@ const GlucoseTrendChart = ({
                 domain={['dataMin', 'dataMax']}
                 ticks={xTicks}
                 tick={<CustomXAxisTick />}
-                axisLine={false}
-                tickLine={false}
-                padding={{ left: 5, right: 5 }}
+                axisLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
+                tickLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
+                padding={{ left: 10, right: 10 }}
+                height={50}
               />
               
               <YAxis 
