@@ -193,8 +193,8 @@ const Dashboard = () => {
         {/* Today's Progress - Mobile-optimized */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg w-full">
           <CardHeader className="pb-1 px-2 sm:px-4 lg:px-6 pt-2 sm:pt-4">
-            <CardTitle className="flex items-center space-x-1 sm:space-x-2 text-heading-md">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-primary flex-shrink-0" />
+            <CardTitle className="flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base lg:text-lg">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-blue-500 flex-shrink-0" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
@@ -209,15 +209,15 @@ const Dashboard = () => {
                     strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-heading-sm leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {Math.round(todaysProgress.steps / 1000)}k
                     </span>
-                    <span className="text-xs text-caption leading-none">steps</span>
+                    <span className="text-xs text-gray-500 leading-none">steps</span>
                   </div>
                 </div>
                 <div className="text-center min-h-[2rem] flex flex-col justify-center">
-                  <p className="text-xs font-medium text-body leading-tight">Steps</p>
-                  <p className="text-xs text-body-sm leading-tight">{Math.round(stepsProgress)}%</p>
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Steps</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(stepsProgress)}%</p>
                 </div>
               </div>
               
@@ -230,15 +230,15 @@ const Dashboard = () => {
                     strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-heading-sm leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {todaysProgress.sleep}h
                     </span>
-                    <span className="text-xs text-caption leading-none">sleep</span>
+                    <span className="text-xs text-gray-500 leading-none">sleep</span>
                   </div>
                 </div>
                 <div className="text-center min-h-[2rem] flex flex-col justify-center">
-                  <p className="text-xs font-medium text-body leading-tight">Sleep</p>
-                  <p className="text-xs text-body-sm leading-tight">{Math.round(sleepProgress)}%</p>
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Sleep</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(sleepProgress)}%</p>
                 </div>
               </div>
               
@@ -251,15 +251,15 @@ const Dashboard = () => {
                     strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs font-bold text-heading-sm leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {todaysProgress.meals}
                     </span>
-                    <span className="text-xs text-caption leading-none">meals</span>
+                    <span className="text-xs text-gray-500 leading-none">meals</span>
                   </div>
                 </div>
                 <div className="text-center min-h-[2rem] flex flex-col justify-center">
-                  <p className="text-xs font-medium text-body leading-tight">Meals</p>
-                  <p className="text-xs text-body-sm leading-tight">{Math.round(mealsProgress)}%</p>
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Meals</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(mealsProgress)}%</p>
                 </div>
               </div>
             </div>

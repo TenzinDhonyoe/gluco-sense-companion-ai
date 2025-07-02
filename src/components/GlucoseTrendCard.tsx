@@ -65,10 +65,10 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
       <CardHeader className="p-0 pb-2 sm:pb-3 lg:pb-4 flex flex-row justify-center items-center">
         <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6 lg:py-4 space-x-2 sm:space-x-3 lg:space-x-4 shadow-lg w-auto max-w-full`}>
           <div className="text-center flex-shrink-0">
-            <p className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-heading-lg leading-none">
+            <p className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-800 leading-none">
               {latestValue ?? '...'}
             </p>
-            <p className="text-xs sm:text-sm lg:text-base text-caption -mt-0.5">mg/dL</p>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 -mt-0.5">mg/dL</p>
           </div>
           {TrendIcon && (
             <div className={`p-1.5 sm:p-2 lg:p-3 rounded-full ${iconBgColor} flex-shrink-0`}>
@@ -90,13 +90,13 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
           </div>
         </div>
         <div className="text-center pt-1 sm:pt-2 px-2">
-          <p className="text-body-sm mb-0.5 sm:mb-1">{trendInfo.description}</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 text-caption">
-            <p className="text-caption text-center">
+          <p className="text-xs sm:text-sm text-gray-600 mb-0.5 sm:mb-1">{trendInfo.description}</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 text-xs">
+            <p className="text-gray-500 text-center">
               Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
             </p>
-            <span className="text-muted-foreground hidden sm:inline">&middot;</span>
-            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-primary hover:underline font-medium">
+            <span className="text-gray-400 hidden sm:inline">&middot;</span>
+            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
               See full history
               <ArrowRight className="w-3 h-3 ml-0.5 flex-shrink-0" />
             </Link>

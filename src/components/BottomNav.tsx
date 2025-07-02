@@ -27,12 +27,12 @@ const BottomNav = () => {
               onClick={() => navigate(path)}
               className={`flex flex-col items-center space-y-0.5 p-1 sm:p-1.5 rounded-lg transition-colors min-w-0 flex-1 max-w-20 ${
                 isActive 
-                  ? "text-primary bg-accent" 
-                  : "text-muted-foreground hover:text-primary hover:bg-muted"
+                  ? "text-blue-600 bg-blue-50" 
+                  : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
               }`}
             >
               <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <span className="text-caption font-medium truncate leading-tight">{label}</span>
+              <span className="text-xs font-medium truncate leading-tight">{label}</span>
             </button>
           );
         })}
