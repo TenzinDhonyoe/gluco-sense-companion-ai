@@ -62,24 +62,24 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
 
   return (
     <Card className="bg-transparent border-0 shadow-none p-0 w-full">
-      <CardHeader className="p-0 pb-2 sm:pb-3 lg:pb-4 flex flex-row justify-center items-center">
-        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6 lg:py-4 space-x-2 sm:space-x-3 lg:space-x-4 shadow-lg w-auto max-w-full`}>
-          <div className="text-center flex-shrink-0">
-            <p className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-heading-lg leading-none">
+      <CardHeader className="p-0 pb-4 sm:pb-6 flex flex-row justify-center items-center">
+        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-full px-4 py-3 sm:px-6 sm:py-4 space-x-3 sm:space-x-4 shadow-lg`}>
+          <div className="text-center">
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800">
               {latestValue ?? '...'}
             </p>
-            <p className="text-xs sm:text-sm lg:text-base text-caption -mt-0.5">mg/dL</p>
+            <p className="text-sm sm:text-base text-gray-500 -mt-1">mg/dL</p>
           </div>
           {TrendIcon && (
-            <div className={`p-1.5 sm:p-2 lg:p-3 rounded-full ${iconBgColor} flex-shrink-0`}>
-              <TrendIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+            <div className={`p-2 sm:p-3 rounded-full ${iconBgColor}`}>
+              <TrendIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2 sm:space-y-3 lg:space-y-4 p-0">
-        <div className="rounded-lg sm:rounded-xl lg:rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white w-full">
-          <div className="h-48 sm:h-64 lg:h-72 xl:h-80 w-full">
+      <CardContent className="space-y-3 sm:space-y-4 p-0">
+        <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white w-full">
+          <div className="h-64 sm:h-72 lg:h-80 w-full">
             <GlucoseTrendChart 
               trendDirection={trendDirection} 
               containerClassName="h-full w-full"
@@ -89,14 +89,14 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
             />
           </div>
         </div>
-        <div className="text-center pt-1 sm:pt-2 px-2">
-          <p className="text-body-sm mb-0.5 sm:mb-1">{trendInfo.description}</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 text-caption">
-            <p className="text-caption text-center">
+        <div className="text-center pt-2">
+          <p className="text-sm text-gray-600 mb-1">{trendInfo.description}</p>
+          <div className="flex items-center justify-center space-x-1.5 text-xs">
+            <p className="text-gray-500">
               Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
             </p>
-            <span className="text-muted-foreground hidden sm:inline">&middot;</span>
-            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-primary hover:underline font-medium">
+            <span className="text-gray-400">&middot;</span>
+            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
               See full history
               <ArrowRight className="w-3 h-3 ml-0.5 flex-shrink-0" />
             </Link>

@@ -169,12 +169,8 @@ const QuickAddDrawer = () => {
           }
       }}>
         <DrawerTrigger asChild>
-          <Button 
-            size="icon" 
-            className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105 w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center"
-          >
-            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-caption font-medium mt-0.5 leading-none">Log</span>
+          <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
+            <Plus className="h-5 w-5" />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
@@ -183,16 +179,16 @@ const QuickAddDrawer = () => {
               <DrawerHeader className="text-left">
                 <DrawerTitle>Quick Add</DrawerTitle>
               </DrawerHeader>
-              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     key="Log Meal"
                     onClick={handleMealPhoto}
                     variant="outline"
-                    className="flex flex-col items-center justify-center space-y-1 sm:space-y-2 h-auto py-3 sm:py-4 border-blue-200 hover:bg-blue-50 text-xs sm:text-sm"
+                    className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
                   >
-                    <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
-                    <span className="font-medium text-gray-800 leading-tight">Log Meal</span>
+                    <Camera className="w-6 h-6 text-blue-500" />
+                    <span className="text-sm font-medium text-gray-800">Log Meal</span>
                   </Button>
                   {logOptions.map((action) => {
                     const Icon = action.icon;
@@ -201,10 +197,10 @@ const QuickAddDrawer = () => {
                         key={action.label}
                         onClick={() => handleStartLogging(action)}
                         variant="outline"
-                        className={`flex flex-col items-center justify-center space-y-1 sm:space-y-2 h-auto py-3 sm:py-4 ${action.borderColor} ${action.hoverBg} text-xs sm:text-sm`}
+                        className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
                       >
-                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${action.color}`} />
-                        <span className="font-medium text-gray-800 leading-tight">{action.label}</span>
+                        <Icon className={`w-6 h-6 ${action.color}`} />
+                        <span className="text-sm font-medium text-gray-800">{action.label}</span>
                       </Button>
                     );
                   })}
@@ -213,10 +209,10 @@ const QuickAddDrawer = () => {
                 {/* Full Width Glucose Button */}
                 <Button
                   onClick={handleGlucoseLog}
-                  className="w-full h-11 sm:h-12 bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center space-x-2 text-sm sm:text-base"
+                  className="w-full h-12 bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center space-x-2"
                 >
-                  <Droplets className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="font-medium">Log Glucose</span>
+                  <Droplets className="w-5 h-5" />
+                  <span className="text-sm font-medium">Log Glucose</span>
                 </Button>
               </div>
             </>
