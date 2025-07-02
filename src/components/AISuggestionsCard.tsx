@@ -84,7 +84,7 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
 
   return (
     <Card className="bg-white rounded-2xl shadow-md">
-      <CardHeader className="pb-4 px-6">
+      <CardHeader className="py-4 px-6">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-amber-500" />
@@ -101,7 +101,7 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent className="px-6 pb-6 pt-0">
         <div className="space-y-4">
           {isLoading ? (
             <div className="space-y-3">

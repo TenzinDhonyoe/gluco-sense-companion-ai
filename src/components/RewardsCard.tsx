@@ -12,13 +12,13 @@ const RewardsCard = () => {
 
   return (
     <Card className="bg-gray-50 border-0 shadow-sm">
-      <CardHeader className="pb-4 px-6">
+      <CardHeader className="py-4 px-6">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Trophy className="w-5 h-5 text-amber-500" />
           <span className="text-gray-900">Rewards & Streaks</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-6 pb-6 space-y-4">
+      <CardContent className="px-6 pb-6 pt-0 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="text-center">
