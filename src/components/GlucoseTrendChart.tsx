@@ -224,29 +224,41 @@ const GlucoseTrendChart = ({
     if (active && payload && payload.length) {
       const point = payload[0].payload;
       const date = new Date(point.timestamp);
-      const hour = date.getHours();
+      const formattedTime = date.toLocaleString('en-US', {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
       
-      // Add lifestyle context based on time
-      let lifestyleNote = "";
-      if (hour >= 7 && hour <= 9) {
-        lifestyleNote = "Morning time";
-      } else if (hour >= 12 && hour <= 14) {
-        lifestyleNote = "Lunch time";
-      } else if (hour >= 18 && hour <= 20) {
-        lifestyleNote = "Dinner time";
-      } else if (hour >= 22 || hour <= 6) {
-        lifestyleNote = "Sleep time";
+      // Glucose zone indicator
+      let zoneInfo = "";
+      let zoneColor = "";
+      if (point.value < 80) {
+        zoneInfo = "Low";
+        zoneColor = "text-orange-600";
+      } else if (point.value < 130) {
+        zoneInfo = "Normal";
+        zoneColor = "text-green-600";
+      } else if (point.value < 160) {
+        zoneInfo = "Elevated";
+        zoneColor = "text-yellow-600";
+      } else {
+        zoneInfo = "High";
+        zoneColor = "text-red-600";
       }
 
       return (
-        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-2 sm:p-3 shadow-xl max-w-xs">
-          <p className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">{`${point.value} mg/dL`}</p>
-          <p className="text-xs sm:text-sm text-gray-600">{date.toLocaleString()}</p>
-          {lifestyleNote && (
-            <p className="text-xs text-blue-600 font-medium mt-1">{lifestyleNote}</p>
-          )}
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-xl max-w-xs">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="font-bold text-gray-900 text-lg">{`${point.value} mg/dL`}</p>
+            <span className={`text-xs font-medium px-2 py-1 rounded-full ${zoneColor} bg-current/10`}>
+              {zoneInfo}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 font-medium">{formattedTime}</p>
           {point.source && (
-            <p className="text-xs text-gray-500 capitalize">{point.source}</p>
+            <p className="text-xs text-gray-500 capitalize mt-1">Source: {point.source}</p>
           )}
         </div>
       );
@@ -257,11 +269,19 @@ const GlucoseTrendChart = ({
   const CustomXAxisTick = (props: any) => {
     const { x, y, payload } = props;
     const date = new Date(payload.value);
-    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const hour = date.getHours();
+    
+    // Show time labels for better clarity
+    let label = "";
+    if (hour === 8) label = "8 AM";
+    else if (hour === 12) label = "12 PM";
+    else if (hour === 16) label = "4 PM";
+    else if (hour === 20) label = "8 PM";
+    else label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
     return (
       <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={10} fontWeight={500} className="sm:text-xs">
+        <text x={0} y={0} dy={16} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight={500} className="sm:text-xs">
           {label}
         </text>
       </g>
@@ -275,9 +295,9 @@ const GlucoseTrendChart = ({
   };
 
   const getGlucoseColor = (value: number) => {
-    if (value < 70) return "#F97316"; // Orange for low (more accessible than red)
+    if (value < 80) return "#F97316"; // Orange/red for low
     if (value > 160) return "#EF4444"; // Red for high
-    if (value > 140) return "#F59E0B"; // Amber for elevated
+    if (value > 130) return "#F59E0B"; // Yellow for elevated
     return "#22C55E"; // Green for normal
   };
 
@@ -308,17 +328,17 @@ const GlucoseTrendChart = ({
   const yAxisDomain = [60, 200];
   const yTicks = [70, 100, 130, 160, 190];
   
-  return (
-    <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
-      {/* Chart Content */}
-      <div className="h-full w-full p-1 sm:p-2">
-        <ChartContainer config={chartConfig} className="h-full w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={dataWithLatestFlag} 
-              margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
-            >
-              <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+    return (
+      <div className={cn("aspect-video w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100", containerClassName)}>
+        {/* Chart Content */}
+        <div className="h-full w-full p-4">
+          <ChartContainer config={chartConfig} className="h-full w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart 
+                data={dataWithLatestFlag} 
+                margin={{ top: 10, right: 15, left: 15, bottom: 30 }}
+              >
+              <CartesianGrid strokeDasharray="none" className="stroke-gray-200/30" horizontal={true} vertical={false} />
               
               <XAxis 
                 dataKey="timestamp" 
@@ -350,25 +370,25 @@ const GlucoseTrendChart = ({
                 />
               </YAxis>
               
-              {/* Soft, accessible glucose zones */}
-              <ReferenceArea y1={60} y2={70} fill="#F97316" fillOpacity={0.08} />
-              <ReferenceArea y1={70} y2={140} fill="#22C55E" fillOpacity={0.08} />
-              <ReferenceArea y1={140} y2={160} fill="#F59E0B" fillOpacity={0.08} />
-              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.08} />
+              {/* Stronger background zones with better color coding */}
+              <ReferenceArea y1={60} y2={80} fill="#EF4444" fillOpacity={0.15} />
+              <ReferenceArea y1={80} y2={130} fill="#22C55E" fillOpacity={0.15} />
+              <ReferenceArea y1={130} y2={160} fill="#F59E0B" fillOpacity={0.15} />
+              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.15} />
 
-              {/* Softer reference lines */}
-              <ReferenceLine y={70} stroke="#F97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-              <ReferenceLine y={140} stroke="#F59E0B" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
+              {/* Clear zone boundary lines */}
+              <ReferenceLine y={80} stroke="#F97316" strokeWidth={1.5} opacity={0.8} />
+              <ReferenceLine y={130} stroke="#F59E0B" strokeWidth={1.5} opacity={0.8} />
+              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1.5} opacity={0.8} />
               
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '2 2', opacity: 0.7 }}/>
               
-              {/* Main glucose line with rounded joins */}
+              {/* Enhanced glucose line with smooth curves */}
               <Line 
                 type="monotone" 
                 dataKey="value" 
                 stroke="#3B82F6"
-                strokeWidth={2}
+                strokeWidth={3}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 dot={(props) => {
@@ -376,20 +396,21 @@ const GlucoseTrendChart = ({
                   if (!payload) return null;
                   
                   const color = getGlucoseColor(payload.value);
-                  const size = payload.source === 'sensor' ? 3 : 4;
+                  const size = 5;
                   
                   return (
                     <circle 
                       cx={cx} 
                       cy={cy} 
                       r={size} 
-                      fill={color}
-                      stroke="white"
-                      strokeWidth={1}
+                      fill="white"
+                      stroke={color}
+                      strokeWidth={2}
+                      className="cursor-pointer hover:r-6 transition-all duration-200"
                     />
                   );
                 }}
-                activeDot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#3B82F6", stroke: "white", strokeWidth: 3 }}
               />
               
               {/* Latest reading highlight */}
