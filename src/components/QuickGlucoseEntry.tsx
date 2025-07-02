@@ -28,11 +28,11 @@ const QuickGlucoseEntry = () => {
           Log Glucose
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>Quick Glucose Entry</DrawerTitle>
+      <DrawerContent className="rounded-t-2xl">
+        <DrawerHeader className="text-center px-6 pt-6">
+          <DrawerTitle className="text-lg font-semibold">Log Glucose Reading</DrawerTitle>
         </DrawerHeader>
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-6">
           <GlucoseEntryForm
             onSuccess={handleSuccess}
             onCancel={() => setOpen(false)}
