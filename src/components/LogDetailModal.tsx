@@ -443,7 +443,7 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0 mx-4 my-8 sm:mx-auto rounded-2xl border-0 shadow-xl w-[calc(100vw-2rem)] sm:w-full">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0 rounded-2xl border-0 shadow-xl w-[90vw] sm:w-full fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-center text-xl font-bold text-gray-900">
             {log.type === 'meal' ? 'Meal Details' : 'Exercise Details'}
