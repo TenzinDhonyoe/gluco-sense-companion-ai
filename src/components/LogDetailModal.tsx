@@ -157,29 +157,20 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
     const isEditing = editingField === field;
 
     return (
-      <Card className={`rounded-xl shadow-sm bg-white ${colorClass}`}>
+      <Card 
+        className={`rounded-xl shadow-sm bg-white ${colorClass} ${!isEditing ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+        onClick={!isEditing ? () => handleEdit(field, value) : undefined}
+      >
         <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 flex items-center justify-center">
-                {icon}
-              </div>
-              <span className="text-sm text-muted-foreground">{label}</span>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-4 h-4 flex items-center justify-center">
+              {icon}
             </div>
-            {!isEditing && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEdit(field, value)}
-                className="h-6 w-6 p-0 hover:bg-gray-100 transition-colors flex-shrink-0"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
+            <span className="text-sm text-muted-foreground">{label}</span>
           </div>
           
           {isEditing ? (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
               <Input
                 value={editValues[field] || ''}
                 onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
@@ -215,11 +206,22 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
     const isEditing = editingField === field;
 
     return (
-      <Card>
+      <Card 
+        className={`cursor-pointer hover:shadow-md transition-shadow ${isEditing ? '' : ''}`}
+        onClick={!isEditing ? () => handleEdit(field, value) : undefined}
+      >
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-semibold">{title}</h4>
-            {isEditing ? (
+          </div>
+          {isEditing ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <Textarea
+                value={editValues[field] || ''}
+                onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
+                className="min-h-[80px] mb-2"
+                autoFocus
+              />
               <div className="flex items-center space-x-2">
                 <Button
                   size="sm"
@@ -238,24 +240,7 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEdit(field, value)}
-                className="h-8 w-8 p-0"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-          {isEditing ? (
-            <Textarea
-              value={editValues[field] || ''}
-              onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
-              className="min-h-[80px]"
-              autoFocus
-            />
+            </div>
           ) : (
             <p className="text-gray-700">{value}</p>
           )}
