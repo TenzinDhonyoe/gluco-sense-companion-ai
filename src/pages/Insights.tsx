@@ -237,9 +237,9 @@ const Insights = () => {
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-0 space-y-4">
             {correlations.map((correlation, index) => (
-              <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+              <div key={index} className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
                 {correlation.icon}
-                <p className="text-sm text-muted leading-relaxed">{correlation.text}</p>
+                <p className="text-sm text-gray-900 leading-relaxed font-medium">{correlation.text}</p>
               </div>
             ))}
           </CardContent>
