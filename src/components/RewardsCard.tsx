@@ -1,18 +1,14 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Trophy, Flame, Star } from "lucide-react";
-
 const RewardsCard = () => {
   const currentPoints = 847;
   const currentStreak = 5;
   const nextLevelPoints = 1000;
-  const progressPercent = (currentPoints / nextLevelPoints) * 100;
-
-  return (
-    <Card className="bg-gray-50 border-0 shadow-sm">
-      <CardHeader className="py-4 px-6">
+  const progressPercent = currentPoints / nextLevelPoints * 100;
+  return <Card className="bg-gray-50 border-0 shadow-sm">
+      <CardHeader className="px-6 py-[18px]">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Trophy className="w-5 h-5 text-amber-500" />
           <span className="text-gray-900">Rewards & Streaks</span>
@@ -51,8 +47,6 @@ const RewardsCard = () => {
           <p>🎯 Stay in range today to continue your streak!</p>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default RewardsCard;
