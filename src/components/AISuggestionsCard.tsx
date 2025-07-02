@@ -83,54 +83,56 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
   };
 
   return (
-    <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-      <CardHeader className="pb-3">
+    <Card className="bg-white rounded-2xl shadow-md">
+      <CardHeader className="pb-2 px-4">
         <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-yellow-500" />
-            <span className="text-gray-900">AI Suggestions</span>
+            <span className="text-base font-semibold text-gray-900">AI Suggestions</span>
           </div>
           <Button
             onClick={generateSuggestions}
             disabled={isLoading}
             variant="ghost"
             size="sm"
-            className="text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+            className="w-11 h-11 text-blue-600 hover:text-blue-700 disabled:text-gray-400"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
-            ))}
-          </div>
-        ) : suggestions.length > 0 ? (
-          suggestions.map((suggestion, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg border-l-4 ${getSuggestionColor(suggestion.level)}`}
-            >
-              <p className="text-sm text-gray-700">{suggestion.text}</p>
-              <span className={`text-xs font-medium ${
-                suggestion.level === 'high' ? 'text-red-600' :
-                suggestion.level === 'medium' ? 'text-yellow-600' :
-                'text-blue-600'
-              }`}>
-                {suggestion.category} • {suggestion.level} priority
-              </span>
+      <CardContent className="gap-4 px-4 py-4">
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
+              ))}
             </div>
-          ))
-        ) : (
-          <p className="text-sm text-gray-600">
-            {glucoseData.length === 0 
-              ? "Add some glucose readings to get personalized suggestions." 
-              : "No suggestions available based on your recent data."}
-          </p>
-        )}
+          ) : suggestions.length > 0 ? (
+            suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-xl border-l-4 ${getSuggestionColor(suggestion.level)}`}
+              >
+                <p className="text-sm text-gray-700 mb-2">{suggestion.text}</p>
+                <span className={`text-xs font-medium ${
+                  suggestion.level === 'high' ? 'text-red-600' :
+                  suggestion.level === 'medium' ? 'text-yellow-600' :
+                  'text-blue-600'
+                }`}>
+                  {suggestion.category} • {suggestion.level} priority
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-600">
+              {glucoseData.length === 0 
+                ? "Add some glucose readings to get personalized suggestions." 
+                : "No suggestions available based on your recent data."}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

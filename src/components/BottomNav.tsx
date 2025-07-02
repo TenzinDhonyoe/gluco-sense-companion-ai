@@ -15,8 +15,8 @@ const BottomNav = () => {
 
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 sm:px-6 py-2 sm:py-3"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
     >
       <div className="flex justify-around max-w-md mx-auto">
         {navItems.map(({ path, icon: Icon, label }) => {
@@ -25,14 +25,14 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center space-y-0.5 sm:space-y-1 p-1 sm:p-2 rounded-lg transition-colors min-w-0 ${
+              className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors min-w-11 min-h-11 ${
                 isActive 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
               }`}
             >
-              <Icon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{label}</span>
+              <Icon className="w-6 h-6" />
+              <span className="text-xs font-medium">{label}</span>
             </button>
           );
         })}

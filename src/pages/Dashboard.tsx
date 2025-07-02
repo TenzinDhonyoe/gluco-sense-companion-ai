@@ -148,27 +148,27 @@ const Dashboard = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20"
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
       style={{ 
         paddingTop: 'max(env(safe-area-inset-top), 1rem)', 
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' 
       }}
     >
-      <div className="px-3 sm:px-4 lg:px-6 space-y-3 sm:space-y-4">
-        {/* Header - Responsive with proper spacing */}
-        <div className="flex justify-between items-center py-2 sm:py-3">
-          <div className="flex items-center flex-shrink-0">
+      <div className="px-4 space-y-6">
+        {/* Header - Apple HIG compliant */}
+        <div className="flex justify-between items-center py-4">
+          <div className="flex items-center">
             <img 
               src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
               alt="Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
+              className="w-10 h-10"
             />
           </div>
           <div className="flex items-center">
             <DynamicAvatar 
               onClick={() => navigate("/profile")} 
-              size={32}
-              className="sm:w-10 sm:h-10 lg:w-12 lg:h-12"
+              size={44}
+              className="w-11 h-11 rounded-full shadow-sm"
             />
           </div>
         </div>
@@ -190,26 +190,26 @@ const Dashboard = () => {
           <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
         </div>
 
-        {/* Today's Progress - Responsive grid */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg w-full">
-          <CardHeader className="pb-2 px-3 sm:px-6">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
+        {/* Today's Progress - Apple HIG compliant */}
+        <Card className="bg-white rounded-2xl shadow-md">
+          <CardHeader className="pb-2 px-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 px-3 sm:px-6">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+          <CardContent className="pt-2 px-4 py-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col items-center gap-2">
                 <div className="relative">
                   <CircularProgress 
                     value={stepsProgress} 
                     color="text-teal-500" 
-                    size={50} 
+                    size={60} 
                     strokeWidth={4}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-sm font-bold text-gray-900 leading-none">
                       {Math.round(todaysProgress.steps / 1000)}k
                     </span>
                     <span className="text-xs text-gray-500 leading-none">steps</span>
@@ -221,16 +221,16 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+              <div className="flex flex-col items-center gap-2">
                 <div className="relative">
                   <CircularProgress 
                     value={sleepProgress} 
                     color="text-purple-500" 
-                    size={50} 
+                    size={60} 
                     strokeWidth={4}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-sm font-bold text-gray-900 leading-none">
                       {todaysProgress.sleep}h
                     </span>
                     <span className="text-xs text-gray-500 leading-none">sleep</span>
@@ -242,16 +242,16 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+              <div className="flex flex-col items-center gap-2">
                 <div className="relative">
                   <CircularProgress 
                     value={mealsProgress} 
                     color="text-orange-500" 
-                    size={50} 
+                    size={60} 
                     strokeWidth={4}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-sm font-bold text-gray-900 leading-none">
                       {todaysProgress.meals}
                     </span>
                     <span className="text-xs text-gray-500 leading-none">meals</span>
@@ -271,15 +271,15 @@ const Dashboard = () => {
           <RewardsCard />
         </div>
 
-        {/* Clear Data Button - Responsive positioning */}
-        <div className="flex justify-center pt-3 sm:pt-4 border-t border-gray-200">
+        {/* Clear Data Button - Apple HIG compliant */}
+        <div className="flex justify-center pt-4 border-t border-gray-200">
           <ClearDataButton />
         </div>
       </div>
 
-      {/* Quick Add Button - Responsive fixed position */}
+      {/* Quick Add Button - Apple HIG compliant fixed position */}
       <div 
-        className="fixed bottom-24 right-3 sm:right-4 lg:right-6 z-10"
+        className="fixed bottom-24 right-4 z-10"
         style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
       >
         <QuickAddDrawer />
