@@ -190,75 +190,72 @@ const Dashboard = () => {
           <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
         </div>
 
-        {/* Today's Progress - Apple HIG compliant */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="pb-2 px-4">
+        {/* Today's Progress - Improved design */}
+        <Card className="bg-white rounded-2xl shadow-sm">
+          <CardHeader className="pb-4 px-6">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <TrendingUp className="w-5 h-5 text-blue-500" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 px-4 py-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center gap-2">
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center space-y-3">
                 <div className="relative">
                   <CircularProgress 
                     value={stepsProgress} 
-                    color="text-teal-500" 
-                    size={60} 
-                    strokeWidth={4}
+                    color="text-blue-500" 
+                    size={64} 
+                    strokeWidth={5}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
                       {Math.round(todaysProgress.steps / 1000)}k
                     </span>
-                    <span className="text-xs text-gray-500 leading-none">steps</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Steps</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Steps</p>
                   <p className="text-xs text-gray-500">{Math.round(stepsProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center text-center space-y-3">
                 <div className="relative">
                   <CircularProgress 
                     value={sleepProgress} 
-                    color="text-purple-500" 
-                    size={60} 
-                    strokeWidth={4}
+                    color="text-green-500" 
+                    size={64} 
+                    strokeWidth={5}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
                       {todaysProgress.sleep}h
                     </span>
-                    <span className="text-xs text-gray-500 leading-none">sleep</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Sleep</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Sleep</p>
                   <p className="text-xs text-gray-500">{Math.round(sleepProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center text-center space-y-3">
                 <div className="relative">
                   <CircularProgress 
                     value={mealsProgress} 
-                    color="text-orange-500" 
-                    size={60} 
-                    strokeWidth={4}
+                    color="text-amber-500" 
+                    size={64} 
+                    strokeWidth={5}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
                       {todaysProgress.meals}
                     </span>
-                    <span className="text-xs text-gray-500 leading-none">meals</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Meals</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Meals</p>
                   <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
                 </div>
               </div>
@@ -277,9 +274,9 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Add Button - Apple HIG compliant fixed position */}
+      {/* Floating Action Button - Improved design */}
       <div 
-        className="fixed bottom-24 right-4 z-10"
+        className="fixed bottom-6 right-6 z-50"
         style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
       >
         <QuickAddDrawer />
