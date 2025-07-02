@@ -160,7 +160,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                    <FormLabel className="flex items-center gap-1 text-xs font-medium h-5">
                       <Hash className="w-3 h-3 text-muted-foreground" />
                       Glucose Level
                     </FormLabel>
@@ -198,7 +198,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium">Unit</FormLabel>
+                    <FormLabel className="text-xs font-medium h-5 flex items-center">Unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-9 text-sm">
