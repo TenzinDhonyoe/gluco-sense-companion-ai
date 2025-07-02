@@ -153,59 +153,57 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
     setEditValues({});
   };
 
-  const renderEditableField = (field: string, value: any, icon: React.ReactNode, label: string, suffix = '') => {
+  const renderEditableField = (field: string, value: any, icon: React.ReactNode, label: string, suffix = '', colorClass = '') => {
     const isEditing = editingField === field;
 
     return (
-      <Card>
-        <CardContent className="p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {icon}
-            <div>
-              <p className="text-sm text-gray-600">{label}</p>
-              {isEditing ? (
-                <Input
-                  value={editValues[field] || ''}
-                  onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
-                  className="text-lg font-semibold mt-1"
-                  autoFocus
-                />
-              ) : (
-                <p className="text-lg font-semibold">{value}{suffix}</p>
-              )}
+      <Card className={`rounded-xl shadow-sm bg-white ${colorClass}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-4 h-4 flex items-center justify-center">
+              {icon}
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {isEditing ? (
-              <>
-                <Button
-                  size="sm"
-                  onClick={() => handleSave(field)}
-                  disabled={isSaving}
-                  className="h-8 w-8 p-0"
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
+            <span className="text-sm text-muted-foreground">{label}</span>
+            {!isEditing && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => handleEdit(field, value)}
-                className="h-8 w-8 p-0"
+                className="ml-auto h-6 w-6 p-0 hover:bg-gray-100 transition-colors"
               >
-                <Edit2 className="w-4 h-4" />
+                <Edit2 className="w-3 h-3" />
               </Button>
             )}
           </div>
+          
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editValues[field] || ''}
+                onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
+                className="text-lg font-bold"
+                autoFocus
+              />
+              <Button
+                size="sm"
+                onClick={() => handleSave(field)}
+                disabled={isSaving}
+                className="h-8 w-8 p-0"
+              >
+                <Save className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                className="h-8 w-8 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="text-lg font-bold text-gray-900">{value}{suffix}</p>
+          )}
         </CardContent>
       </Card>
     );
@@ -312,65 +310,75 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
   };
 
   const renderMealDetails = () => (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-2 mb-4">
-        <UtensilsCrossed className="w-6 h-6 text-green-500" />
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              {editingField === 'description' ? (
-                <div className="flex items-center space-x-2">
-                  <Input
-                    value={editValues.description || ''}
-                    onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-                    className="text-xl font-semibold"
-                    autoFocus
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => handleSave('description')}
-                    disabled={isSaving}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Save className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCancel}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-xl font-semibold">{log.description}</h3>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleEdit('description', log.description)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-              <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
-            </div>
+    <div className="space-y-6">
+      {/* Header Section - Centered */}
+      <div className="text-center space-y-3">
+        <div className="flex items-center justify-center gap-2">
+          <UtensilsCrossed className="w-6 h-6 text-green-500" />
+          {log.meal_type && (
+            <Badge variant="secondary" className="text-xs px-2 py-1 rounded-full">
+              {log.meal_type}
+            </Badge>
+          )}
+        </div>
+        
+        {editingField === 'description' ? (
+          <div className="flex items-center justify-center gap-2">
+            <Input
+              value={editValues.description || ''}
+              onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
+              className="text-lg font-semibold text-center"
+              autoFocus
+            />
+            <Button
+              size="sm"
+              onClick={() => handleSave('description')}
+              disabled={isSaving}
+              className="h-8 w-8 p-0"
+            >
+              <Save className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-lg font-semibold capitalize">{log.description}</h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleEdit('description', log.description)}
+              className="h-6 w-6 p-0 hover:bg-gray-100 transition-colors"
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">{formatTime(log.time)}</p>
+      </div>
+
+      {/* Nutrition Cards */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <div className="grid grid-cols-2 gap-4">
+          {log.calories && renderEditableField('calories', log.calories, <Flame className="w-4 h-4 text-orange-500" />, 'Calories', '', 'border-l-4 border-orange-200')}
+          {log.total_carbs && renderEditableField('total_carbs', log.total_carbs, <Wheat className="w-4 h-4 text-yellow-500" />, 'Carbs', 'g', 'border-l-4 border-yellow-200')}
+          {log.total_protein && renderEditableField('total_protein', log.total_protein, <Beef className="w-4 h-4 text-red-500" />, 'Protein', 'g', 'border-l-4 border-red-200')}
+          {log.total_fat && renderEditableField('total_fat', log.total_fat, <Droplets className="w-4 h-4 text-blue-500" />, 'Fat', 'g', 'border-l-4 border-blue-200')}
+          {log.total_fiber && renderEditableField('total_fiber', log.total_fiber, <Apple className="w-4 h-4 text-green-600" />, 'Fiber', 'g', 'border-l-4 border-green-200')}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {log.calories && renderEditableField('calories', log.calories, <Flame className="w-5 h-5 text-orange-500" />, 'Calories')}
-        {log.total_carbs && renderEditableField('total_carbs', log.total_carbs, <Wheat className="w-5 h-5 text-yellow-500" />, 'Carbs', 'g')}
-        {log.total_protein && renderEditableField('total_protein', log.total_protein, <Beef className="w-5 h-5 text-red-500" />, 'Protein', 'g')}
-        {log.total_fat && renderEditableField('total_fat', log.total_fat, <Droplets className="w-5 h-5 text-blue-500" />, 'Fat', 'g')}
-        {log.total_fiber && renderEditableField('total_fiber', log.total_fiber, <Apple className="w-5 h-5 text-green-600" />, 'Fiber', 'g')}
-      </div>
-
-      {log.notes && renderEditableText('notes', log.notes, 'Notes')}
+      {log.notes && (
+        <div className="bg-gray-50 rounded-xl p-4">
+          {renderEditableText('notes', log.notes, 'Notes')}
+        </div>
+      )}
     </div>
   );
 
@@ -435,14 +443,24 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-6">
+        <DialogHeader className="relative">
+          <DialogTitle className="text-center">
             {log.type === 'meal' ? 'Meal Details' : 'Exercise Details'}
           </DialogTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="absolute -top-2 -right-2 h-8 w-8 p-0 hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </DialogHeader>
         
-        {log.type === 'meal' ? renderMealDetails() : renderExerciseDetails()}
+        <div className="mt-4">
+          {log.type === 'meal' ? renderMealDetails() : renderExerciseDetails()}
+        </div>
       </DialogContent>
     </Dialog>
   );
