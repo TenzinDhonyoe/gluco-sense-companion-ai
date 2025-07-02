@@ -15,24 +15,24 @@ const BottomNav = () => {
 
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 sm:px-6 py-2 sm:py-3"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 px-2 sm:px-4 lg:px-6 py-1 sm:py-2"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.25rem)' }}
     >
-      <div className="flex justify-around max-w-md mx-auto">
+      <div className="flex justify-around max-w-sm sm:max-w-md mx-auto">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center space-y-0.5 sm:space-y-1 p-1 sm:p-2 rounded-lg transition-colors min-w-0 ${
+              className={`flex flex-col items-center space-y-0.5 p-1 sm:p-1.5 rounded-lg transition-colors min-w-0 flex-1 max-w-20 ${
                 isActive 
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
               }`}
             >
-              <Icon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{label}</span>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate leading-tight">{label}</span>
             </button>
           );
         })}

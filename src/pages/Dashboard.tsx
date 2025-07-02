@@ -148,27 +148,27 @@ const Dashboard = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20"
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
       style={{ 
-        paddingTop: 'env(safe-area-inset-top)', 
-        paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' 
+        paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)', 
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 6rem)' 
       }}
     >
-      <div className="px-3 sm:px-4 lg:px-6 space-y-3 sm:space-y-4">
-        {/* Header - Responsive with proper spacing */}
-        <div className="flex justify-between items-center py-2 sm:py-3">
+      <div className="px-2 sm:px-4 lg:px-6 space-y-2 sm:space-y-3 lg:space-y-4 max-w-4xl mx-auto">
+        {/* Header - Mobile-optimized spacing */}
+        <div className="flex justify-between items-center py-1 sm:py-2 lg:py-3">
           <div className="flex items-center flex-shrink-0">
             <img 
               src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" 
               alt="Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
+              className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10"
             />
           </div>
           <div className="flex items-center">
             <DynamicAvatar 
               onClick={() => navigate("/profile")} 
-              size={32}
-              className="sm:w-10 sm:h-10 lg:w-12 lg:h-12"
+              size={28}
+              className="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10"
             />
           </div>
         </div>
@@ -190,76 +190,76 @@ const Dashboard = () => {
           <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
         </div>
 
-        {/* Today's Progress - Responsive grid */}
+        {/* Today's Progress - Mobile-optimized */}
         <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg w-full">
-          <CardHeader className="pb-2 px-3 sm:px-6">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
+          <CardHeader className="pb-1 px-2 sm:px-4 lg:px-6 pt-2 sm:pt-4">
+            <CardTitle className="flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base lg:text-lg">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-blue-500 flex-shrink-0" />
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-2 px-3 sm:px-6">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+          <CardContent className="pt-1 px-2 sm:px-4 lg:px-6 pb-2 sm:pb-4">
+            <div className="grid grid-cols-3 gap-1 sm:gap-2 lg:gap-3">
+              <div className="flex flex-col items-center space-y-0.5 sm:space-y-1">
                 <div className="relative">
                   <CircularProgress 
                     value={stepsProgress} 
                     color="text-teal-500" 
-                    size={50} 
-                    strokeWidth={4}
+                    size={40}
+                    strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {Math.round(todaysProgress.steps / 1000)}k
                     </span>
                     <span className="text-xs text-gray-500 leading-none">steps</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Steps</p>
-                  <p className="text-xs text-gray-500">{Math.round(stepsProgress)}% of goal</p>
+                <div className="text-center min-h-[2rem] flex flex-col justify-center">
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Steps</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(stepsProgress)}%</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+              <div className="flex flex-col items-center space-y-0.5 sm:space-y-1">
                 <div className="relative">
                   <CircularProgress 
                     value={sleepProgress} 
                     color="text-purple-500" 
-                    size={50} 
-                    strokeWidth={4}
+                    size={40}
+                    strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {todaysProgress.sleep}h
                     </span>
                     <span className="text-xs text-gray-500 leading-none">sleep</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Sleep</p>
-                  <p className="text-xs text-gray-500">{Math.round(sleepProgress)}% of goal</p>
+                <div className="text-center min-h-[2rem] flex flex-col justify-center">
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Sleep</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(sleepProgress)}%</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+              <div className="flex flex-col items-center space-y-0.5 sm:space-y-1">
                 <div className="relative">
                   <CircularProgress 
                     value={mealsProgress} 
                     color="text-orange-500" 
-                    size={50} 
-                    strokeWidth={4}
+                    size={40}
+                    strokeWidth={3}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-none">
+                    <span className="text-xs font-bold text-gray-900 leading-none">
                       {todaysProgress.meals}
                     </span>
                     <span className="text-xs text-gray-500 leading-none">meals</span>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-900">Meals</p>
-                  <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
+                <div className="text-center min-h-[2rem] flex flex-col justify-center">
+                  <p className="text-xs font-medium text-gray-900 leading-tight">Meals</p>
+                  <p className="text-xs text-gray-500 leading-tight">{Math.round(mealsProgress)}%</p>
                 </div>
               </div>
             </div>
@@ -271,16 +271,16 @@ const Dashboard = () => {
           <RewardsCard />
         </div>
 
-        {/* Clear Data Button - Responsive positioning */}
-        <div className="flex justify-center pt-3 sm:pt-4 border-t border-gray-200">
+        {/* Clear Data Button - Mobile-optimized */}
+        <div className="flex justify-center pt-2 sm:pt-3 border-t border-gray-200/50">
           <ClearDataButton />
         </div>
       </div>
 
-      {/* Quick Add Button - Responsive fixed position */}
+      {/* Quick Add Button - Mobile-optimized fixed position */}
       <div 
-        className="fixed bottom-24 right-3 sm:right-4 lg:right-6 z-10"
-        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        className="fixed bottom-16 right-2 sm:bottom-20 sm:right-3 lg:right-4 z-10"
+        style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
       >
         <QuickAddDrawer />
       </div>
