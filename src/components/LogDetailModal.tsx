@@ -383,61 +383,125 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
   );
 
   const renderExerciseDetails = () => (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-2 mb-4">
-        <Dumbbell className="w-6 h-6 text-blue-500" />
-        <div className="flex-1">
-          {editingField === 'description' ? (
-            <div className="flex items-center space-x-2">
-              <Input
-                value={editValues.description || ''}
-                onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-                className="text-xl font-semibold"
-                autoFocus
-              />
-              <Button
-                size="sm"
-                onClick={() => handleSave('description')}
-                disabled={isSaving}
-                className="h-8 w-8 p-0"
-              >
-                <Save className="w-4 h-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                className="h-8 w-8 p-0"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2">
-              <h3 className="text-xl font-semibold">{log.description}</h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEdit('description', log.description)}
-                className="h-8 w-8 p-0"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            </div>
+    <div className="space-y-6">
+      {/* Header Section - Centered */}
+      <div className="text-center space-y-3">
+        <div className="flex items-center justify-center gap-2">
+          <Dumbbell className="w-6 h-6 text-blue-500" />
+          {log.exercise_type && (
+            <Badge variant="secondary" className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+              {log.exercise_type}
+            </Badge>
           )}
-          <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
-          {log.exercise_type && renderEditableBadge('exercise_type', log.exercise_type, editingField === 'exercise_type')}
+        </div>
+        
+        {editingField === 'description' ? (
+          <div className="flex items-center justify-center gap-2">
+            <Input
+              value={editValues.description || ''}
+              onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
+              className="text-lg font-semibold text-center"
+              autoFocus
+            />
+            <Button
+              size="sm"
+              onClick={() => handleSave('description')}
+              disabled={isSaving}
+              className="h-8 w-8 p-0"
+            >
+              <Save className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-lg font-semibold capitalize">🏃 {log.description}</h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleEdit('description', log.description)}
+              className="h-6 w-6 p-0 hover:bg-gray-100 transition-colors"
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">{formatTime(log.time)}</p>
+        
+        {log.intensity && (
+          <div className="flex justify-center">
+            {editingField === 'intensity' ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editValues.intensity || ''}
+                  onChange={(e) => setEditValues({ ...editValues, intensity: e.target.value })}
+                  className="w-32"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  onClick={() => handleSave('intensity')}
+                  disabled={isSaving}
+                  className="h-8 w-8 p-0"
+                >
+                  <Save className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancel}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize text-xs px-3 py-1 rounded-full">
+                  {log.intensity} intensity
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleEdit('intensity', log.intensity)}
+                  className="h-6 w-6 p-0"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Exercise Metrics Cards */}
+      <div className="bg-gray-50 rounded-xl p-4">
+        <div className="grid grid-cols-2 gap-4">
+          {log.duration && renderEditableField('duration', log.duration, <Clock className="w-4 h-4 text-purple-500" />, 'Duration', ' min', 'border-l-4 border-purple-200')}
+          {log.calories_burned && renderEditableField('calories_burned', log.calories_burned, <Flame className="w-4 h-4 text-orange-500" />, 'Calories Burned', '', 'border-l-4 border-orange-200')}
+          {log.average_heart_rate && renderEditableField('average_heart_rate', log.average_heart_rate, <div className="w-4 h-4 bg-red-500 rounded-full" />, 'Avg HR', ' bpm', 'border-l-4 border-red-200')}
+          {log.max_heart_rate && renderEditableField('max_heart_rate', log.max_heart_rate, <div className="w-4 h-4 bg-red-600 rounded-full" />, 'Max HR', ' bpm', 'border-l-4 border-red-300')}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {log.duration && renderEditableField('duration', log.duration, <Clock className="w-5 h-5 text-purple-500" />, 'Duration', ' min')}
-        {log.calories_burned && renderEditableField('calories_burned', log.calories_burned, <Flame className="w-5 h-5 text-orange-500" />, 'Calories Burned')}
-        {log.average_heart_rate && renderEditableField('average_heart_rate', log.average_heart_rate, <div className="w-5 h-5 bg-red-500 rounded-full" />, 'Avg Heart Rate', ' bpm')}
-        {log.max_heart_rate && renderEditableField('max_heart_rate', log.max_heart_rate, <div className="w-5 h-5 bg-red-600 rounded-full" />, 'Max Heart Rate', ' bpm')}
-      </div>
+      {log.notes && (
+        <div className="bg-gray-50 rounded-xl p-4">
+          {renderEditableText('notes', log.notes, 'Notes')}
+        </div>
+      )}
 
-      {log.notes && renderEditableText('notes', log.notes, 'Notes')}
+      {/* Optional glucose linking section */}
+      <div className="bg-blue-50 rounded-xl p-4 text-center">
+        <p className="text-sm text-blue-700 font-medium">💡 Tip: Link this workout to glucose readings</p>
+        <p className="text-xs text-blue-600 mt-1">Track how exercise affects your blood sugar levels</p>
+      </div>
     </div>
   );
 
