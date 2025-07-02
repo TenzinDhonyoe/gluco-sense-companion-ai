@@ -104,7 +104,7 @@ const AISuggestionsCard = ({ glucoseData, logs }: AISuggestionsCardProps) => {
       <CardContent className="px-6 pb-6">
         <div className="space-y-4">
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-4 bg-gray-200 rounded animate-pulse w-full" />
               ))}

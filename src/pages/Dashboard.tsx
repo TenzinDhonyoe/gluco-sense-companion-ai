@@ -190,7 +190,7 @@ const Dashboard = () => {
           <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
         </div>
 
-        {/* Today's Progress - Improved design */}
+        {/* Today's Progress - Harmonized spacing */}
         <Card className="bg-white rounded-2xl shadow-sm">
           <CardHeader className="pb-4 px-6">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -198,7 +198,7 @@ const Dashboard = () => {
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 px-6 pb-6">
+          <CardContent className="px-6 pb-6">
             <div className="grid grid-cols-3 gap-6">
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="relative">
