@@ -443,22 +443,14 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-6">
-        <DialogHeader className="relative">
-          <DialogTitle className="text-center">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto p-0 m-4 rounded-2xl border-0 shadow-xl">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-center text-xl font-bold text-gray-900">
             {log.type === 'meal' ? 'Meal Details' : 'Exercise Details'}
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="absolute -top-2 -right-2 h-8 w-8 p-0 hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </Button>
         </DialogHeader>
         
-        <div className="mt-4">
+        <div className="px-6 pb-6">
           {log.type === 'meal' ? renderMealDetails() : renderExerciseDetails()}
         </div>
       </DialogContent>
