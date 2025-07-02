@@ -36,6 +36,14 @@
 
     --radius: 0.5rem;
 
+    /* Typography system */
+    --text-heading-large: 222.2 84% 4.9%;
+    --text-heading-medium: 222.2 84% 4.9%;
+    --text-heading-small: 222.2 84% 4.9%;
+    --text-body: 222.2 84% 4.9%;
+    --text-body-small: 215.4 16.3% 46.9%;
+    --text-caption: 215.4 16.3% 46.9%;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;

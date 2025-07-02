@@ -174,7 +174,7 @@ const QuickAddDrawer = () => {
             className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105 w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center"
           >
             <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-xs font-medium mt-0.5 leading-none">Log</span>
+            <span className="text-caption font-medium mt-0.5 leading-none">Log</span>
           </Button>
         </DrawerTrigger>
         <DrawerContent>
