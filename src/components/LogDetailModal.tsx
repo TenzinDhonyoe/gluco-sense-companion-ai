@@ -159,17 +159,19 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
     return (
       <Card className={`rounded-xl shadow-sm bg-white ${colorClass}`}>
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-4 h-4 flex items-center justify-center">
-              {icon}
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 flex items-center justify-center">
+                {icon}
+              </div>
+              <span className="text-sm text-muted-foreground">{label}</span>
             </div>
-            <span className="text-sm text-muted-foreground">{label}</span>
             {!isEditing && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => handleEdit(field, value)}
-                className="ml-auto h-6 w-6 p-0 hover:bg-gray-100 transition-colors"
+                className="h-6 w-6 p-0 hover:bg-gray-100 transition-colors flex-shrink-0"
               >
                 <Edit2 className="w-3 h-3" />
               </Button>
@@ -177,18 +179,18 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
           </div>
           
           {isEditing ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-2">
               <Input
                 value={editValues[field] || ''}
                 onChange={(e) => setEditValues({ ...editValues, [field]: e.target.value })}
-                className="text-lg font-bold"
+                className="text-lg font-bold flex-1"
                 autoFocus
               />
               <Button
                 size="sm"
                 onClick={() => handleSave(field)}
                 disabled={isSaving}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 flex-shrink-0"
               >
                 <Save className="w-4 h-4" />
               </Button>
@@ -196,13 +198,13 @@ const LogDetailModal = ({ log, open, onOpenChange, onLogUpdate }: LogDetailModal
                 size="sm"
                 variant="outline"
                 onClick={handleCancel}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 flex-shrink-0"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           ) : (
-            <p className="text-lg font-bold text-gray-900">{value}{suffix}</p>
+            <p className="text-lg font-bold text-gray-900 mt-1">{value}{suffix}</p>
           )}
         </CardContent>
       </Card>
