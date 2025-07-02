@@ -11,29 +11,29 @@ const RewardsCard = () => {
   const progressPercent = (currentPoints / nextLevelPoints) * 100;
 
   return (
-    <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-0 shadow-lg">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center space-x-2">
-          <Trophy className="w-5 h-5 text-yellow-500" />
+    <Card className="bg-gray-50 border-0 shadow-sm">
+      <CardHeader className="pb-4 px-6">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <Trophy className="w-5 h-5 text-amber-500" />
           <span className="text-gray-900">Rewards & Streaks</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-6 pb-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{currentPoints}</div>
+              <div className="text-xl font-bold text-amber-600">{currentPoints}</div>
               <div className="text-xs text-gray-600">Points</div>
             </div>
             <div className="text-center">
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-1">
                 <Flame className="w-5 h-5 text-orange-500" />
-                <span className="text-2xl font-bold text-orange-600">{currentStreak}</span>
+                <span className="text-xl font-bold text-orange-600">{currentStreak}</span>
               </div>
               <div className="text-xs text-gray-600">Day Streak</div>
             </div>
           </div>
-          <Badge className="bg-yellow-500 text-white">
+          <Badge className="bg-amber-500 text-white rounded-full px-3 py-1 text-xs">
             <Star className="w-3 h-3 mr-1" />
             Level 3
           </Badge>
@@ -44,7 +44,7 @@ const RewardsCard = () => {
             <span>Progress to Level 4</span>
             <span>{currentPoints}/{nextLevelPoints}</span>
           </div>
-          <Progress value={progressPercent} className="h-2" />
+          <Progress value={progressPercent} className="h-3" />
         </div>
         
         <div className="text-sm text-gray-600">
