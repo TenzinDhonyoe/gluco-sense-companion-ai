@@ -27,28 +27,32 @@ const Insights = () => {
   // Streaks & Achievements data
   const achievements = [
     { 
-      icon: <Flame className="w-6 h-6 text-orange-500" />, 
+      icon: <Flame className="w-5 h-5 text-orange-500" />, 
       title: "5 Day Streak", 
       description: "Logged meals consistently", 
-      earned: true 
+      earned: true,
+      achievedDate: "Achieved today"
     },
     { 
-      icon: <Target className="w-6 h-6 text-green-500" />, 
+      icon: <Target className="w-5 h-5 text-green-500" />, 
       title: "In Range Champion", 
       description: "3 days in target range", 
-      earned: true 
+      earned: true,
+      achievedDate: "2 days ago"
     },
     { 
-      icon: <Activity className="w-6 h-6 text-blue-500" />, 
+      icon: <Activity className="w-5 h-5 text-blue-500" />, 
       title: "Active Week", 
       description: "Hit step goal 6/7 days", 
-      earned: true 
+      earned: true,
+      achievedDate: "3 days ago"
     },
     { 
-      icon: <Award className="w-6 h-6 text-gray-400" />, 
+      icon: <Award className="w-5 h-5 text-gray-400" />, 
       title: "Perfect Week", 
       description: "All goals met for 7 days", 
-      earned: false 
+      earned: false,
+      achievedDate: "Not yet achieved"
     }
   ];
 
@@ -126,11 +130,11 @@ const Insights = () => {
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' 
       }}
     >
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-6 mt-6">
         {/* Header */}
-        <div className="py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
-          <p className="text-base text-gray-600">Your personalized glucose management insights</p>
+        <div className="py-4 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Insights</h1>
+          <p className="text-sm text-muted-foreground">Your personalized glucose management insights</p>
         </div>
 
         {/* HbA1c Estimate */}
@@ -147,22 +151,29 @@ const Insights = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-0">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               {achievements.map((achievement, index) => (
                 <div 
                   key={index} 
-                  className={`p-4 rounded-xl border-2 ${achievement.earned ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
+                  className={`bg-white rounded-2xl shadow-sm p-5 border hover:shadow-md transition-shadow cursor-pointer ${
+                    achievement.earned 
+                      ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50' 
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
                 >
-                  <div className="flex flex-col items-center text-center space-y-2">
+                  <div className="flex items-center gap-4">
                     <div className={achievement.earned ? '' : 'opacity-40'}>
                       {achievement.icon}
                     </div>
-                    <div>
-                      <p className={`font-semibold text-sm ${achievement.earned ? 'text-gray-900' : 'text-gray-500'}`}>
+                    <div className="flex-1">
+                      <h3 className={`text-lg font-semibold ${achievement.earned ? 'text-gray-900' : 'text-gray-500'}`}>
                         {achievement.title}
-                      </p>
-                      <p className={`text-xs ${achievement.earned ? 'text-gray-600' : 'text-gray-400'}`}>
+                      </h3>
+                      <p className={`text-sm ${achievement.earned ? 'text-muted-foreground' : 'text-gray-400'}`}>
                         {achievement.description}
+                      </p>
+                      <p className={`text-xs mt-1 ${achievement.earned ? 'text-amber-600' : 'text-gray-400'}`}>
+                        {achievement.achievedDate}
                       </p>
                     </div>
                   </div>
@@ -175,7 +186,7 @@ const Insights = () => {
         {/* Week-over-Week Comparison */}
         <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <TrendingUp className="w-5 h-5 text-blue-500" />
               <span>This Week vs Last Week</span>
             </CardTitle>
@@ -219,16 +230,16 @@ const Insights = () => {
         {/* Lifestyle Correlation Summary */}
         <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <Zap className="w-5 h-5 text-purple-500" />
               <span>Lifestyle Correlations</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-6 pb-6 pt-0 space-y-4">
             {correlations.map((correlation, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+              <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                 {correlation.icon}
-                <p className="text-sm text-gray-700 leading-relaxed">{correlation.text}</p>
+                <p className="text-sm text-muted leading-relaxed">{correlation.text}</p>
               </div>
             ))}
           </CardContent>
@@ -237,7 +248,7 @@ const Insights = () => {
         {/* AI-Powered Insight Cards */}
         <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <Brain className="w-5 h-5 text-purple-500" />
               <span>AI Insights</span>
             </CardTitle>
@@ -270,7 +281,7 @@ const Insights = () => {
         {/* Risk Warnings */}
         <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
               <span>Risk Warnings</span>
             </CardTitle>
