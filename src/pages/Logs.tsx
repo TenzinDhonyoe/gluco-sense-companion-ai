@@ -284,26 +284,33 @@ const Logs = () => {
       >
         <div className="px-4 space-y-6">
           {/* Header - Apple HIG compliant */}
-          <div className="py-4">
+          <div className="py-4 mb-4 text-center">
             <h1 className="text-2xl font-bold text-gray-900">Log Activity</h1>
-            <p className="text-base text-gray-600">Track your meals, workouts, and glucose</p>
+            <p className="text-sm text-muted-foreground">Track your meals, workouts, and glucose</p>
           </div>
 
-          {/* Combined Logging Section - Apple HIG compliant */}
+          {/* ✍️ New Entry Section */}
           <Card className="bg-white rounded-2xl shadow-md">
-            <CardContent className="space-y-4 pt-6 px-4 py-4">
-              <Textarea
-                placeholder="What did you eat or do?"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="min-h-[80px] border-gray-200 text-base"
-                disabled={isLoading}
-              />
+            <CardHeader className="px-6 py-4">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                ✍️ New Entry
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-6 pb-6 pt-0">
+              <div className="relative">
+                <Textarea
+                  placeholder="🍽️ What did you eat or do? 🏃‍♂️"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="h-24 rounded-xl shadow-sm border-gray-200 text-base resize-none"
+                  disabled={isLoading}
+                />
+              </div>
               
               <Button
                 onClick={handleAISubmit}
                 disabled={isLoading || !input.trim()}
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white h-12 text-base"
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white py-3 text-base rounded-xl"
               >
                 {isLoading ? (
                   <>
@@ -313,7 +320,7 @@ const Logs = () => {
                 ) : (
                   <>
                     <Brain className="w-5 h-5 mr-2" />
-                    Log with AI
+                    Generate Log with AI
                   </>
                 )}
               </Button>
@@ -321,31 +328,33 @@ const Logs = () => {
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
-                  variant="outline"
-                  className="border-blue-200 hover:bg-blue-50 h-12 text-sm min-h-11"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 py-2.5 gap-2 text-sm rounded-xl"
                 >
-                  <Camera className="w-4 h-4 mr-2" />
+                  <Camera className="w-4 h-4" />
                   Take Photo
                 </Button>
                 
                 <QuickGlucoseEntry />
               </div>
               
-              <p className="text-xs text-gray-500 text-center px-2">
+              <p className="text-xs text-muted-foreground text-center mt-3">
                 AI will automatically detect if it's a meal or exercise and log it with nutrition/activity data
               </p>
             </CardContent>
           </Card>
 
-          {/* Recent Logs - Apple HIG compliant */}
+          {/* 📄 Recent Logs */}
           <Card className="bg-white rounded-2xl shadow-md">
-            <CardHeader className="px-4 py-4">
+            <CardHeader className="px-6 py-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">Recent Logs</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-gray-500" />
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  📄 Recent Logs
+                </CardTitle>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
+                  <span className="text-xs text-muted-foreground">Filter:</span>
+                  <Filter className="w-3 h-3 text-muted-foreground" />
                   <Select value={logFilter} onValueChange={(value: 'all' | 'meal' | 'exercise') => setLogFilter(value)}>
-                    <SelectTrigger className="w-32 h-10 text-sm">
+                    <SelectTrigger className="w-20 h-7 text-xs border-none bg-transparent">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -357,8 +366,8 @@ const Logs = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="px-4 py-4">
-              <div className="space-y-4">
+            <CardContent className="px-6 pb-6 pt-0">
+              <div className="space-y-3">
                 {isLoadingDatabase ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -368,32 +377,34 @@ const Logs = () => {
                     <div
                       key={log.id}
                       onClick={() => handleLogClick(log)}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:shadow-md transition-shadow cursor-pointer min-h-11"
+                      className="bg-white shadow-sm rounded-lg p-3 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
                     >
-                      {getLogIcon(log.type)}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-base truncate">{log.description}</p>
-                        <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <Badge variant="secondary" className="capitalize text-xs">
-                          {log.type}
-                        </Badge>
-                        {log.type === 'meal' && log.calories && (
-                          <Badge className="bg-orange-500 text-white text-xs">
-                            {log.calories} cal
+                      <div className="flex items-center gap-3">
+                        {getLogIcon(log.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 text-base truncate">{log.description}</p>
+                          <p className="text-xs text-muted-foreground">{formatTime(log.time)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="secondary" className="capitalize text-xs">
+                            {log.type}
                           </Badge>
-                        )}
-                        {log.type === 'exercise' && log.duration && (
-                          <Badge className="bg-blue-500 text-white text-xs">
-                            {log.duration}min
-                          </Badge>
-                        )}
+                          {log.type === 'meal' && log.calories && (
+                            <Badge className="bg-orange-500 text-white text-xs">
+                              {log.calories} cal
+                            </Badge>
+                          )}
+                          {log.type === 'exercise' && log.duration && (
+                            <Badge className="bg-blue-500 text-white text-xs">
+                              {log.duration}min
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <p className="text-base">No logs found</p>
                     <p className="text-sm">Start logging your meals and exercises!</p>
                   </div>

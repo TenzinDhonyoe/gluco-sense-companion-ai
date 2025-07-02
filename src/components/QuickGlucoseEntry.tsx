@@ -22,10 +22,9 @@ const QuickGlucoseEntry = () => {
     <Drawer open={open} onOpenChange={setOpen} dismissible>
       <DrawerTrigger asChild>
         <Button
-          variant="outline"
-          className="w-full border-blue-200 hover:bg-blue-50 h-12 text-sm"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2.5 gap-2 text-sm rounded-xl"
         >
-          <Droplets className="w-4 h-4 mr-2 text-red-500" />
+          <Droplets className="w-4 h-4 text-red-500" />
           Log Glucose
         </Button>
       </DrawerTrigger>
