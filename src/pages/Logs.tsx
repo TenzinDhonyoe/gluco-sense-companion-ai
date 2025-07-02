@@ -278,53 +278,53 @@ const Logs = () => {
       <div 
         className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
         style={{ 
-          paddingTop: 'env(safe-area-inset-top)', 
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)', 
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' 
         }}
       >
-        <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 space-y-3 sm:space-y-4 lg:space-y-6">
-          {/* Header - Mobile optimized */}
-          <div className="pt-2 sm:pt-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Log Activity</h1>
-            <p className="text-sm sm:text-base text-gray-600">Track your meals, workouts, and glucose</p>
+        <div className="px-4 space-y-6">
+          {/* Header - Apple HIG compliant */}
+          <div className="py-4">
+            <h1 className="text-2xl font-bold text-gray-900">Log Activity</h1>
+            <p className="text-base text-gray-600">Track your meals, workouts, and glucose</p>
           </div>
 
-          {/* Combined Logging Section - Mobile first */}
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="space-y-3 pt-4 sm:pt-6 px-3 sm:px-6">
+          {/* Combined Logging Section - Apple HIG compliant */}
+          <Card className="bg-white rounded-2xl shadow-md">
+            <CardContent className="space-y-4 pt-6 px-4 py-4">
               <Textarea
                 placeholder="What did you eat or do?"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="min-h-[60px] sm:min-h-[80px] border-gray-200 text-sm sm:text-base"
+                className="min-h-[80px] border-gray-200 text-base"
                 disabled={isLoading}
               />
               
               <Button
                 onClick={handleAISubmit}
                 disabled={isLoading || !input.trim()}
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white h-10 sm:h-12 text-sm sm:text-base"
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white h-12 text-base"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Processing with AI...
                   </>
                 ) : (
                   <>
-                    <Brain className="w-4 h-4 mr-2" />
+                    <Brain className="w-5 h-5 mr-2" />
                     Log with AI
                   </>
                 )}
               </Button>
               
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => setIsCameraOpen(true)}
                   variant="outline"
-                  className="border-blue-200 hover:bg-blue-50 h-10 sm:h-12 text-xs sm:text-sm"
+                  className="border-blue-200 hover:bg-blue-50 h-12 text-sm min-h-11"
                 >
-                  <Camera className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <Camera className="w-4 h-4 mr-2" />
                   Take Photo
                 </Button>
                 
@@ -337,15 +337,15 @@ const Logs = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Logs - Mobile optimized */}
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          {/* Recent Logs - Apple HIG compliant */}
+          <Card className="bg-white rounded-2xl shadow-md">
+            <CardHeader className="px-4 py-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base sm:text-lg">Recent Logs</CardTitle>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                <CardTitle className="text-base font-semibold">Recent Logs</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-500" />
                   <Select value={logFilter} onValueChange={(value: 'all' | 'meal' | 'exercise') => setLogFilter(value)}>
-                    <SelectTrigger className="w-20 sm:w-32 h-8 sm:h-10 text-xs sm:text-sm">
+                    <SelectTrigger className="w-32 h-10 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -357,25 +357,25 @@ const Logs = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="px-3 sm:px-6">
-              <div className="space-y-2 sm:space-y-4">
+            <CardContent className="px-4 py-4">
+              <div className="space-y-4">
                 {isLoadingDatabase ? (
-                  <div className="flex items-center justify-center py-6 sm:py-8">
-                    <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-gray-500" />
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
                   </div>
                 ) : filteredDatabaseLogs.length > 0 ? (
                   filteredDatabaseLogs.map((log) => (
                     <div
                       key={log.id}
                       onClick={() => handleLogClick(log)}
-                      className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-white rounded-lg border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:shadow-md transition-shadow cursor-pointer min-h-11"
                     >
                       {getLogIcon(log.type)}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{log.description}</p>
-                        <p className="text-xs sm:text-sm text-gray-500">{formatTime(log.time)}</p>
+                        <p className="font-medium text-gray-900 text-base truncate">{log.description}</p>
+                        <p className="text-sm text-gray-500">{formatTime(log.time)}</p>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
                         <Badge variant="secondary" className="capitalize text-xs">
                           {log.type}
                         </Badge>
@@ -393,9 +393,9 @@ const Logs = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-6 sm:py-8 text-gray-500">
-                    <p className="text-sm sm:text-base">No logs found</p>
-                    <p className="text-xs sm:text-sm">Start logging your meals and exercises!</p>
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-base">No logs found</p>
+                    <p className="text-sm">Start logging your meals and exercises!</p>
                   </div>
                 )}
               </div>

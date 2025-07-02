@@ -172,23 +172,23 @@ const Chat = () => {
     <div 
       className="flex flex-col h-screen bg-gray-50"
       style={{ 
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: 'env(safe-area-inset-bottom)'
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)'
       }}
     >
-      {/* Header - Mobile optimized */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 p-3 sm:p-4 shadow-sm">
+      {/* Header - Apple HIG compliant */}
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <img 
               src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
               alt="GlucoCoach AI" 
-              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50 flex-shrink-0"
+              className="w-10 h-10 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
             />
             <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">GlucoCoach AI</h1>
-              <p className="text-xs sm:text-sm text-green-500 flex items-center">
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1 sm:mr-2"></span>
+              <h1 className="text-lg font-semibold text-gray-900 truncate">GlucoCoach AI</h1>
+              <p className="text-sm text-green-500 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                 Online
               </p>
             </div>
@@ -200,49 +200,49 @@ const Chat = () => {
               onClick={handleClearChat}
               variant="ghost"
               size="sm"
-              className="text-gray-500 hover:text-red-500 flex-shrink-0 p-1 sm:p-2"
+              className="text-gray-500 hover:text-red-500 w-11 h-11"
             >
-              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <Trash2 className="w-4 h-4" />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Messages Area - Mobile optimized */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
+      {/* Messages Area - Apple HIG compliant */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
-            <div className={`flex items-end space-x-1 sm:space-x-2 max-w-[85%] sm:max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+            <div className={`flex items-end gap-2 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
               {/* Avatar */}
               <div className="flex-shrink-0 mb-1">
                 {message.type === 'bot' ? (
                   <img 
                     src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
                     alt="GlucoCoach AI" 
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
                   />
                 ) : (
                   <img 
                     src="/lovable-uploads/880f3ea4-efd1-4de5-93a4-d0d91ae981f7.png" 
                     alt="User" 
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
                   />
                 )}
               </div>
               
               {/* Message Bubble */}
-              <div className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm ${
+              <div className={`rounded-2xl px-4 py-3 shadow-sm ${
                 message.type === 'bot' 
                   ? 'bg-white border border-gray-200' 
                   : 'bg-blue-500 text-white'
               }`}>
-                <div className={`text-xs sm:text-sm leading-relaxed ${message.type === 'bot' ? 'text-gray-800' : 'text-white'}`}>
+                <div className={`text-sm leading-relaxed ${message.type === 'bot' ? 'text-gray-800' : 'text-white'}`}>
                   {message.content}
                 </div>
-                <div className={`text-xs mt-1 sm:mt-2 ${
+                <div className={`text-xs mt-2 ${
                   message.type === 'bot' ? 'text-gray-500' : 'text-blue-100'
                 }`}>
                   {getRelativeTime(message.timestamp)}
@@ -255,20 +255,20 @@ const Chat = () => {
         {/* Typing Indicator */}
         {isLoading && (
           <div className="flex justify-start animate-fade-in">
-            <div className="flex items-end space-x-1 sm:space-x-2 max-w-[85%] sm:max-w-[80%]">
+            <div className="flex items-end gap-2 max-w-[80%]">
               <img 
                 src="/lovable-uploads/b270e330-8a62-4bd9-9ea1-8b69bdb3d6d7.png" 
                 alt="GlucoCoach AI" 
-                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
+                className="w-8 h-8 rounded-full border-2 border-white shadow-lg ring-2 ring-blue-200/50"
               />
-              <div className="bg-white border border-gray-200 rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
-                  <span className="text-xs sm:text-sm text-gray-500">AI Coach is typing...</span>
+                  <span className="text-sm text-gray-500">AI Coach is typing...</span>
                 </div>
               </div>
             </div>
@@ -278,19 +278,19 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Reply Suggestions - Mobile optimized */}
+      {/* Quick Reply Suggestions - Apple HIG compliant */}
       {messages.length <= 1 && !isLoading && (
-        <div className="flex-shrink-0 px-2 sm:px-4 pb-1 sm:pb-2">
-          <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
+        <div className="flex-shrink-0 px-4 pb-2">
+          <div className="flex gap-2 overflow-x-auto">
             {quickReplies.map((reply, index) => {
               const Icon = reply.icon;
               return (
                 <button
                   key={index}
                   onClick={() => handleQuickReply(reply)}
-                  className="flex items-center space-x-1 sm:space-x-2 bg-white border border-gray-200 rounded-full px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap shadow-sm flex-shrink-0"
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap shadow-sm min-h-11"
                 >
-                  <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <Icon className="w-4 h-4" />
                   <span>{reply.text}</span>
                 </button>
               );
@@ -299,28 +299,28 @@ const Chat = () => {
         </div>
       )}
 
-      {/* Input Area - Mobile optimized */}
+      {/* Input Area - Apple HIG compliant */}
       <div 
-        className="flex-shrink-0 bg-white border-t border-gray-200 p-2 sm:p-4"
+        className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-4"
         style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
-        <div className="flex space-x-2 sm:space-x-3">
+        <div className="flex gap-3">
           <div className="flex-1">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask about meals, glucose trends, or habits..."
-              className="border border-gray-300 rounded-2xl px-3 py-2 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
+              className="border border-gray-300 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               disabled={isLoading}
             />
           </div>
           <Button
             onClick={() => sendMessage()}
             disabled={!inputMessage.trim() || isLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-2xl transition-colors flex-shrink-0"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-2xl transition-colors w-11 h-11"
           >
-            <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+            <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>

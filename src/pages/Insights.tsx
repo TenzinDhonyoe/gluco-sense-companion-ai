@@ -30,39 +30,39 @@ const Insights = () => {
     <div 
       className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
       style={{ 
-        paddingTop: 'env(safe-area-inset-top)', 
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)', 
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' 
       }}
     >
-      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 space-y-3 sm:space-y-4 lg:space-y-6">
-        {/* Header - Mobile optimized */}
-        <div className="pt-2 sm:pt-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Insights</h1>
-          <p className="text-sm sm:text-base text-gray-600">Your glucose management overview</p>
+      <div className="px-4 space-y-6">
+        {/* Header - Apple HIG compliant */}
+        <div className="py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
+          <p className="text-base text-gray-600">Your glucose management overview</p>
         </div>
 
-        {/* This Week's Focus - Mobile optimized */}
-        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg">
-          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <Focus className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+        {/* This Week's Focus - Apple HIG compliant */}
+        <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-md">
+          <CardHeader className="px-4 py-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Focus className="w-5 h-5" />
               <span>This Week's Focus</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-start space-x-2 sm:space-x-3">
-                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 mt-1 text-yellow-300 flex-shrink-0" />
+          <CardContent className="px-4 py-4">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
                 <div className="min-w-0">
-                  <h4 className="font-semibold mb-1 text-sm sm:text-base">Reduce post-meal spikes</h4>
-                  <p className="text-blue-100 text-xs sm:text-sm leading-relaxed">Try eating protein before carbs and take a 10-minute walk after meals</p>
+                  <h4 className="font-semibold mb-1 text-base">Reduce post-meal spikes</h4>
+                  <p className="text-blue-100 text-sm leading-relaxed">Try eating protein before carbs and take a 10-minute walk after meals</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-2 sm:space-x-3">
-                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 mt-1 text-yellow-300 flex-shrink-0" />
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 mt-1 text-yellow-300" />
                 <div className="min-w-0">
-                  <h4 className="font-semibold mb-1 text-sm sm:text-base">Improve sleep consistency</h4>
-                  <p className="text-blue-100 text-xs sm:text-sm leading-relaxed">Aim for 7-8 hours of sleep with consistent bedtime to help stabilize glucose</p>
+                  <h4 className="font-semibold mb-1 text-base">Improve sleep consistency</h4>
+                  <p className="text-blue-100 text-sm leading-relaxed">Aim for 7-8 hours of sleep with consistent bedtime to help stabilize glucose</p>
                 </div>
               </div>
             </div>
@@ -74,60 +74,60 @@ const Insights = () => {
           <HbA1cCard />
         </div>
 
-        {/* Key Insights - Mobile optimized */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
+        {/* Key Insights - Apple HIG compliant */}
+        <Card className="bg-white rounded-2xl shadow-md">
+          <CardHeader className="px-4 py-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Activity className="w-5 h-5 text-blue-500" />
               <span>Key Insights</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6">
+          <CardContent className="space-y-6 px-4 py-4">
             {/* Time in Range */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Time in Range (70-180 mg/dL)</span>
-                <span className="text-base sm:text-lg font-bold text-gray-900">{Math.round(timeInRange)}%</span>
+                <span className="text-sm font-medium text-gray-700">Time in Range (70-180 mg/dL)</span>
+                <span className="text-lg font-bold text-gray-900">{Math.round(timeInRange)}%</span>
               </div>
-              <Progress value={timeInRange} className="h-2 sm:h-3" />
+              <Progress value={timeInRange} className="h-3" />
               <p className="text-xs text-gray-500 mt-1">Target: {">"}70%</p>
             </div>
 
             {/* Post Meal Spikes */}
-            <div className="flex items-center justify-between p-2 sm:p-3 bg-orange-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900 text-sm sm:text-base">Post-meal spikes (last 7 days)</p>
-                <p className="text-xs sm:text-sm text-gray-600">{postMealSpikes} episodes above 180 mg/dL</p>
+                <p className="font-medium text-gray-900 text-base">Post-meal spikes (last 7 days)</p>
+                <p className="text-sm text-gray-600">{postMealSpikes} episodes above 180 mg/dL</p>
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-orange-600 flex-shrink-0">{postMealSpikes}</div>
+              <div className="text-2xl font-bold text-orange-600">{postMealSpikes}</div>
             </div>
 
             {/* Glucose Stability */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Glucose Stability</span>
-                <span className="text-base sm:text-lg font-bold text-gray-900">{Math.round(glucoseStability)}%</span>
+                <span className="text-sm font-medium text-gray-700">Glucose Stability</span>
+                <span className="text-lg font-bold text-gray-900">{Math.round(glucoseStability)}%</span>
               </div>
-              <Progress value={glucoseStability} className="h-2 sm:h-3" />
+              <Progress value={glucoseStability} className="h-3" />
               <p className="text-xs text-gray-500 mt-1">Based on glucose variability</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* What Affects Your Glucose - Mobile optimized */}
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-          <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
-            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 flex-shrink-0" />
+        {/* What Affects Your Glucose - Apple HIG compliant */}
+        <Card className="bg-white rounded-2xl shadow-md">
+          <CardHeader className="px-4 py-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Target className="w-5 h-5 text-purple-500" />
               <span>What Affects Your Glucose</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="space-y-2 sm:space-y-3">
+          <CardContent className="px-4 py-4">
+            <div className="space-y-3">
               {glucoseFactors.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-900 text-sm sm:text-base min-w-0 flex-1 pr-2">{item.factor}</span>
-                  <Badge className={`${item.color} bg-transparent border text-xs flex-shrink-0`}>
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl min-h-11">
+                  <span className="font-medium text-gray-900 text-base min-w-0 flex-1 pr-2">{item.factor}</span>
+                  <Badge className={`${item.color} bg-transparent border text-xs`}>
                     {item.impact} impact
                   </Badge>
                 </div>
