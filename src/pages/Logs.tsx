@@ -291,12 +291,7 @@ const Logs = () => {
 
           {/* ✍️ New Entry Section */}
           <Card className="bg-white rounded-2xl shadow-md">
-            <CardHeader className="px-6 py-4">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                ✍️ New Entry
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 px-6 pb-6 pt-0">
+            <CardContent className="space-y-4 px-6 py-6">
               <div className="relative">
                 <Textarea
                   placeholder="🍽️ What did you eat or do? 🏃‍♂️"
