@@ -78,8 +78,8 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-0">
-        <div className="rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-white w-full">
-          <div className="h-72 w-full">
+        <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-200 bg-white w-full p-4">
+          <div className="h-[220px] max-h-[250px] w-full">
             <GlucoseTrendChart 
               trendDirection={trendDirection} 
               containerClassName="h-full w-full"

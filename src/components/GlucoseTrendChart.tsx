@@ -338,58 +338,64 @@ const GlucoseTrendChart = ({
                 tick={{ fontSize: 10, fill: "#6B7280", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
-                width={30}
-                tickFormatter={(value) => `${value}`}
+                width={35}
+                tickFormatter={(value) => {
+                  if (value === 70) return 'Low';
+                  if (value === 100) return 'Normal';
+                  if (value === 140) return 'Elevated';
+                  if (value === 160) return 'High';
+                  return `${value}`;
+                }}
               >
                 <Label
                   value="mg/dL"
                   angle={-90}
                   position="insideLeft"
-                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 10, fontWeight: 600 }}
-                  offset={-2}
+                  style={{ textAnchor: 'middle', fill: '#9CA3AF', fontSize: 10, fontWeight: 400 }}
+                  offset={5}
                 />
               </YAxis>
               
-              {/* Soft, accessible glucose zones */}
-              <ReferenceArea y1={60} y2={70} fill="#F97316" fillOpacity={0.08} />
-              <ReferenceArea y1={70} y2={140} fill="#22C55E" fillOpacity={0.08} />
-              <ReferenceArea y1={140} y2={160} fill="#F59E0B" fillOpacity={0.08} />
-              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.08} />
+              {/* Translucent glucose zones */}
+              <ReferenceArea y1={60} y2={70} fill="#F97316" fillOpacity={0.05} />
+              <ReferenceArea y1={70} y2={140} fill="#22C55E" fillOpacity={0.05} />
+              <ReferenceArea y1={140} y2={160} fill="#F59E0B" fillOpacity={0.05} />
+              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.05} />
 
-              {/* Softer reference lines */}
-              <ReferenceLine y={70} stroke="#F97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-              <ReferenceLine y={140} stroke="#F59E0B" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
+              {/* Subtle solid reference lines */}
+              <ReferenceLine y={70} stroke="#F97316" strokeWidth={0.5} opacity={0.3} />
+              <ReferenceLine y={140} stroke="#F59E0B" strokeWidth={0.5} opacity={0.3} />
+              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={0.5} opacity={0.3} />
               
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '2 2', opacity: 0.7 }}/>
               
-              {/* Main glucose line with rounded joins */}
+              {/* Main glucose line with smooth curve */}
               <Line 
                 type="monotone" 
                 dataKey="value" 
                 stroke="#3B82F6"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                connectNulls={false}
                 dot={(props) => {
                   const { cx, cy, payload } = props;
                   if (!payload) return null;
                   
                   const color = getGlucoseColor(payload.value);
-                  const size = payload.source === 'sensor' ? 3 : 4;
                   
                   return (
                     <circle 
                       cx={cx} 
                       cy={cy} 
-                      r={size} 
-                      fill={color}
-                      stroke="white"
-                      strokeWidth={1}
+                      r={4} 
+                      fill="white"
+                      stroke={color}
+                      strokeWidth={2}
                     />
                   );
                 }}
-                activeDot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 3 }}
               />
               
               {/* Latest reading highlight */}
