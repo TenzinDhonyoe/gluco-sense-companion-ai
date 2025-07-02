@@ -138,30 +138,30 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
 
   return (
     <Card className="w-full max-w-md mx-auto rounded-2xl shadow-lg border-0">
-      <CardHeader className="pb-4 px-6 pt-6 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Calendar className="w-5 h-5 text-muted-foreground" />
+      <CardHeader className="pb-3 px-4 pt-4 text-center">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
         </div>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-base font-semibold text-gray-900">
           {isEditing ? 'Edit' : 'Log'} Glucose Reading
         </CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground">
           Manually add your latest glucose level
         </p>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent className="px-4 pb-4">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             
             {/* Glucose Value and Unit */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                      <Hash className="w-4 h-4 text-muted-foreground" />
+                    <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                      <Hash className="w-3 h-3 text-muted-foreground" />
                       Glucose Level
                     </FormLabel>
                     <FormControl>
@@ -171,14 +171,14 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                           type="number"
                           step="0.1"
                           placeholder="e.g., 110"
-                          className={`rounded-xl shadow-sm border focus:ring-2 h-12 text-lg ${
+                          className={`rounded-lg shadow-sm border focus:ring-1 h-9 text-sm ${
                             category === 'low' ? 'border-yellow-500 focus:ring-yellow-200' :
                             category === 'high' ? 'border-red-500 focus:ring-red-200' :
                             'border-green-500 focus:ring-green-200'
                           }`}
                         />
                         {!isNaN(valueNum) && (
-                          <div className={`absolute -bottom-5 left-0 text-xs font-medium ${
+                          <div className={`absolute -bottom-4 left-0 text-xs font-medium ${
                             category === 'low' ? 'text-yellow-600' :
                             category === 'high' ? 'text-red-600' :
                             'text-green-600'
@@ -198,14 +198,14 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Unit</FormLabel>
+                    <FormLabel className="text-xs font-medium">Unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-xl shadow-sm border-gray-200 h-12">
+                        <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-9 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-white shadow-lg border rounded-xl z-50">
+                      <SelectContent className="bg-white shadow-lg border rounded-lg z-50">
                         <SelectItem value="mg/dL">mg/dL</SelectItem>
                         <SelectItem value="mmol/L">mmol/L</SelectItem>
                       </SelectContent>
@@ -217,21 +217,21 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
             </div>
 
             {/* Date and Time */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                      <Calendar className="w-3 h-3 text-muted-foreground" />
                       Date
                     </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         type="date" 
-                        className="rounded-xl shadow-sm border-gray-200 h-12 focus:ring-2 focus:ring-blue-200"
+                        className="rounded-lg shadow-sm border-gray-200 h-9 text-sm focus:ring-1 focus:ring-blue-200"
                       />
                     </FormControl>
                     <FormMessage />
@@ -244,15 +244,15 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                 name="time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
+                    <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
                       Time
                     </FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         type="time" 
-                        className="rounded-xl shadow-sm border-gray-200 h-12 focus:ring-2 focus:ring-blue-200"
+                        className="rounded-lg shadow-sm border-gray-200 h-9 text-sm focus:ring-1 focus:ring-blue-200"
                       />
                     </FormControl>
                     <FormMessage />
@@ -267,13 +267,13 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
               name="tag"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
+                  <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                    <Tag className="w-3 h-3 text-muted-foreground" />
                     Tag (Optional)
                   </FormLabel>
                   
                   {/* Quick Tag Chips */}
-                  <div className="flex flex-wrap gap-2 mb-3">
+                  <div className="flex flex-wrap gap-1 mb-2">
                     {quickTags.map((tag) => (
                       <Button
                         key={tag}
@@ -281,7 +281,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                         size="sm"
                         variant={field.value === tag ? "default" : "outline"}
                         onClick={() => field.onChange(tag)}
-                        className="rounded-full px-3 py-1 text-xs capitalize"
+                        className="rounded-full px-2 py-0.5 text-xs capitalize h-6"
                       >
                         {glucoseTags.find(t => t.value === tag)?.label || tag}
                       </Button>
@@ -290,11 +290,11 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                   
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="rounded-xl shadow-sm border-gray-200 h-12">
+                      <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-9 text-sm">
                         <SelectValue placeholder="Select a tag" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white shadow-lg border rounded-xl z-50">
+                    <SelectContent className="bg-white shadow-lg border rounded-lg z-50">
                       {glucoseTags.map((tag) => (
                         <SelectItem key={tag.value} value={tag.value}>
                           {tag.label}
@@ -313,15 +313,15 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
+                  <FormLabel className="flex items-center gap-1 text-xs font-medium">
+                    <FileText className="w-3 h-3 text-muted-foreground" />
                     Notes (Optional)
                   </FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
                       placeholder="e.g., Ate pasta before reading..."
-                      className="resize-none h-24 rounded-xl shadow-sm border-gray-200 focus:ring-2 focus:ring-blue-200"
+                      className="resize-none h-16 rounded-lg shadow-sm border-gray-200 focus:ring-1 focus:ring-blue-200 text-sm"
                     />
                   </FormControl>
                   <FormMessage />
@@ -330,14 +330,14 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
             />
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2 pt-2">
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 bg-primary text-white rounded-xl shadow-sm px-4 py-2.5 h-12 font-medium"
+                className="flex-1 bg-primary text-white rounded-lg shadow-sm px-3 py-2 h-9 font-medium text-sm"
               >
-                <Save className="w-4 h-4 mr-2" />
-                {isSubmitting ? 'Saving...' : isEditing ? 'Update Reading' : 'Save Reading'}
+                <Save className="w-3 h-3 mr-1" />
+                {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Save'}
               </Button>
               {onCancel && (
                 <Button
@@ -345,9 +345,9 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                   variant="outline"
                   onClick={onCancel}
                   disabled={isSubmitting}
-                  className="rounded-xl border-gray-200 px-4 py-2.5 h-12"
+                  className="rounded-lg border-gray-200 px-3 py-2 h-9 text-sm"
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <X className="w-3 h-3 mr-1" />
                   Cancel
                 </Button>
               )}
