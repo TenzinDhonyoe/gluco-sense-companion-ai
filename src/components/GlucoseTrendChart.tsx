@@ -349,15 +349,15 @@ const GlucoseTrendChart = ({
   
     return (
       <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100", containerClassName)}>
-        {/* Chart Content */}
-        <div className="h-full w-full p-4">
+        {/* Enhanced Chart Content */}
+        <div className="h-full w-full p-4">{/* Updated container */}
           <ChartContainer config={chartConfig} className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart 
                 data={dataWithLatestFlag} 
                 margin={{ top: 10, right: 15, left: 15, bottom: 40 }}
               >
-              <CartesianGrid strokeDasharray="none" className="stroke-gray-200/30" horizontal={true} vertical={false} />
+              <CartesianGrid strokeDasharray="none" className="stroke-gray-200/40" horizontal={true} vertical={false} />
               
               <XAxis 
                 dataKey="timestamp" 
