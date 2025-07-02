@@ -40,13 +40,22 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
     return 'border-green-400';
   };
 
-  const getBackgroundColor = () => {
-    if (!latestValue) return 'bg-white';
+  const getStatusText = () => {
+    if (!latestValue) return 'No data';
     
-    if (latestValue < 80) return 'bg-gradient-to-r from-orange-50 to-orange-100';
-    if (latestValue > 160) return 'bg-gradient-to-r from-red-50 to-red-100';
-    if (latestValue > 130) return 'bg-gradient-to-r from-yellow-50 to-yellow-100';
-    return 'bg-gradient-to-r from-green-50 to-green-100';
+    if (latestValue < 80) return 'Slightly low';
+    if (latestValue > 160) return 'High';
+    if (latestValue > 130) return 'Elevated';
+    return 'In range';
+  };
+
+  const getStatusTextColor = () => {
+    if (!latestValue) return 'text-gray-500';
+    
+    if (latestValue < 80) return 'text-orange-600';
+    if (latestValue > 160) return 'text-red-600';
+    if (latestValue > 130) return 'text-yellow-600';
+    return 'text-green-600';
   };
 
   const trendInfo = getTrendInfo(trend);
@@ -74,24 +83,27 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
 
   return (
     <Card className="bg-transparent border-0 shadow-none p-0 w-full">
-      <CardHeader className="p-0 pb-6 flex flex-row justify-center items-center">
-        <div className={`flex items-center ${getBackgroundColor()} border-2 ${getBorderColor()} rounded-2xl px-6 py-4 gap-4 shadow-lg transition-all duration-300`}>
+      <CardHeader className="p-0 pb-4 flex flex-row justify-center items-center">
+        <div className={`flex items-center bg-white border-2 ${getBorderColor()} rounded-xl px-4 py-3 gap-2 shadow-sm transition-all duration-300`}>
           <div className="text-center">
-            <p className="text-4xl font-bold text-gray-800 leading-none">
+            <p className="text-3xl font-bold text-gray-800 leading-none">
               {latestValue ?? '...'}
             </p>
-            <p className="text-sm text-gray-600 font-medium">mg/dL</p>
+            <p className="text-xs text-gray-500">mg/dL</p>
+            <p className={`text-xs font-medium ${getStatusTextColor()}`}>
+              {getStatusText()}
+            </p>
           </div>
           {TrendIcon && (
-            <div className={`p-3 rounded-full ${iconBgColor} shadow-md ${iconAnimation}`}>
-              <TrendIcon className="w-6 h-6 text-white" />
+            <div className={`p-2 rounded-full ${iconBgColor} shadow-sm ${trendDirection !== 'flat' ? iconAnimation : ''}`}>
+              <TrendIcon className="w-4 h-4 text-white" />
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 p-0">
-        <div className="rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-white w-full">
-          <div className="h-72 w-full">
+      <CardContent className="space-y-3 p-0">
+        <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100 bg-white w-full">
+          <div className="h-44 w-full">
             <GlucoseTrendChart 
               trendDirection={trendDirection} 
               containerClassName="h-full w-full"
@@ -101,18 +113,14 @@ const GlucoseTrendCard = ({ trend, lastReading, latestValue, trendDirection, glu
             />
           </div>
         </div>
-        <div className="text-center pt-2">
-          <p className="text-sm text-gray-600 mb-2">{trendInfo.description}</p>
-          <div className="flex items-center justify-center gap-2 text-xs">
-            <p className="text-gray-500">
-              Last updated {minutesAgo > 0 ? `${minutesAgo} minutes ago` : 'just now'}
-            </p>
-            <span className="text-gray-400">&middot;</span>
-            <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
-              See full history
-              <ArrowRight className="w-3 h-3 ml-1" />
-            </Link>
-          </div>
+        <div className="flex items-center justify-between text-xs pt-1">
+          <p className="text-gray-500">
+            {minutesAgo > 0 ? `${minutesAgo}m ago` : 'Now'}
+          </p>
+          <Link to="/insights/full" state={{ trendDirection }} className="flex items-center text-blue-600 hover:underline font-medium">
+            View Trends
+            <ArrowRight className="w-3 h-3 ml-1" />
+          </Link>
         </div>
       </CardContent>
     </Card>

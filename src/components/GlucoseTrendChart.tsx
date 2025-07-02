@@ -360,88 +360,55 @@ const GlucoseTrendChart = ({
   const yTicks = [70, 100, 130, 160, 190];
   
   return (
-    <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl", containerClassName)}>
+    <div className={cn("h-full w-full relative bg-gradient-to-br from-blue-50/30 to-indigo-50/30 rounded-xl", containerClassName)}>
       {/* Chart Content */}
-      <div className="h-full w-full p-1 sm:p-2 relative">
-        {/* Zone Legend */}
-        <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-sm border border-gray-200/50">
-          <div className="flex flex-col gap-1 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-2 rounded-sm bg-green-500 opacity-60"></div>
-              <span className="text-gray-600">Normal (80-130)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-2 rounded-sm bg-yellow-500 opacity-60"></div>
-              <span className="text-gray-600">Elevated (130-160)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-2 rounded-sm bg-red-500 opacity-60"></div>
-              <span className="text-gray-600">High (&gt;160)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-2 rounded-sm bg-orange-500 opacity-60"></div>
-              <span className="text-gray-600">Low (&lt;80)</span>
-            </div>
-          </div>
-        </div>
-        
+      <div className="h-full w-full p-4">
         <ChartContainer config={chartConfig} className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={dataWithLatestFlag} 
-              margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
+              margin={{ top: 10, right: 10, left: 25, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+              <CartesianGrid strokeDasharray="none" className="stroke-gray-200/30" />
               
+              {/* Hide X-axis on dashboard view */}
               <XAxis 
                 dataKey="timestamp" 
                 type="number"
                 domain={['dataMin', 'dataMax']}
-                ticks={xTicks}
-                tick={<CustomXAxisTick />}
-                axisLine={false}
-                tickLine={false}
-                padding={{ left: 5, right: 5 }}
+                hide={true}
               />
               
               <YAxis 
                 orientation="left"
                 domain={yAxisDomain}
-                ticks={yTicks}
-                tick={{ fontSize: 10, fill: "#6B7280", fontWeight: 500 }}
+                ticks={[80, 130, 160]}
+                tick={{ fontSize: 9, fill: "#9CA3AF", fontWeight: 500 }}
                 axisLine={false}
                 tickLine={false}
-                width={30}
+                width={25}
                 tickFormatter={(value) => `${value}`}
-              >
-                <Label
-                  value="mg/dL"
-                  angle={-90}
-                  position="insideLeft"
-                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 10, fontWeight: 600 }}
-                  offset={-2}
-                />
-              </YAxis>
+              />
               
-              {/* Enhanced glucose zones with stronger colors */}
-              <ReferenceArea y1={60} y2={80} fill="#F97316" fillOpacity={0.15} />
-              <ReferenceArea y1={80} y2={130} fill="#22C55E" fillOpacity={0.12} />
-              <ReferenceArea y1={130} y2={160} fill="#F59E0B" fillOpacity={0.15} />
-              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.15} />
+              {/* Simplified glucose zones with subtle colors */}
+              <ReferenceArea y1={60} y2={80} fill="#F97316" fillOpacity={0.06} />
+              <ReferenceArea y1={80} y2={130} fill="#22C55E" fillOpacity={0.06} />
+              <ReferenceArea y1={130} y2={160} fill="#F59E0B" fillOpacity={0.06} />
+              <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.06} />
 
-              {/* Zone boundary lines */}
-              <ReferenceLine y={80} stroke="#F97316" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.7} />
-              <ReferenceLine y={130} stroke="#F59E0B" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.7} />
-              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1.5} strokeDasharray="3 3" opacity={0.7} />
+              {/* Minimal zone boundary lines */}
+              <ReferenceLine y={80} stroke="#F97316" strokeWidth={0.5} opacity={0.4} />
+              <ReferenceLine y={130} stroke="#F59E0B" strokeWidth={0.5} opacity={0.4} />
+              <ReferenceLine y={160} stroke="#EF4444" strokeWidth={0.5} opacity={0.4} />
               
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '2 2', opacity: 0.7 }}/>
               
-              {/* Main glucose line with smooth curve and enhanced styling */}
+              {/* Main glucose line with smooth curve */}
               <Line 
                 type="monotone" 
                 dataKey="value" 
                 stroke="#3B82F6"
-                strokeWidth={3}
+                strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 dot={(props) => {
@@ -449,32 +416,31 @@ const GlucoseTrendChart = ({
                   if (!payload) return null;
                   
                   const color = getGlucoseColor(payload.value);
-                  const size = payload.source === 'sensor' ? 4 : 5;
                   
                   return (
                     <circle 
                       cx={cx} 
                       cy={cy} 
-                      r={size} 
+                      r={3} 
                       fill={color}
                       stroke="white"
                       strokeWidth={2}
-                      className="drop-shadow-sm"
+                      className="drop-shadow-sm cursor-pointer"
                     />
                   );
                 }}
                 activeDot={{ 
-                  r: 6, 
+                  r: 5, 
                   fill: "#3B82F6", 
                   stroke: "white", 
-                  strokeWidth: 3,
+                  strokeWidth: 2,
                   className: "drop-shadow-md"
                 }}
               />
               
-              {/* Latest reading highlight with pulse animation */}
+              {/* Latest reading highlight */}
               <Line 
-                type="monotone"
+                type="monotone" 
                 dataKey="value"
                 stroke="transparent"
                 strokeWidth={0}
