@@ -301,8 +301,8 @@ const PreDiabeticGlucoseChart = ({
     return Math.round(sum / last7Days.length);
   }, [glucoseData]);
 
-  // Get motivational insight
-  const getMotivationalInsight = () => {
+  // Get motivational insight - properly memoized
+  const motivationalInsight = useMemo(() => {
     if (!glucoseData.length) return "Start tracking to unlock insights";
     
     const morningReadings = glucoseData.filter(reading => {
@@ -328,7 +328,7 @@ const PreDiabeticGlucoseChart = ({
     } else {
       return "📈 Keep tracking to improve your patterns";
     }
-  };
+  }, [glucoseData, timeInRangeData.normal]);
 
   return (
     <div className={cn("w-full space-y-5", containerClassName)}>
@@ -391,7 +391,7 @@ const PreDiabeticGlucoseChart = ({
 
           {/* Motivational Insight */}
           <div className="pt-2">
-            <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight()}</p>
+            <p className="text-sm text-blue-600 font-medium">{motivationalInsight}</p>
           </div>
         </div>
       </div>
