@@ -288,164 +288,242 @@ const PreDiabeticGlucoseChart = ({
   }
 
   return (
-    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4", containerClassName)}>
+    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 space-y-6", containerClassName)}>
       {/* Time in Range Progress Bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-900">Time in Range (Last 7 Days)</h3>
-          <span className="text-sm font-medium text-gray-600">
-            {timeInRangeData.normal}% in target range
-          </span>
+      <div className="space-y-3">
+        <div className="text-center">
+          <h3 className="text-base font-semibold text-gray-900">Time in Range</h3>
+          <p className="text-2xl font-bold text-green-600 mt-1">
+            {timeInRangeData.normal}% in target
+          </p>
+          <p className="text-sm text-muted-foreground">Last 7 days</p>
         </div>
         
-        <div className="flex rounded-lg overflow-hidden h-3 bg-gray-200">
-          <div 
-            className="bg-orange-400" 
-            style={{ width: `${timeInRangeData.low}%` }}
-            title={`Low (<80): ${timeInRangeData.low}%`}
-          />
-          <div 
-            className="bg-green-500" 
-            style={{ width: `${timeInRangeData.normal}%` }}
-            title={`Normal (80-130): ${timeInRangeData.normal}%`}
-          />
-          <div 
-            className="bg-yellow-500" 
-            style={{ width: `${timeInRangeData.elevated}%` }}
-            title={`Elevated (130-160): ${timeInRangeData.elevated}%`}
-          />
-          <div 
-            className="bg-red-500" 
-            style={{ width: `${timeInRangeData.high}%` }}
-            title={`High (>160): ${timeInRangeData.high}%`}
-          />
+        <div className="relative">
+          <div className="flex rounded-full overflow-hidden h-4 bg-gray-100 shadow-inner">
+            <div 
+              className="bg-orange-300/60 transition-all duration-500" 
+              style={{ width: `${timeInRangeData.low}%` }}
+            />
+            <div 
+              className="bg-green-400 transition-all duration-500" 
+              style={{ width: `${timeInRangeData.normal}%` }}
+            />
+            <div 
+              className="bg-yellow-400/80 transition-all duration-500" 
+              style={{ width: `${timeInRangeData.elevated}%` }}
+            />
+            <div 
+              className="bg-red-300/60 transition-all duration-500" 
+              style={{ width: `${timeInRangeData.high}%` }}
+            />
+          </div>
+          
+          {/* Inline segment labels */}
+          <div className="flex justify-center gap-4 mt-3">
+            {timeInRangeData.low > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-orange-300/60"></div>
+                <span className="text-xs text-gray-600">{timeInRangeData.low}%</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-400"></div>
+              <span className="text-xs font-medium text-gray-700">{timeInRangeData.normal}%</span>
+            </div>
+            {timeInRangeData.elevated > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-yellow-400/80"></div>
+                <span className="text-xs text-gray-600">{timeInRangeData.elevated}%</span>
+              </div>
+            )}
+            {timeInRangeData.high > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-300/60"></div>
+                <span className="text-xs text-gray-600">{timeInRangeData.high}%</span>
+              </div>
+            )}
+          </div>
         </div>
-        
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>🟧 Low {timeInRangeData.low}%</span>
-          <span>🟩 Normal {timeInRangeData.normal}%</span>
-          <span>🟨 Elevated {timeInRangeData.elevated}%</span>
-          <span>🟥 High {timeInRangeData.high}%</span>
+
+        {/* Encouraging caption */}
+        <div className="text-center">
+          {timeInRangeData.normal >= 70 ? (
+            <p className="text-sm text-green-600 font-medium">✅ Excellent glucose control this week!</p>
+          ) : timeInRangeData.normal >= 50 ? (
+            <p className="text-sm text-blue-600 font-medium">📈 You're making great progress!</p>
+          ) : (
+            <p className="text-sm text-gray-600 font-medium">🎯 Keep tracking for better insights</p>
+          )}
         </div>
       </div>
 
-      {/* Insights Cards */}
+      {/* Insight Highlight Cards */}
       {insights.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          {insights.map((insight, index) => (
-            <Card key={index} className="bg-white shadow-sm">
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2">
-                  <insight.icon className={`w-4 h-4 mt-0.5 ${insight.color}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{insight.text}</p>
-                    <p className="text-xs text-gray-500">{insight.subtext}</p>
+        <div className="space-y-3">
+          <h4 className="text-base font-semibold text-gray-900">Weekly Insights</h4>
+          <div className="space-y-3">
+            {insights.map((insight, index) => (
+              <Card key={index} className="bg-white rounded-xl shadow-sm border-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xl">
+                      {insight.icon === TrendingDown ? '🟢' : 
+                       insight.icon === TrendingUp ? '🔴' : '📅'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-gray-900">{insight.text}</p>
+                      <p className="text-sm text-muted-foreground">{insight.subtext}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* View Mode Toggle */}
-      <div className="mb-4">
-        <ToggleGroup 
-          type="single" 
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-          className="justify-start"
-        >
-          <ToggleGroupItem value="trend" size="sm">Trend</ToggleGroupItem>
-          <ToggleGroupItem value="dailyChange" size="sm">Daily Change</ToggleGroupItem>
-          <ToggleGroupItem value="timeInRange" size="sm">Time in Range</ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      {/* Graph Section */}
+      <div className="space-y-4">
+        {/* View Mode Pills */}
+        <div className="flex justify-center">
+          <div className="bg-muted rounded-full p-1 inline-flex">
+            <button
+              onClick={() => setViewMode('trend')}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                viewMode === 'trend' 
+                  ? "bg-white text-gray-900 shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              Trend
+            </button>
+            <button
+              onClick={() => setViewMode('dailyChange')}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                viewMode === 'dailyChange' 
+                  ? "bg-white text-gray-900 shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              Daily Change
+            </button>
+            <button
+              onClick={() => setViewMode('timeInRange')}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                viewMode === 'timeInRange' 
+                  ? "bg-white text-gray-900 shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
+              )}
+            >
+              Weekly View
+            </button>
+          </div>
+        </div>
 
-      {/* Chart */}
-      <div className="h-52 w-full">
-        <ChartContainer 
-          config={{ 
-            glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
-            change: { label: "Daily Change", color: "#10B981" }
-          }} 
-          className="h-full w-full"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            {viewMode === 'dailyChange' ? (
-              <BarChart data={processedData} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
-                <XAxis 
-                  dataKey="day" 
-                  tick={{ fontSize: 10, fill: "#6B7280" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10, fill: "#6B7280" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={30}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
-                <Bar 
-                  dataKey="change" 
-                  fill="#3B82F6"
-                  radius={[2, 2, 0, 0]}
-                  shape={(props: any) => {
-                    const { payload, ...rest } = props;
-                    const color = payload?.isImprovement ? "#10B981" : "#EF4444";
-                    return <rect {...rest} fill={color} />;
-                  }}
-                />
-              </BarChart>
-            ) : (
-              <LineChart data={processedData} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  type="number"
-                  domain={['dataMin', 'dataMax']}
-                  tick={{ fontSize: 10, fill: "#6B7280" }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                />
-                <YAxis 
-                  domain={[60, 200]}
-                  tick={{ fontSize: 10, fill: "#6B7280" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={30}
-                />
-                
-                {/* Glucose zones */}
-                <ReferenceArea y1={60} y2={80} fill="#F97316" fillOpacity={0.08} />
-                <ReferenceArea y1={80} y2={130} fill="#22C55E" fillOpacity={0.08} />
-                <ReferenceArea y1={130} y2={160} fill="#F59E0B" fillOpacity={0.08} />
-                <ReferenceArea y1={160} y2={200} fill="#EF4444" fillOpacity={0.08} />
+        {/* Enhanced Chart */}
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="h-[200px] w-full">
+            <ChartContainer 
+              config={{ 
+                glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
+                change: { label: "Daily Change", color: "#10B981" }
+              }} 
+              className="h-full w-full"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                {viewMode === 'dailyChange' ? (
+                  <BarChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                    <XAxis 
+                      dataKey="day" 
+                      tick={{ fontSize: 11, fill: "#6B7280" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 11, fill: "#6B7280" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={35}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
+                    <Bar 
+                      dataKey="change" 
+                      fill="#3B82F6"
+                      radius={[4, 4, 0, 0]}
+                      shape={(props: any) => {
+                        const { payload, ...rest } = props;
+                        const color = payload?.isImprovement ? "#10B981" : "#EF4444";
+                        return <rect {...rest} fill={color} />;
+                      }}
+                    />
+                  </BarChart>
+                ) : (
+                  <LineChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                    <XAxis 
+                      dataKey="timestamp" 
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
+                      tick={{ fontSize: 11, fill: "#6B7280" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis 
+                      domain={[60, 200]}
+                      tick={{ fontSize: 11, fill: "#6B7280" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={35}
+                    />
+                    
+                    {/* Glucose zones with softer colors */}
+                    <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
+                    <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
+                    <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
+                    <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
 
-                <ReferenceLine y={80} stroke="#F97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-                <ReferenceLine y={130} stroke="#F59E0B" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-                <ReferenceLine y={160} stroke="#EF4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-                
-                <Tooltip content={<CustomTooltip />} />
-                
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3B82F6"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  dot={{ r: 4, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
-                />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
-        </ChartContainer>
+                    <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                    <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                    <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                    
+                    <Tooltip content={<CustomTooltip />} />
+                    
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#3B82F6"
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      dot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                      activeDot={{ 
+                        r: 7, 
+                        fill: "#3B82F6", 
+                        stroke: "white", 
+                        strokeWidth: 3,
+                        className: "animate-pulse"
+                      }}
+                    />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
+          
+          {/* Chart Footer */}
+          <div className="mt-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              💡 Tap any point for details • Swipe to see past 14 days
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
