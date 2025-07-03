@@ -326,55 +326,6 @@ const PreDiabeticGlucoseChart = ({
 
   return (
     <div className={cn("w-full rounded-2xl px-4 py-5 space-y-4", containerClassName)}>
-      {/* Compact Time in Range Bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">Time in Range</h3>
-          <p className="text-sm text-muted-foreground">Last 7 days</p>
-        </div>
-        
-        <div className="relative">
-          <div className="flex rounded-full overflow-hidden h-3 bg-gray-100 shadow-inner relative">
-            {/* Only show segments that have values > 0 */}
-            {timeInRangeData.low > 0 && (
-              <div 
-                className="bg-orange-300/60 transition-all duration-500" 
-                style={{ width: `${timeInRangeData.low}%` }}
-              />
-            )}
-            <div 
-              className="bg-green-400 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.normal}%` }}
-            />
-            {timeInRangeData.elevated > 0 && (
-              <div 
-                className="bg-yellow-400/80 transition-all duration-500" 
-                style={{ width: `${timeInRangeData.elevated}%` }}
-              />
-            )}
-            {timeInRangeData.high > 0 && (
-              <div 
-                className="bg-red-300/60 transition-all duration-500" 
-                style={{ width: `${timeInRangeData.high}%` }}
-              />
-            )}
-            
-            {/* Percentage labels on bar */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-medium text-white mix-blend-difference">
-                {timeInRangeData.normal}% in range
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Motivational insight */}
-        <div className="text-center">
-          <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight}</p>
-        </div>
-      </div>
-
-
       {/* Graph Section */}
       <div className="space-y-3">
         {/* Refined View Mode Pills */}
