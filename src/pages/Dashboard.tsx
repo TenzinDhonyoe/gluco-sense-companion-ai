@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
+import PreDiabeticGlucoseChart from "@/components/PreDiabeticGlucoseChart";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
 import RewardsCard from "@/components/RewardsCard";
@@ -143,9 +144,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Current Glucose - Full width responsive */}
+        {/* Enhanced Glucose Chart for Prediabetic Users */}
         <div className="w-full">
-          <GlucoseTrendCard trend={calculateTrendCategory()} lastReading={getLastReadingTime()} latestValue={latestReading?.value} trendDirection={calculateTrendDirection()} glucoseData={glucoseData} onDataUpdate={handleGlucoseDataUpdate} />
+          <PreDiabeticGlucoseChart onDataUpdate={handleGlucoseDataUpdate} />
         </div>
 
         {/* AI Suggestions - Responsive card */}
