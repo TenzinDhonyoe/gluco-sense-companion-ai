@@ -340,15 +340,7 @@ const GlucoseTrendChart = ({
                 tickLine={false}
                 width={30}
                 tickFormatter={(value) => `${value}`}
-              >
-                <Label
-                  value="mg/dL"
-                  angle={-90}
-                  position="insideLeft"
-                  style={{ textAnchor: 'middle', fill: '#6B7280', fontSize: 10, fontWeight: 600 }}
-                  offset={-2}
-                />
-              </YAxis>
+              />
               
               {/* Soft, accessible glucose zones */}
               <ReferenceArea y1={60} y2={70} fill="#F97316" fillOpacity={0.08} />
