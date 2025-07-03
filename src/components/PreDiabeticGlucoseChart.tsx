@@ -287,75 +287,123 @@ const PreDiabeticGlucoseChart = ({
     );
   }
 
+  // Calculate average glucose for the week
+  const weeklyAverage = useMemo(() => {
+    if (!glucoseData.length) return 0;
+    
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+    );
+    
+    if (!last7Days.length) return 0;
+    
+    const sum = last7Days.reduce((acc, reading) => acc + reading.value, 0);
+    return Math.round(sum / last7Days.length);
+  }, [glucoseData]);
+
+  // Get motivational insight
+  const getMotivationalInsight = () => {
+    if (!glucoseData.length) return "Start tracking to unlock insights";
+    
+    const morningReadings = glucoseData.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour >= 6 && hour <= 10;
+    });
+    
+    if (morningReadings.length >= 3) {
+      const morningVariance = morningReadings.reduce((acc, reading, _, arr) => {
+        const avg = arr.reduce((sum, r) => sum + r.value, 0) / arr.length;
+        return acc + Math.pow(reading.value - avg, 2);
+      }, 0) / morningReadings.length;
+      
+      if (morningVariance < 400) {
+        return "✅ Stable mornings detected – nice work!";
+      }
+    }
+    
+    if (timeInRangeData.normal >= 70) {
+      return "🎯 You're in excellent control!";
+    } else if (glucoseData.length < 10) {
+      return "💡 Try logging after meals for better trends";
+    } else {
+      return "📈 Keep tracking to improve your patterns";
+    }
+  };
+
   return (
-    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl px-6 py-6 space-y-6", containerClassName)}>
-      {/* Time in Range Progress Bar */}
-      <div className="space-y-3">
-        <div className="text-center">
-          <h3 className="text-base font-semibold text-gray-900">Time in Range</h3>
-          <p className="text-2xl font-bold text-green-600 mt-1">
-            {timeInRangeData.normal}% in target
-          </p>
-          <p className="text-sm text-muted-foreground">Last 7 days</p>
-        </div>
-        
-        <div className="relative">
-          <div className="flex rounded-full overflow-hidden h-4 bg-gray-100 shadow-inner">
-            <div 
-              className="bg-orange-300/60 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.low}%` }}
-            />
-            <div 
-              className="bg-green-400 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.normal}%` }}
-            />
-            <div 
-              className="bg-yellow-400/80 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.elevated}%` }}
-            />
-            <div 
-              className="bg-red-300/60 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.high}%` }}
-            />
+    <div className={cn("w-full space-y-5", containerClassName)}>
+      {/* Summary Card */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="text-center space-y-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Your average this week</p>
+            <p className="text-2xl font-bold text-gray-900">{weeklyAverage || '--'} mg/dL</p>
           </div>
           
-          {/* Inline segment labels */}
-          <div className="flex justify-center gap-4 mt-3">
-            {timeInRangeData.low > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-orange-300/60"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.low}%</span>
+          {/* Compact Time in Range */}
+          <div className="space-y-2">
+            <div className="relative">
+              <div className="flex rounded-full overflow-hidden h-3 bg-gray-100">
+                {timeInRangeData.low > 0 && (
+                  <div 
+                    className="bg-orange-300 transition-all duration-500" 
+                    style={{ width: `${timeInRangeData.low}%` }}
+                  />
+                )}
+                <div 
+                  className="bg-green-400 transition-all duration-500 relative" 
+                  style={{ width: `${timeInRangeData.normal}%` }}
+                >
+                  {timeInRangeData.normal > 20 && (
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
+                      {timeInRangeData.normal}%
+                    </span>
+                  )}
+                </div>
+                {timeInRangeData.elevated > 0 && (
+                  <div 
+                    className="bg-yellow-400 transition-all duration-500 relative" 
+                    style={{ width: `${timeInRangeData.elevated}%` }}
+                  >
+                    {timeInRangeData.elevated > 15 && (
+                      <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
+                        {timeInRangeData.elevated}%
+                      </span>
+                    )}
+                  </div>
+                )}
+                {timeInRangeData.high > 0 && (
+                  <div 
+                    className="bg-red-400 transition-all duration-500" 
+                    style={{ width: `${timeInRangeData.high}%` }}
+                  />
+                )}
               </div>
-            )}
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <span className="text-xs font-medium text-gray-700">{timeInRangeData.normal}%</span>
             </div>
-            {timeInRangeData.elevated > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-yellow-400/80"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.elevated}%</span>
-              </div>
-            )}
-            {timeInRangeData.high > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-300/60"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.high}%</span>
-              </div>
-            )}
+            
+            <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+              <span>🟢 {timeInRangeData.normal}% in range</span>
+              {timeInRangeData.elevated > 0 && (
+                <span>🟡 {timeInRangeData.elevated}% elevated</span>
+              )}
+            </div>
+          </div>
+
+          {/* Motivational Insight */}
+          <div className="pt-2">
+            <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight()}</p>
           </div>
         </div>
+      </div>
 
-        {/* Encouraging caption */}
-        <div className="text-center">
-          {timeInRangeData.normal >= 70 ? (
-            <p className="text-sm text-green-600 font-medium">Excellent glucose control this week!</p>
-          ) : timeInRangeData.normal >= 50 ? (
-            <p className="text-sm text-blue-600 font-medium">You're making great progress!</p>
-          ) : (
-            <p className="text-sm text-gray-600 font-medium">Keep tracking for better insights</p>
-          )}
-        </div>
+      {/* Quick CTA */}
+      <div className="flex justify-center gap-3">
+        <button className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
+          + Log Glucose
+        </button>
+        <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors">
+          💬 Ask GlucoCoach AI
+        </button>
       </div>
 
 
@@ -401,7 +449,7 @@ const PreDiabeticGlucoseChart = ({
         </div>
 
         {/* Enhanced Chart */}
-        <div className="h-[200px] w-full">
+        <div className="h-[180px] w-full bg-white rounded-2xl p-4 shadow-sm animate-fade-in">
           <ChartContainer 
             config={{ 
               glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
@@ -412,7 +460,7 @@ const PreDiabeticGlucoseChart = ({
             <ResponsiveContainer width="100%" height="100%">
               {viewMode === 'dailyChange' ? (
                 <BarChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" strokeOpacity={0.8} />
                   <XAxis 
                     dataKey="day" 
                     tick={{ fontSize: 11, fill: "#6B7280" }}
@@ -426,11 +474,11 @@ const PreDiabeticGlucoseChart = ({
                     width={35}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
+                  <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="2 2" strokeOpacity={0.6} />
                   <Bar 
                     dataKey="change" 
                     fill="#3B82F6"
-                    radius={[4, 4, 0, 0]}
+                    radius={[6, 6, 0, 0]}
                     shape={(props: any) => {
                       const { payload, ...rest } = props;
                       const color = payload?.isImprovement ? "#10B981" : "#EF4444";
@@ -440,7 +488,7 @@ const PreDiabeticGlucoseChart = ({
                 </BarChart>
               ) : (
                 <LineChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" strokeOpacity={0.8} />
                   <XAxis 
                     dataKey="timestamp" 
                     type="number"
@@ -459,14 +507,14 @@ const PreDiabeticGlucoseChart = ({
                   />
                   
                   {/* Glucose zones with softer colors */}
-                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
-                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
-                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
-                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
+                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.04} />
+                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.04} />
+                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.04} />
+                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.04} />
 
-                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.3} />
+                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.3} />
+                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="3 3" strokeOpacity={0.3} />
                   
                   <Tooltip content={<CustomTooltip />} />
                   
@@ -474,16 +522,15 @@ const PreDiabeticGlucoseChart = ({
                     type="monotone" 
                     dataKey="value" 
                     stroke="#3B82F6"
-                    strokeWidth={3}
+                    strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    dot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                    dot={{ r: 3, fill: "#3B82F6", stroke: "#3B82F6", strokeWidth: 1, strokeOpacity: 0.8 }}
                     activeDot={{ 
-                      r: 7, 
+                      r: 6, 
                       fill: "#3B82F6", 
                       stroke: "white", 
-                      strokeWidth: 3,
-                      className: "animate-pulse"
+                      strokeWidth: 2
                     }}
                   />
                 </LineChart>
