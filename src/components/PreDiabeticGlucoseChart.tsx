@@ -288,7 +288,7 @@ const PreDiabeticGlucoseChart = ({
   }
 
   return (
-    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 space-y-6", containerClassName)}>
+    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 space-y-6", containerClassName)}>
       {/* Time in Range Progress Bar */}
       <div className="space-y-3">
         <div className="text-center">
