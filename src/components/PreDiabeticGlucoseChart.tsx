@@ -288,7 +288,7 @@ const PreDiabeticGlucoseChart = ({
   }
 
   // Calculate motivational insight
-  const getMotivationalInsight = useCallback(() => {
+  const getMotivationalInsight = useMemo(() => {
     if (!glucoseData.length) return "Start tracking to see insights";
     
     const last7Days = glucoseData.filter(reading => 
@@ -369,7 +369,7 @@ const PreDiabeticGlucoseChart = ({
 
         {/* Motivational insight */}
         <div className="text-center">
-          <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight()}</p>
+          <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight}</p>
         </div>
       </div>
 
