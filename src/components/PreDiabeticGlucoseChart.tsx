@@ -358,30 +358,6 @@ const PreDiabeticGlucoseChart = ({
         </div>
       </div>
 
-      {/* Insight Highlight Cards */}
-      {insights.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-base font-semibold text-gray-900">Weekly Insights</h4>
-          <div className="space-y-3">
-            {insights.map((insight, index) => (
-              <Card key={index} className="bg-white rounded-xl shadow-sm border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xl">
-                      {insight.icon === TrendingDown ? '🟢' : 
-                       insight.icon === TrendingUp ? '🔴' : '📅'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-gray-900">{insight.text}</p>
-                      <p className="text-sm text-muted-foreground">{insight.subtext}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Graph Section */}
       <div className="space-y-4">
