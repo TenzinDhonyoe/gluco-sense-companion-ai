@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,28 +36,23 @@ const Dashboard = () => {
     setGlucoseData(data);
   }, []);
 
-  // Calculate latest value and trend direction from real database data
-  const latestReading = glucoseData[glucoseData.length - 1];
-  const previousReading = glucoseData[glucoseData.length - 2];
-  const calculateTrendDirection = (): 'up' | 'down' | 'flat' => {
-    if (!latestReading || !previousReading) return 'flat';
-    const difference = latestReading.value - previousReading.value;
-    if (difference > 5) return 'up';
-    if (difference < -5) return 'down';
-    return 'flat';
-  };
-  const calculateTrendCategory = (): 'low' | 'normal' | 'high' => {
-    if (!latestReading) return 'normal';
-    if (latestReading.value < 70) return 'low';
-    if (latestReading.value > 180) return 'high';
-    return 'normal';
-  };
+  // Calculate weekly summary from glucose data
+  const weeklySummary = useMemo(() => {
+    if (!glucoseData.length) return { average: 0, inRange: 0, elevated: 0 };
+    
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+    );
 
-  // Get the actual timestamp from the latest reading, not mock data
-  const getLastReadingTime = (): Date => {
-    if (!latestReading) return new Date();
-    return new Date(latestReading.timestamp);
-  };
+    if (!last7Days.length) return { average: 0, inRange: 0, elevated: 0 };
+
+    const total = last7Days.length;
+    const average = Math.round(last7Days.reduce((sum, reading) => sum + reading.value, 0) / total);
+    const inRange = Math.round((last7Days.filter(r => r.value >= 80 && r.value <= 130).length / total) * 100);
+    const elevated = Math.round((last7Days.filter(r => r.value > 130).length / total) * 100);
+
+    return { average, inRange, elevated };
+  }, [glucoseData]);
 
   // Mock log entries for demonstration - these should also come from database eventually
   const mockLogs: LogEntry[] = [{
@@ -133,7 +128,7 @@ const Dashboard = () => {
     paddingTop: 'max(env(safe-area-inset-top), 1rem)',
     paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)'
   }}>
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-5">
         {/* Header - Apple HIG compliant */}
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
@@ -144,9 +139,58 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Weekly Summary Card */}
+        <Card className="bg-white rounded-2xl shadow-sm">
+          <CardContent className="px-4 py-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Your average this week</h3>
+                <p className="text-2xl font-bold text-primary mt-1">{weeklySummary.average} mg/dL</p>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                    {weeklySummary.inRange}% in range
+                  </span>
+                  {weeklySummary.elevated > 0 && (
+                    <span className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                      {weeklySummary.elevated}% elevated
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Quick Action Buttons */}
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 h-8 text-xs"
+                onClick={() => navigate("/glucose-tracker")}
+              >
+                + Log Glucose
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 h-8 text-xs"
+                onClick={() => navigate("/chat")}
+              >
+                Ask GlucoCoach AI
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Enhanced Glucose Chart for Prediabetic Users */}
         <div className="w-full">
-          <PreDiabeticGlucoseChart onDataUpdate={handleGlucoseDataUpdate} />
+          <PreDiabeticGlucoseChart 
+            onDataUpdate={handleGlucoseDataUpdate} 
+            containerClassName="bg-white" 
+          />
         </div>
 
         {/* AI Suggestions - Responsive card */}

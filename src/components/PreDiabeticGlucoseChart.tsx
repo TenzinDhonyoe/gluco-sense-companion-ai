@@ -287,90 +287,105 @@ const PreDiabeticGlucoseChart = ({
     );
   }
 
+  // Calculate motivational insight
+  const getMotivationalInsight = useCallback(() => {
+    if (!glucoseData.length) return "Start tracking to see insights";
+    
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+    );
+
+    if (!last7Days.length) return "Start tracking to see insights";
+
+    // Check for stable mornings (fasting readings between 80-100)
+    const morningReadings = last7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour >= 6 && hour <= 9;
+    });
+    
+    const stableMornings = morningReadings.filter(r => r.value >= 80 && r.value <= 100);
+    
+    if (stableMornings.length >= 3) {
+      return "Stable mornings detected – nice work!";
+    }
+
+    // Check if user has good time in range
+    if (timeInRangeData.normal >= 70) {
+      return "Great glucose control this week!";
+    }
+
+    // Check for consistent logging
+    if (last7Days.length >= 14) {
+      return "Consistent tracking builds better habits";
+    }
+
+    // Default encouragement
+    return "Try logging after meals for better trends";
+  }, [glucoseData, timeInRangeData.normal]);
+
   return (
-    <div className={cn("w-full bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl px-6 py-6 space-y-6", containerClassName)}>
-      {/* Time in Range Progress Bar */}
-      <div className="space-y-3">
-        <div className="text-center">
+    <div className={cn("w-full rounded-2xl px-4 py-5 space-y-4", containerClassName)}>
+      {/* Compact Time in Range Bar */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-900">Time in Range</h3>
-          <p className="text-2xl font-bold text-green-600 mt-1">
-            {timeInRangeData.normal}% in target
-          </p>
           <p className="text-sm text-muted-foreground">Last 7 days</p>
         </div>
         
         <div className="relative">
-          <div className="flex rounded-full overflow-hidden h-4 bg-gray-100 shadow-inner">
-            <div 
-              className="bg-orange-300/60 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.low}%` }}
-            />
+          <div className="flex rounded-full overflow-hidden h-3 bg-gray-100 shadow-inner relative">
+            {/* Only show segments that have values > 0 */}
+            {timeInRangeData.low > 0 && (
+              <div 
+                className="bg-orange-300/60 transition-all duration-500" 
+                style={{ width: `${timeInRangeData.low}%` }}
+              />
+            )}
             <div 
               className="bg-green-400 transition-all duration-500" 
               style={{ width: `${timeInRangeData.normal}%` }}
             />
-            <div 
-              className="bg-yellow-400/80 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.elevated}%` }}
-            />
-            <div 
-              className="bg-red-300/60 transition-all duration-500" 
-              style={{ width: `${timeInRangeData.high}%` }}
-            />
-          </div>
-          
-          {/* Inline segment labels */}
-          <div className="flex justify-center gap-4 mt-3">
-            {timeInRangeData.low > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-orange-300/60"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.low}%</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <span className="text-xs font-medium text-gray-700">{timeInRangeData.normal}%</span>
-            </div>
             {timeInRangeData.elevated > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-yellow-400/80"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.elevated}%</span>
-              </div>
+              <div 
+                className="bg-yellow-400/80 transition-all duration-500" 
+                style={{ width: `${timeInRangeData.elevated}%` }}
+              />
             )}
             {timeInRangeData.high > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-300/60"></div>
-                <span className="text-xs text-gray-600">{timeInRangeData.high}%</span>
-              </div>
+              <div 
+                className="bg-red-300/60 transition-all duration-500" 
+                style={{ width: `${timeInRangeData.high}%` }}
+              />
             )}
+            
+            {/* Percentage labels on bar */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-medium text-white mix-blend-difference">
+                {timeInRangeData.normal}% in range
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Encouraging caption */}
+        {/* Motivational insight */}
         <div className="text-center">
-          {timeInRangeData.normal >= 70 ? (
-            <p className="text-sm text-green-600 font-medium">Excellent glucose control this week!</p>
-          ) : timeInRangeData.normal >= 50 ? (
-            <p className="text-sm text-blue-600 font-medium">You're making great progress!</p>
-          ) : (
-            <p className="text-sm text-gray-600 font-medium">Keep tracking for better insights</p>
-          )}
+          <p className="text-sm text-blue-600 font-medium">{getMotivationalInsight()}</p>
         </div>
       </div>
 
 
       {/* Graph Section */}
-      <div className="space-y-4">
-        {/* View Mode Pills */}
+      <div className="space-y-3">
+        {/* Refined View Mode Pills */}
         <div className="flex justify-center">
           <div className="bg-muted rounded-full p-1 inline-flex">
             <button
               onClick={() => setViewMode('trend')}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                "rounded-full px-4 py-1 text-sm font-medium transition-all duration-200",
                 viewMode === 'trend' 
-                  ? "bg-white text-gray-900 shadow-sm" 
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Trend
@@ -378,10 +393,10 @@ const PreDiabeticGlucoseChart = ({
             <button
               onClick={() => setViewMode('dailyChange')}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                "rounded-full px-4 py-1 text-sm font-medium transition-all duration-200",
                 viewMode === 'dailyChange' 
-                  ? "bg-white text-gray-900 shadow-sm" 
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Daily Change
@@ -389,10 +404,10 @@ const PreDiabeticGlucoseChart = ({
             <button
               onClick={() => setViewMode('timeInRange')}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
+                "rounded-full px-4 py-1 text-sm font-medium transition-all duration-200",
                 viewMode === 'timeInRange' 
-                  ? "bg-white text-gray-900 shadow-sm" 
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Weekly View
@@ -400,8 +415,8 @@ const PreDiabeticGlucoseChart = ({
           </div>
         </div>
 
-        {/* Enhanced Chart */}
-        <div className="h-[200px] w-full">
+        {/* Smaller Enhanced Chart */}
+        <div className="h-[160px] w-full animate-fade-in">
           <ChartContainer 
             config={{ 
               glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
@@ -473,17 +488,16 @@ const PreDiabeticGlucoseChart = ({
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="#3B82F6"
-                    strokeWidth={3}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    dot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                    dot={{ r: 3, fill: "hsl(var(--primary))", stroke: "white", strokeWidth: 1.5 }}
                     activeDot={{ 
-                      r: 7, 
-                      fill: "#3B82F6", 
+                      r: 5, 
+                      fill: "hsl(var(--primary))", 
                       stroke: "white", 
-                      strokeWidth: 3,
-                      className: "animate-pulse"
+                      strokeWidth: 2
                     }}
                   />
                 </LineChart>
