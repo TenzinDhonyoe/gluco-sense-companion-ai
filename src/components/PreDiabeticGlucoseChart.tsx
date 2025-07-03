@@ -425,104 +425,95 @@ const PreDiabeticGlucoseChart = ({
         </div>
 
         {/* Enhanced Chart */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="h-[200px] w-full">
-            <ChartContainer 
-              config={{ 
-                glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
-                change: { label: "Daily Change", color: "#10B981" }
-              }} 
-              className="h-full w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                {viewMode === 'dailyChange' ? (
-                  <BarChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                    <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
-                    <XAxis 
-                      dataKey="day" 
-                      tick={{ fontSize: 11, fill: "#6B7280" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 11, fill: "#6B7280" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={35}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
-                    <Bar 
-                      dataKey="change" 
-                      fill="#3B82F6"
-                      radius={[4, 4, 0, 0]}
-                      shape={(props: any) => {
-                        const { payload, ...rest } = props;
-                        const color = payload?.isImprovement ? "#10B981" : "#EF4444";
-                        return <rect {...rest} fill={color} />;
-                      }}
-                    />
-                  </BarChart>
-                ) : (
-                  <LineChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                    <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      type="number"
-                      domain={['dataMin', 'dataMax']}
-                      tick={{ fontSize: 11, fill: "#6B7280" }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    />
-                    <YAxis 
-                      domain={[60, 200]}
-                      tick={{ fontSize: 11, fill: "#6B7280" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={35}
-                    />
-                    
-                    {/* Glucose zones with softer colors */}
-                    <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
-                    <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
-                    <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
-                    <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
+        <div className="h-[200px] w-full">
+          <ChartContainer 
+            config={{ 
+              glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
+              change: { label: "Daily Change", color: "#10B981" }
+            }} 
+            className="h-full w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              {viewMode === 'dailyChange' ? (
+                <BarChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <XAxis 
+                    dataKey="day" 
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
+                  <Bar 
+                    dataKey="change" 
+                    fill="#3B82F6"
+                    radius={[4, 4, 0, 0]}
+                    shape={(props: any) => {
+                      const { payload, ...rest } = props;
+                      const color = payload?.isImprovement ? "#10B981" : "#EF4444";
+                      return <rect {...rest} fill={color} />;
+                    }}
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  />
+                  <YAxis 
+                    domain={[60, 200]}
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
+                  />
+                  
+                  {/* Glucose zones with softer colors */}
+                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
+                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
+                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
+                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
 
-                    <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                    <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                    <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                    
-                    <Tooltip content={<CustomTooltip />} />
-                    
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#3B82F6"
-                      strokeWidth={3}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      dot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
-                      activeDot={{ 
-                        r: 7, 
-                        fill: "#3B82F6", 
-                        stroke: "white", 
-                        strokeWidth: 3,
-                        className: "animate-pulse"
-                      }}
-                    />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
-          
-          {/* Chart Footer */}
-          <div className="mt-3 text-center">
-            <p className="text-xs text-muted-foreground">
-              💡 Tap any point for details • Swipe to see past 14 days
-            </p>
-          </div>
+                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  
+                  <Tooltip content={<CustomTooltip />} />
+                  
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#3B82F6"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    dot={{ r: 5, fill: "#3B82F6", stroke: "white", strokeWidth: 2 }}
+                    activeDot={{ 
+                      r: 7, 
+                      fill: "#3B82F6", 
+                      stroke: "white", 
+                      strokeWidth: 3,
+                      className: "animate-pulse"
+                    }}
+                  />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          </ChartContainer>
         </div>
       </div>
     </div>
