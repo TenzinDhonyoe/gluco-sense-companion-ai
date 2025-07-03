@@ -349,11 +349,11 @@ const PreDiabeticGlucoseChart = ({
         {/* Encouraging caption */}
         <div className="text-center">
           {timeInRangeData.normal >= 70 ? (
-            <p className="text-sm text-green-600 font-medium">✅ Excellent glucose control this week!</p>
+            <p className="text-sm text-green-600 font-medium">Excellent glucose control this week!</p>
           ) : timeInRangeData.normal >= 50 ? (
-            <p className="text-sm text-blue-600 font-medium">📈 You're making great progress!</p>
+            <p className="text-sm text-blue-600 font-medium">You're making great progress!</p>
           ) : (
-            <p className="text-sm text-gray-600 font-medium">🎯 Keep tracking for better insights</p>
+            <p className="text-sm text-gray-600 font-medium">Keep tracking for better insights</p>
           )}
         </div>
       </div>
