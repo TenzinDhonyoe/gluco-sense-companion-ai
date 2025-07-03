@@ -135,6 +135,42 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [glucoseData]);
 
+  // Calculate motivational insight
+  const getMotivationalInsight = useMemo(() => {
+    if (!glucoseData.length) return "Start tracking to see insights";
+    
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+    );
+
+    if (!last7Days.length) return "Start tracking to see insights";
+
+    // Check for stable mornings (fasting readings between 80-100)
+    const morningReadings = last7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour >= 6 && hour <= 9;
+    });
+    
+    const stableMornings = morningReadings.filter(r => r.value >= 80 && r.value <= 100);
+    
+    if (stableMornings.length >= 3) {
+      return "Stable mornings detected – nice work!";
+    }
+
+    // Check if user has good time in range
+    if (timeInRangeData.normal >= 70) {
+      return "Great glucose control this week!";
+    }
+
+    // Check for consistent logging
+    if (last7Days.length >= 14) {
+      return "Consistent tracking builds better habits";
+    }
+
+    // Default encouragement
+    return "Try logging after meals for better trends";
+  }, [glucoseData, timeInRangeData.normal]);
+
   // Process data for different chart modes
   const processedData = useMemo(() => {
     if (!glucoseData.length) return [];
@@ -287,41 +323,6 @@ const PreDiabeticGlucoseChart = ({
     );
   }
 
-  // Calculate motivational insight
-  const getMotivationalInsight = useMemo(() => {
-    if (!glucoseData.length) return "Start tracking to see insights";
-    
-    const last7Days = glucoseData.filter(reading => 
-      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
-    );
-
-    if (!last7Days.length) return "Start tracking to see insights";
-
-    // Check for stable mornings (fasting readings between 80-100)
-    const morningReadings = last7Days.filter(reading => {
-      const hour = new Date(reading.timestamp).getHours();
-      return hour >= 6 && hour <= 9;
-    });
-    
-    const stableMornings = morningReadings.filter(r => r.value >= 80 && r.value <= 100);
-    
-    if (stableMornings.length >= 3) {
-      return "Stable mornings detected – nice work!";
-    }
-
-    // Check if user has good time in range
-    if (timeInRangeData.normal >= 70) {
-      return "Great glucose control this week!";
-    }
-
-    // Check for consistent logging
-    if (last7Days.length >= 14) {
-      return "Consistent tracking builds better habits";
-    }
-
-    // Default encouragement
-    return "Try logging after meals for better trends";
-  }, [glucoseData, timeInRangeData.normal]);
 
   return (
     <div className={cn("w-full rounded-2xl px-4 py-5 space-y-4", containerClassName)}>
