@@ -192,9 +192,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <Card className="bg-white rounded-2xl shadow-sm">
-          
-        </Card>
+        
 
         {/* AI Suggestions - Responsive card */}
         <div className="w-full">
