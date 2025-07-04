@@ -139,36 +139,35 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Weekly Summary Card */}
+        {/* Simplified Weekly Summary Card */}
         <Card className="bg-white rounded-2xl shadow-sm">
-          <CardContent className="px-4 py-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">Your average this week</h3>
-                <p className="text-2xl font-bold text-primary mt-1">{weeklySummary.average} mg/dL</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                    {weeklySummary.inRange}% in range
-                  </span>
-                  {weeklySummary.elevated > 0 && (
-                    <span className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                      {weeklySummary.elevated}% elevated
-                    </span>
-                  )}
-                </div>
-              </div>
+          <CardContent className="px-4 pt-6 pb-3">
+            <div className="space-y-1">
+              <p className="text-xl font-bold text-gray-900">🟢 Your average this week: {weeklySummary.average} mg/dL</p>
+              <p className="text-sm text-muted-foreground">
+                {weeklySummary.inRange}% in range • {weeklySummary.elevated}% elevated
+              </p>
             </div>
-            
-            {/* Quick Action Buttons */}
-            <div className="flex gap-2">
+          </CardContent>
+        </Card>
+
+        {/* Enhanced Glucose Chart for Prediabetic Users */}
+        <div className="w-full mt-5">
+          <PreDiabeticGlucoseChart 
+            onDataUpdate={handleGlucoseDataUpdate} 
+            containerClassName="bg-white" 
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="bg-white rounded-2xl shadow-sm">
+          <CardContent className="px-4 py-4">
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+            <div className="space-y-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1 h-8 text-xs"
+                className="w-full h-10"
                 onClick={() => navigate("/glucose-tracker")}
               >
                 + Log Glucose
@@ -176,7 +175,7 @@ const Dashboard = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1 h-8 text-xs"
+                className="w-full h-10"
                 onClick={() => navigate("/chat")}
               >
                 Ask GlucoCoach AI
@@ -184,14 +183,6 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Enhanced Glucose Chart for Prediabetic Users */}
-        <div className="w-full">
-          <PreDiabeticGlucoseChart 
-            onDataUpdate={handleGlucoseDataUpdate} 
-            containerClassName="bg-white" 
-          />
-        </div>
 
         {/* AI Suggestions - Responsive card */}
         <div className="w-full">
