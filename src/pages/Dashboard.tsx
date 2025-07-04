@@ -160,7 +160,7 @@ const Dashboard = () => {
 
         {/* Clean Weekly Summary Card - Centered Layout */}
         <Card className="bg-white rounded-full shadow-sm border-2">
-          <CardContent className="px-4 py-3 text-center">
+          <CardContent className="px-6 py-3 text-center">
             <div className="space-y-1.5">
               <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
               <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
