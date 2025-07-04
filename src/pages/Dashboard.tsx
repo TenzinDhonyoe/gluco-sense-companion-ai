@@ -38,24 +38,32 @@ const Dashboard = () => {
 
   // Calculate weekly summary from glucose data
   const weeklySummary = useMemo(() => {
-    if (!glucoseData.length) return { average: 0, inRange: 0, elevated: 0, status: 'normal', statusText: 'Good control', statusColor: 'green' };
-    
-    const last7Days = glucoseData.filter(reading => 
-      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
-    );
-
-    if (!last7Days.length) return { average: 0, inRange: 0, elevated: 0, status: 'normal', statusText: 'Good control', statusColor: 'green' };
-
+    if (!glucoseData.length) return {
+      average: 0,
+      inRange: 0,
+      elevated: 0,
+      status: 'normal',
+      statusText: 'Good control',
+      statusColor: 'green'
+    };
+    const last7Days = glucoseData.filter(reading => reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (!last7Days.length) return {
+      average: 0,
+      inRange: 0,
+      elevated: 0,
+      status: 'normal',
+      statusText: 'Good control',
+      statusColor: 'green'
+    };
     const total = last7Days.length;
     const average = Math.round(last7Days.reduce((sum, reading) => sum + reading.value, 0) / total);
-    const inRange = Math.round((last7Days.filter(r => r.value >= 80 && r.value <= 130).length / total) * 100);
-    const elevated = Math.round((last7Days.filter(r => r.value > 130).length / total) * 100);
+    const inRange = Math.round(last7Days.filter(r => r.value >= 80 && r.value <= 130).length / total * 100);
+    const elevated = Math.round(last7Days.filter(r => r.value > 130).length / total * 100);
 
     // Determine status based on average glucose
     let status = 'normal';
     let statusText = 'Good control';
     let statusColor = 'green';
-
     if (average >= 80 && average <= 130) {
       status = 'normal';
       statusText = 'Good control';
@@ -69,8 +77,14 @@ const Dashboard = () => {
       statusText = 'Needs attention';
       statusColor = 'red';
     }
-
-    return { average, inRange, elevated, status, statusText, statusColor };
+    return {
+      average,
+      inRange,
+      elevated,
+      status,
+      statusText,
+      statusColor
+    };
   }, [glucoseData]);
 
   // Mock log entries for demonstration - these should also come from database eventually
@@ -164,16 +178,8 @@ const Dashboard = () => {
             <div className="space-y-1.5">
               <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
               <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
-              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-                weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' :
-                weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  weeklySummary.statusColor === 'green' ? 'bg-green-500' :
-                  weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}></div>
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${weeklySummary.statusColor === 'green' ? 'bg-green-500' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
                 {weeklySummary.statusText}
               </div>
             </div>
@@ -182,35 +188,12 @@ const Dashboard = () => {
 
         {/* Enhanced Glucose Chart for Prediabetic Users */}
         <div className="w-full mt-5">
-          <PreDiabeticGlucoseChart 
-            onDataUpdate={handleGlucoseDataUpdate} 
-            containerClassName="bg-white" 
-          />
+          <PreDiabeticGlucoseChart onDataUpdate={handleGlucoseDataUpdate} containerClassName="bg-white" />
         </div>
 
         {/* Quick Actions */}
         <Card className="bg-white rounded-2xl shadow-sm">
-          <CardContent className="px-4 py-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
-            <div className="space-y-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full h-10"
-                onClick={() => navigate("/glucose-tracker")}
-              >
-                + Log Glucose
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full h-10"
-                onClick={() => navigate("/chat")}
-              >
-                Ask GlucoCoach AI
-              </Button>
-            </div>
-          </CardContent>
+          
         </Card>
 
         {/* AI Suggestions - Responsive card */}
