@@ -38,20 +38,39 @@ const Dashboard = () => {
 
   // Calculate weekly summary from glucose data
   const weeklySummary = useMemo(() => {
-    if (!glucoseData.length) return { average: 0, inRange: 0, elevated: 0 };
+    if (!glucoseData.length) return { average: 0, inRange: 0, elevated: 0, status: 'normal', statusText: 'Good control', statusColor: 'green' };
     
     const last7Days = glucoseData.filter(reading => 
       reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last7Days.length) return { average: 0, inRange: 0, elevated: 0 };
+    if (!last7Days.length) return { average: 0, inRange: 0, elevated: 0, status: 'normal', statusText: 'Good control', statusColor: 'green' };
 
     const total = last7Days.length;
     const average = Math.round(last7Days.reduce((sum, reading) => sum + reading.value, 0) / total);
     const inRange = Math.round((last7Days.filter(r => r.value >= 80 && r.value <= 130).length / total) * 100);
     const elevated = Math.round((last7Days.filter(r => r.value > 130).length / total) * 100);
 
-    return { average, inRange, elevated };
+    // Determine status based on average glucose
+    let status = 'normal';
+    let statusText = 'Good control';
+    let statusColor = 'green';
+
+    if (average >= 80 && average <= 130) {
+      status = 'normal';
+      statusText = 'Good control';
+      statusColor = 'green';
+    } else if (average > 130 && average <= 160) {
+      status = 'elevated';
+      statusText = 'Elevated';
+      statusColor = 'yellow';
+    } else if (average > 160) {
+      status = 'high';
+      statusText = 'Needs attention';
+      statusColor = 'red';
+    }
+
+    return { average, inRange, elevated, status, statusText, statusColor };
   }, [glucoseData]);
 
   // Mock log entries for demonstration - these should also come from database eventually
@@ -139,14 +158,24 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Simplified Weekly Summary Card */}
-        <Card className="bg-white rounded-2xl shadow-sm">
-          <CardContent className="px-4 pt-6 pb-3">
-            <div className="space-y-1">
-              <p className="text-xl font-bold text-gray-900">🟢 Your average this week: {weeklySummary.average} mg/dL</p>
-              <p className="text-sm text-muted-foreground">
-                {weeklySummary.inRange}% in range • {weeklySummary.elevated}% elevated
-              </p>
+        {/* Clean Weekly Summary Card - Centered Layout */}
+        <Card className="bg-white rounded-xl shadow-sm">
+          <CardContent className="px-4 py-4 text-center">
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
+              <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' :
+                weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  weeklySummary.statusColor === 'green' ? 'bg-green-500' :
+                  weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}></div>
+                {weeklySummary.statusText}
+              </div>
             </div>
           </CardContent>
         </Card>
