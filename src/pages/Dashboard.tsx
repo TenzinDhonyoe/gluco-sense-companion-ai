@@ -158,17 +158,27 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Compact Weekly Summary Badge */}
-        <div className={`mx-auto rounded-full px-6 py-3 inline-flex items-center gap-2 ${
-          weeklySummary.statusColor === 'green' ? 'bg-green-50 text-green-700' :
-          weeklySummary.statusColor === 'yellow' ? 'bg-yellow-50 text-yellow-700' :
-          'bg-red-50 text-red-700'
-        }`}>
-          <span className="text-lg">📊</span>
-          <span className="text-base font-medium">
-            {weeklySummary.average} mg/dL • {weeklySummary.statusText}
-          </span>
-        </div>
+        {/* Clean Weekly Summary Card - Centered Layout */}
+        <Card className="bg-white rounded-full shadow-sm border-2">
+          <CardContent className="px-8 py-6 text-center">
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
+              <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' :
+                weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  weeklySummary.statusColor === 'green' ? 'bg-green-500' :
+                  weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}></div>
+                {weeklySummary.statusText}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Enhanced Glucose Chart for Prediabetic Users */}
         <div className="w-full mt-5">
