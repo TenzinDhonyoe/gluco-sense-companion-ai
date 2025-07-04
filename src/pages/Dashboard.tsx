@@ -11,8 +11,6 @@ import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import PreDiabeticGlucoseChart from "@/components/PreDiabeticGlucoseChart";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
-import TimeInRangeCard from "@/components/TimeInRangeCard";
-import RecentLogsTimeline from "@/components/RecentLogsTimeline";
 import RewardsCard from "@/components/RewardsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
@@ -75,54 +73,20 @@ const Dashboard = () => {
     return { average, inRange, elevated, status, statusText, statusColor };
   }, [glucoseData]);
 
-  // Mock log entries for recent logs timeline
-  const recentLogsData = useMemo(() => [
-    {
-      id: '1',
-      type: 'glucose' as const,
-      description: 'Glucose reading',
-      value: 118,
-      unit: 'mg/dL',
-      time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-      category: 'post-meal'
-    },
-    {
-      id: '2',
-      type: 'meal' as const,
-      description: 'Grilled chicken salad with mixed vegetables',
-      time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-      category: 'lunch'
-    },
-    {
-      id: '3',
-      type: 'exercise' as const,
-      description: 'Morning walk - 30 minutes',
-      time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-      category: 'cardio'
-    },
-    {
-      id: '4',
-      type: 'glucose' as const,
-      description: 'Fasting glucose',
-      value: 102,
-      unit: 'mg/dL',
-      time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // yesterday
-      category: 'fasting'
-    }
-  ], []);
-
-  // Mock log entries for AI suggestions (legacy format)
+  // Mock log entries for demonstration - these should also come from database eventually
   const mockLogs: LogEntry[] = [{
     id: '1',
     type: 'meal',
     description: 'Grilled chicken salad with mixed vegetables',
     time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    // 2 hours ago
     points: 15
   }, {
     id: '2',
     type: 'exercise',
     description: 'Morning walk - 30 minutes',
     time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    // 5 hours ago
     points: 25
   }];
   useEffect(() => {
@@ -194,90 +158,140 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 📊 Weekly Average Card */}
-        <Card className="bg-white rounded-xl shadow-sm">
-          <CardContent className="p-4 text-center">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground font-medium">Weekly Average</p>
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-2xl font-bold">{weeklySummary.average} mg/dL</span>
-                <Badge className={`${
-                  weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700 border-green-200' :
-                  weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                  'bg-red-100 text-red-700 border-red-200'
-                }`}>
-                  {weeklySummary.statusColor === 'green' ? '🟢' : 
-                   weeklySummary.statusColor === 'yellow' ? '🟡' : '🔴'} {weeklySummary.statusText}
-                </Badge>
+        {/* Clean Weekly Summary Card - Centered Layout */}
+        <Card className="bg-white rounded-full shadow-sm border-2">
+          <CardContent className="px-6 py-3 text-center">
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
+              <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' :
+                weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  weeklySummary.statusColor === 'green' ? 'bg-green-500' :
+                  weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}></div>
+                {weeklySummary.statusText}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 📈 Glucose Graph */}
-        <div className="w-full">
+        {/* Enhanced Glucose Chart for Prediabetic Users */}
+        <div className="w-full mt-5">
           <PreDiabeticGlucoseChart 
             onDataUpdate={handleGlucoseDataUpdate} 
-            containerClassName="bg-white rounded-xl shadow-sm" 
+            containerClassName="bg-white" 
           />
         </div>
 
-        {/* 🧩 Time in Range Card */}
-        <TimeInRangeCard glucoseData={glucoseData} />
-
-        {/* 🔄 Recent Logs Timeline */}
-        <RecentLogsTimeline logs={recentLogsData} />
-
-        {/* ⚡ Quick Actions */}
-        <Card className="bg-white rounded-xl shadow-sm">
-          <CardContent className="p-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
+        {/* Quick Actions */}
+        <Card className="bg-white rounded-2xl shadow-sm">
+          <CardContent className="px-4 py-4">
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Quick Actions</h3>
+            <div className="space-y-2">
               <Button 
-                className="h-12 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg shadow-sm"
+                variant="outline" 
+                size="sm" 
+                className="w-full h-10"
                 onClick={() => navigate("/glucose-tracker")}
               >
-                📊 Log Glucose
+                + Log Glucose
               </Button>
               <Button 
-                variant="outline"
-                className="h-12 border-2 border-blue-200 hover:bg-blue-50 font-medium rounded-lg"
+                variant="outline" 
+                size="sm" 
+                className="w-full h-10"
                 onClick={() => navigate("/chat")}
               >
-                🤖 Ask AI Coach
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mt-3">
-              <Button 
-                variant="outline"
-                className="h-10 text-sm"
-                onClick={() => navigate("/logs")}
-              >
-                🍽️ Log Meal
-              </Button>
-              <Button 
-                variant="outline"
-                className="h-10 text-sm"
-                onClick={() => navigate("/logs")}
-              >
-                🏃‍♂️ Log Exercise
+                Ask GlucoCoach AI
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* 💡 AI Suggestion Card */}
+        {/* AI Suggestions - Responsive card */}
         <div className="w-full">
           <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
+        </div>
+
+        {/* Today's Progress - Harmonized spacing */}
+        <Card className="bg-white rounded-2xl shadow-sm">
+          <CardHeader className="px-6 py-[18px]">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <span>Today's Progress</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-6 pt-0">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="relative">
+                  <CircularProgress value={stepsProgress} color="text-blue-500" size={64} strokeWidth={5} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
+                      {Math.round(todaysProgress.steps / 1000)}k
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Steps</p>
+                  <p className="text-xs text-gray-500">{Math.round(stepsProgress)}% of goal</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="relative">
+                  <CircularProgress value={sleepProgress} color="text-green-500" size={64} strokeWidth={5} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
+                      {todaysProgress.sleep}h
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Sleep</p>
+                  <p className="text-xs text-gray-500">{Math.round(sleepProgress)}% of goal</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="relative">
+                  <CircularProgress value={mealsProgress} color="text-amber-500" size={64} strokeWidth={5} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-bold text-gray-900 leading-none">
+                      {todaysProgress.meals}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-900">Meals</p>
+                  <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rewards - Responsive card */}
+        <div className="w-full">
+          <RewardsCard />
         </div>
 
         {/* Clear Data Button - Apple HIG compliant */}
         <div className="flex justify-center pt-4 border-t border-gray-200">
           <ClearDataButton />
         </div>
+      </div>
+
+      {/* Floating Action Button - Improved design */}
+      <div className="fixed bottom-6 right-6 z-50" style={{
+      bottom: 'calc(6rem + env(safe-area-inset-bottom))'
+    }}>
+        <QuickAddDrawer />
       </div>
 
       <BottomNav />
