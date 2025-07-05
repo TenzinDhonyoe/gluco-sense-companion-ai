@@ -173,6 +173,8 @@ const Chat = () => {
       className="flex flex-col h-screen bg-gray-50"
       style={{ 
         paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
         paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)'
       }}
     >

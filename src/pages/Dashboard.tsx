@@ -159,6 +159,8 @@ const Dashboard = () => {
   };
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" style={{
     paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+    paddingLeft: 'env(safe-area-inset-left)',
+    paddingRight: 'env(safe-area-inset-right)',
     paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)'
   }}>
       <div className="px-4 space-y-5">

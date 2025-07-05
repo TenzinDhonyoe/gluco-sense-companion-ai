@@ -113,7 +113,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col"
+      style={{ 
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)'
+      }}
+    >
       {/* Header with Logo */}
       <div className="text-center pt-12 pb-4 py-[20px]">
         <div className="flex justify-center mb-4">
