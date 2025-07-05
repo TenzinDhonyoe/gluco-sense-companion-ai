@@ -15,15 +15,7 @@ const GlucoseTracker = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
-      style={{ 
-        paddingTop: 'max(env(safe-area-inset-top), 1rem)', 
-        paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)',
-        paddingLeft: 'env(safe-area-inset-left)',
-        paddingRight: 'env(safe-area-inset-right)'
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
