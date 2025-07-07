@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Tooltip, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, ReferenceArea, Tooltip, BarChart, Bar, Area, ComposedChart, LabelList } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { downsampleLTTB, movingAverage } from "@/lib/chartUtils";
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, TrendingDown, Utensils, Activity, Moon, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, Utensils, Activity, Moon, Calendar, AlertTriangle } from "lucide-react";
 
 export interface GlucoseReading {
   time: string;
@@ -171,18 +171,75 @@ const PreDiabeticGlucoseChart = ({
     return "Try logging after meals for better trends";
   }, [glucoseData, timeInRangeData.normal]);
 
-  // Process data for different chart modes
+  // Enhanced data processing for Weekly View and other modes
   const processedData = useMemo(() => {
-    if (!glucoseData.length) return [];
+    if (!glucoseData.length) return { chartData: [], weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     
     const last7Days = glucoseData.filter(reading => 
       reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
     );
 
+    if (viewMode === 'timeInRange') {
+      // Weekly View with enhanced daily statistics
+      const dailyData = new Map();
+      
+      last7Days.forEach(reading => {
+        const day = new Date(reading.timestamp).toDateString();
+        if (!dailyData.has(day)) {
+          dailyData.set(day, []);
+        }
+        dailyData.get(day).push(reading.value);
+      });
+
+      const dailyStats = Array.from(dailyData.entries()).map(([day, values]) => {
+        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const std = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length);
+        const highReadings = values.filter(v => v > 160).length;
+        const highPercentage = (highReadings / values.length) * 100;
+        const inRangeReadings = values.filter(v => v >= 80 && v <= 130).length;
+        const inRangePercentage = (inRangeReadings / values.length) * 100;
+        
+        return {
+          day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
+          fullDate: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          timestamp: new Date(day).getTime(),
+          average: Math.round(avg),
+          std: Math.round(std),
+          upperBand: Math.round(avg + std),
+          lowerBand: Math.round(avg - std),
+          isProblematic: highPercentage > 30,
+          inRangePercentage: Math.round(inRangePercentage),
+          readingCount: values.length,
+          highPercentage: Math.round(highPercentage)
+        };
+      }).sort((a, b) => a.timestamp - b.timestamp);
+
+      const weeklyAverage = Math.round(
+        last7Days.reduce((sum, reading) => sum + reading.value, 0) / last7Days.length
+      );
+
+      // AI Summary generation
+      const problematicDays = dailyStats.filter(d => d.isProblematic);
+      const avgInRange = Math.round(dailyStats.reduce((sum, d) => sum + d.inRangePercentage, 0) / dailyStats.length);
+      
+      let aiSummary = "";
+      if (problematicDays.length > 2) {
+        aiSummary = `High glucose spikes detected on ${problematicDays.length} days this week. Consider reviewing meal choices and timing.`;
+      } else if (avgInRange >= 70) {
+        aiSummary = `Excellent control with ${avgInRange}% in target range. Keep up the consistent routine!`;
+      } else if (weeklyAverage > 140) {
+        aiSummary = `Weekly average is elevated. Focus on reducing refined carbs and increasing activity after meals.`;
+      } else {
+        aiSummary = "Tracking regularly helps identify patterns. Try logging meals for better insights.";
+      }
+
+      return { chartData: dailyStats, weeklyAverage, dailyStats, aiSummary };
+    }
+
     if (viewMode === 'trend') {
       // Smooth the data using moving average
       const points = last7Days.map(d => ({ ...d, x: d.timestamp, y: d.value }));
-      return movingAverage(points, 3);
+      return { chartData: movingAverage(points, 3), weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     }
 
     if (viewMode === 'dailyChange') {
@@ -206,14 +263,16 @@ const PreDiabeticGlucoseChart = ({
         };
       }).sort((a, b) => a.timestamp - b.timestamp);
 
-      return dailyData.map((item, index) => ({
+      const processedDailyData = dailyData.map((item, index) => ({
         ...item,
         change: index > 0 ? item.average - dailyData[index - 1].average : 0,
         isImprovement: index > 0 ? item.average < dailyData[index - 1].average : false
       }));
+
+      return { chartData: processedDailyData, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     }
 
-    return last7Days;
+    return { chartData: last7Days, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
   }, [glucoseData, viewMode]);
 
   // Generate insights
@@ -367,8 +426,17 @@ const PreDiabeticGlucoseChart = ({
           </div>
         </div>
 
-        {/* Smaller Enhanced Chart */}
-        <div className="h-[160px] w-full animate-fade-in">
+        {/* Time in Range Badge for Weekly View */}
+        {viewMode === 'timeInRange' && (
+          <div className="flex justify-center mb-2">
+            <Badge className="bg-green-100 text-green-800 border-green-200">
+              {timeInRangeData.normal}% in range this week
+            </Badge>
+          </div>
+        )}
+
+        {/* Enhanced Chart */}
+        <div className="h-[200px] w-full animate-fade-in">
           <ChartContainer 
             config={{ 
               glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
@@ -378,7 +446,7 @@ const PreDiabeticGlucoseChart = ({
           >
             <ResponsiveContainer width="100%" height="100%">
               {viewMode === 'dailyChange' ? (
-                <BarChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                <BarChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
                   <XAxis 
                     dataKey="day" 
@@ -405,8 +473,121 @@ const PreDiabeticGlucoseChart = ({
                     }}
                   />
                 </BarChart>
+              ) : viewMode === 'timeInRange' ? (
+                <ComposedChart data={processedData.chartData} margin={{ top: 20, right: 10, left: 10, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <XAxis 
+                    dataKey="day" 
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    domain={[60, 200]}
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
+                  />
+                  
+                  {/* Glucose zones with labels */}
+                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.08} />
+                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.08} />
+                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.08} />
+                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.08} />
+
+                  {/* Zone boundary lines */}
+                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  
+                  {/* Weekly average line */}
+                  {processedData.weeklyAverage > 0 && (
+                    <ReferenceLine 
+                      y={processedData.weeklyAverage} 
+                      stroke="#3B82F6" 
+                      strokeWidth={2} 
+                      strokeDasharray="8 4" 
+                      opacity={0.8}
+                    />
+                  )}
+                  
+                  {/* Variability bands */}
+                  <Area 
+                    type="monotone" 
+                    dataKey="upperBand" 
+                    stroke="none" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.1}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="lowerBand" 
+                    stroke="none" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.1}
+                  />
+                  
+                  <Tooltip content={({ active, payload }: any) => {
+                    if (active && payload && payload.length) {
+                      const point = payload[0].payload;
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg cursor-pointer">
+                          <p className="font-medium text-gray-900">{point.fullDate}</p>
+                          <p className="text-sm text-gray-600">Daily average: {point.average} mg/dL</p>
+                          <p className="text-sm text-gray-600">In range: {point.inRangePercentage}%</p>
+                          <p className="text-sm text-gray-600">{point.readingCount} readings</p>
+                          {point.isProblematic && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <AlertTriangle className="w-3 h-3 text-red-500" />
+                              <span className="text-xs text-red-600">High spikes detected</span>
+                            </div>
+                          )}
+                          <p className="text-xs text-blue-600 mt-1">Tap to view daily trend</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }} />
+                  
+                  {/* Main glucose line with enhanced styling for problematic days */}
+                  <Line 
+                    type="monotone" 
+                    dataKey="average" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    dot={(props: any) => {
+                      const { payload, cx, cy } = props;
+                      const isProblematic = payload?.isProblematic;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={isProblematic ? 6 : 4}
+                          fill={isProblematic ? "#ef4444" : "hsl(var(--primary))"}
+                          stroke="white"
+                          strokeWidth={2}
+                          className="cursor-pointer hover:r-8 transition-all"
+                          onClick={() => {
+                            // Handle day click for detailed view
+                            console.log('Clicked day:', payload);
+                          }}
+                        />
+                      );
+                    }}
+                    activeDot={{ 
+                      r: 8, 
+                      fill: "hsl(var(--primary))", 
+                      stroke: "white", 
+                      strokeWidth: 3,
+                      className: "cursor-pointer"
+                    }}
+                  />
+                </ComposedChart>
               ) : (
-                <LineChart data={processedData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                <LineChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
                   <XAxis 
                     dataKey="timestamp" 
@@ -457,6 +638,28 @@ const PreDiabeticGlucoseChart = ({
             </ResponsiveContainer>
           </ChartContainer>
         </div>
+
+        {/* Zone Labels for Weekly View */}
+        {viewMode === 'timeInRange' && (
+          <div className="flex justify-between text-xs text-gray-500 px-2">
+            <span>Low</span>
+            <span className="text-green-600 font-medium">Normal</span>
+            <span className="text-yellow-600">Elevated</span>
+            <span className="text-red-600">High</span>
+          </div>
+        )}
+
+        {/* AI Summary for Weekly View */}
+        {viewMode === 'timeInRange' && processedData.aiSummary && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mt-0.5">
+                <span className="text-white text-xs font-bold">AI</span>
+              </div>
+              <p className="text-sm text-blue-800 leading-relaxed">{processedData.aiSummary}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
