@@ -111,15 +111,31 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Calculate time in range for last 7 days
+  // Calculate time in range for last 7 days and previous week comparison
   const timeInRangeData = useMemo(() => {
-    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0 };
+    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
     
+    const now = Date.now();
     const last7Days = glucoseData.filter(reading => 
-      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+      reading.timestamp >= now - 7 * 24 * 60 * 60 * 1000
+    );
+    const previous7Days = glucoseData.filter(reading => 
+      reading.timestamp >= now - 14 * 24 * 60 * 60 * 1000 && 
+      reading.timestamp < now - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0 };
+    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
+
+    const calculateTimeInRange = (readings: GlucoseReading[]) => {
+      if (!readings.length) return 0;
+      const total = readings.length;
+      const normal = readings.filter(r => r.value >= 80 && r.value <= 130).length;
+      return Math.round((normal / total) * 100);
+    };
+
+    const currentWeekInRange = calculateTimeInRange(last7Days);
+    const previousWeekInRange = calculateTimeInRange(previous7Days);
+    const weeklyTrend = previousWeekInRange > 0 ? currentWeekInRange - previousWeekInRange : 0;
 
     const total = last7Days.length;
     const normal = last7Days.filter(r => r.value >= 80 && r.value <= 130).length;
@@ -131,7 +147,8 @@ const PreDiabeticGlucoseChart = ({
       normal: Math.round((normal / total) * 100),
       elevated: Math.round((elevated / total) * 100),
       high: Math.round((high / total) * 100),
-      low: Math.round((low / total) * 100)
+      low: Math.round((low / total) * 100),
+      weeklyTrend
     };
   }, [glucoseData]);
 
@@ -426,12 +443,27 @@ const PreDiabeticGlucoseChart = ({
           </div>
         </div>
 
-        {/* Time in Range Badge for Weekly View */}
+        {/* Time in Range Badge and Trend for Weekly View */}
         {viewMode === 'timeInRange' && (
-          <div className="flex justify-center mb-2">
+          <div className="flex flex-col items-center mb-2 space-y-1">
             <Badge className="bg-green-100 text-green-800 border-green-200">
               {timeInRangeData.normal}% in range this week
             </Badge>
+            {timeInRangeData.weeklyTrend !== 0 && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                {timeInRangeData.weeklyTrend > 0 ? (
+                  <>
+                    <TrendingUp className="w-3 h-3 text-green-600" />
+                    <span className="text-green-600">↑ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="w-3 h-3 text-red-600" />
+                    <span className="text-red-600">↓ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -532,18 +564,10 @@ const PreDiabeticGlucoseChart = ({
                     if (active && payload && payload.length) {
                       const point = payload[0].payload;
                       return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg cursor-pointer">
-                          <p className="font-medium text-gray-900">{point.fullDate}</p>
-                          <p className="text-sm text-gray-600">Daily average: {point.average} mg/dL</p>
-                          <p className="text-sm text-gray-600">In range: {point.inRangePercentage}%</p>
-                          <p className="text-sm text-gray-600">{point.readingCount} readings</p>
-                          {point.isProblematic && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <AlertTriangle className="w-3 h-3 text-red-500" />
-                              <span className="text-xs text-red-600">High spikes detected</span>
-                            </div>
-                          )}
-                          <p className="text-xs text-blue-600 mt-1">Tap to view daily trend</p>
+                        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
+                          <p className="font-medium text-gray-900 text-sm">{point.fullDate}</p>
+                          <p className="text-xs text-gray-600">Avg: {point.average} mg/dL</p>
+                          <p className="text-xs text-gray-600">{point.readingCount} readings</p>
                         </div>
                       );
                     }
@@ -639,15 +663,6 @@ const PreDiabeticGlucoseChart = ({
           </ChartContainer>
         </div>
 
-        {/* Zone Labels for Weekly View */}
-        {viewMode === 'timeInRange' && (
-          <div className="flex justify-between text-xs text-gray-500 px-2">
-            <span>Low</span>
-            <span className="text-green-600 font-medium">Normal</span>
-            <span className="text-yellow-600">Elevated</span>
-            <span className="text-red-600">High</span>
-          </div>
-        )}
 
         {/* AI Summary for Weekly View */}
         {viewMode === 'timeInRange' && processedData.aiSummary && (
