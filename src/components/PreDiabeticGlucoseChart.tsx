@@ -25,7 +25,7 @@ interface PreDiabeticGlucoseChartProps {
   onDataUpdate?: (data: GlucoseReading[]) => void;
 }
 
-type ViewMode = 'trend' | 'timeInRange' | 'dailyChange' | 'byMeal';
+type ViewMode = 'trend' | 'dailyChange';
 
 const PreDiabeticGlucoseChart = ({ 
   data: propData, 
@@ -196,7 +196,7 @@ const PreDiabeticGlucoseChart = ({
       reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (viewMode === 'timeInRange') {
+    if (viewMode === 'trend') {
       // Weekly View with enhanced daily statistics
       const dailyData = new Map();
       
@@ -251,12 +251,6 @@ const PreDiabeticGlucoseChart = ({
       }
 
       return { chartData: dailyStats, weeklyAverage, dailyStats, aiSummary };
-    }
-
-    if (viewMode === 'trend') {
-      // Smooth the data using moving average
-      const points = last7Days.map(d => ({ ...d, x: d.timestamp, y: d.value }));
-      return { chartData: movingAverage(points, 3), weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     }
 
     if (viewMode === 'dailyChange') {
@@ -429,22 +423,11 @@ const PreDiabeticGlucoseChart = ({
             >
               Daily Change
             </button>
-            <button
-              onClick={() => setViewMode('timeInRange')}
-              className={cn(
-                "rounded-full px-4 py-1 text-sm font-medium transition-all duration-200",
-                viewMode === 'timeInRange' 
-                  ? "bg-background text-foreground shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Weekly View
-            </button>
           </div>
         </div>
 
-        {/* Time in Range Badge and Trend for Weekly View */}
-        {viewMode === 'timeInRange' && (
+        {/* Time in Range Badge and Trend for Trend View */}
+        {viewMode === 'trend' && (
           <div className="flex flex-col items-center mb-2 space-y-1">
             <Badge className="bg-green-100 text-green-800 border-green-200">
               {timeInRangeData.normal}% in range this week
@@ -505,7 +488,7 @@ const PreDiabeticGlucoseChart = ({
                     }}
                   />
                 </BarChart>
-              ) : viewMode === 'timeInRange' ? (
+              ) : (
                 <ComposedChart data={processedData.chartData} margin={{ top: 20, right: 10, left: 10, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
                   <XAxis 
@@ -610,62 +593,13 @@ const PreDiabeticGlucoseChart = ({
                     }}
                   />
                 </ComposedChart>
-              ) : (
-                <LineChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    type="number"
-                    domain={['dataMin', 'dataMax']}
-                    tick={{ fontSize: 11, fill: "#6B7280" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  />
-                  <YAxis 
-                    domain={[60, 200]}
-                    tick={{ fontSize: 11, fill: "#6B7280" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={35}
-                  />
-                  
-                  {/* Glucose zones with softer colors */}
-                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
-                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
-                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
-                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
-
-                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  
-                  <Tooltip content={<CustomTooltip />} />
-                  
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    dot={{ r: 3, fill: "hsl(var(--primary))", stroke: "white", strokeWidth: 1.5 }}
-                    activeDot={{ 
-                      r: 5, 
-                      fill: "hsl(var(--primary))", 
-                      stroke: "white", 
-                      strokeWidth: 2
-                    }}
-                  />
-                </LineChart>
               )}
             </ResponsiveContainer>
           </ChartContainer>
         </div>
 
-
-        {/* AI Summary for Weekly View */}
-        {viewMode === 'timeInRange' && processedData.aiSummary && (
+        {/* AI Summary for Trend View */}
+        {viewMode === 'trend' && processedData.aiSummary && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-start gap-2">
               <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mt-0.5">

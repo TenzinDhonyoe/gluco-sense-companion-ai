@@ -17,6 +17,7 @@ import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
 import DynamicAvatar from "@/components/DynamicAvatar";
 import ClearDataButton from "@/components/ClearDataButton";
+import Timeline from "@/components/Timeline";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -262,6 +263,11 @@ const Dashboard = () => {
         {/* Rewards - Responsive card */}
         <div className="w-full">
           <RewardsCard />
+        </div>
+
+        {/* Timeline - Chronological list of all activity */}
+        <div className="w-full">
+          <Timeline glucoseData={glucoseData} logs={mockLogs} />
         </div>
 
         {/* Clear Data Button - Apple HIG compliant */}
