@@ -26,7 +26,6 @@ interface PreDiabeticGlucoseChartProps {
 }
 
 type ViewMode = 'trend' | 'dailyChange';
-type TimeWindow = 'all' | 'waking' | 'sleeping';
 
 const PreDiabeticGlucoseChart = ({ 
   data: propData, 
@@ -34,7 +33,6 @@ const PreDiabeticGlucoseChart = ({
   onDataUpdate
 }: PreDiabeticGlucoseChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('trend');
-  const [timeWindow, setTimeWindow] = useState<TimeWindow>('all');
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -113,34 +111,20 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Calculate time in range with time window filtering
+  // Calculate time in range for last 7 days and previous week comparison
   const timeInRangeData = useMemo(() => {
-    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, label: "all day" };
+    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
     
     const now = Date.now();
-    const last5Days = glucoseData.filter(reading => 
-      reading.timestamp >= now - 5 * 24 * 60 * 60 * 1000
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= now - 7 * 24 * 60 * 60 * 1000
     );
-    const previous5Days = glucoseData.filter(reading => 
-      reading.timestamp >= now - 10 * 24 * 60 * 60 * 1000 && 
-      reading.timestamp < now - 5 * 24 * 60 * 60 * 1000
+    const previous7Days = glucoseData.filter(reading => 
+      reading.timestamp >= now - 14 * 24 * 60 * 60 * 1000 && 
+      reading.timestamp < now - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last5Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, label: "all day" };
-
-    // Filter by time window
-    const filterByTimeWindow = (readings: GlucoseReading[]) => {
-      if (timeWindow === 'all') return readings;
-      return readings.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        if (timeWindow === 'waking') return hour >= 6 && hour <= 22;
-        if (timeWindow === 'sleeping') return hour < 6 || hour > 22;
-        return true;
-      });
-    };
-
-    const filteredCurrent = filterByTimeWindow(last5Days);
-    const filteredPrevious = filterByTimeWindow(previous5Days);
+    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
 
     const calculateTimeInRange = (readings: GlucoseReading[]) => {
       if (!readings.length) return 0;
@@ -149,31 +133,24 @@ const PreDiabeticGlucoseChart = ({
       return Math.round((normal / total) * 100);
     };
 
-    const currentInRange = calculateTimeInRange(filteredCurrent);
-    const previousInRange = calculateTimeInRange(filteredPrevious);
-    const weeklyTrend = previousInRange > 0 ? currentInRange - previousInRange : 0;
+    const currentWeekInRange = calculateTimeInRange(last7Days);
+    const previousWeekInRange = calculateTimeInRange(previous7Days);
+    const weeklyTrend = previousWeekInRange > 0 ? currentWeekInRange - previousWeekInRange : 0;
 
-    const total = filteredCurrent.length;
-    const normal = filteredCurrent.filter(r => r.value >= 80 && r.value <= 130).length;
-    const elevated = filteredCurrent.filter(r => r.value > 130 && r.value <= 160).length;
-    const high = filteredCurrent.filter(r => r.value > 160).length;
-    const low = filteredCurrent.filter(r => r.value < 80).length;
-
-    const labels = {
-      all: "all day",
-      waking: "waking hours",
-      sleeping: "overnight"
-    };
+    const total = last7Days.length;
+    const normal = last7Days.filter(r => r.value >= 80 && r.value <= 130).length;
+    const elevated = last7Days.filter(r => r.value > 130 && r.value <= 160).length;
+    const high = last7Days.filter(r => r.value > 160).length;
+    const low = last7Days.filter(r => r.value < 80).length;
 
     return {
       normal: Math.round((normal / total) * 100),
       elevated: Math.round((elevated / total) * 100),
       high: Math.round((high / total) * 100),
       low: Math.round((low / total) * 100),
-      weeklyTrend,
-      label: labels[timeWindow]
+      weeklyTrend
     };
-  }, [glucoseData, timeWindow]);
+  }, [glucoseData]);
 
   // Calculate motivational insight
   const getMotivationalInsight = useMemo(() => {
@@ -211,106 +188,75 @@ const PreDiabeticGlucoseChart = ({
     return "Try logging after meals for better trends";
   }, [glucoseData, timeInRangeData.normal]);
 
-  // Enhanced data processing with 5-day focus
+  // Enhanced data processing for Weekly View and other modes
   const processedData = useMemo(() => {
-    if (!glucoseData.length) return { chartData: [], weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
+    if (!glucoseData.length) return { chartData: [], weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     
-    const last5Days = glucoseData.filter(reading => 
-      reading.timestamp >= Date.now() - 5 * 24 * 60 * 60 * 1000
+    const last7Days = glucoseData.filter(reading => 
+      reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
     );
 
     if (viewMode === 'trend') {
-      // Daily readings view - show individual readings, not aggregated
-      const last7Days = glucoseData.filter(reading => 
-        reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
-      );
-
-      // Group readings by day to calculate daily stats for tooltips
-      const dailyStatsMap = new Map();
+      // Weekly View with enhanced daily statistics
+      const dailyData = new Map();
+      
       last7Days.forEach(reading => {
         const day = new Date(reading.timestamp).toDateString();
-        if (!dailyStatsMap.has(day)) {
-          dailyStatsMap.set(day, []);
+        if (!dailyData.has(day)) {
+          dailyData.set(day, []);
         }
-        dailyStatsMap.get(day).push(reading.value);
+        dailyData.get(day).push(reading.value);
       });
 
-      // Add daily stats to each reading for hover information
-      const enrichedReadings = last7Days.map(reading => {
-        const day = new Date(reading.timestamp).toDateString();
-        const dayReadings = dailyStatsMap.get(day) || [];
-        const minValue = Math.min(...dayReadings);
-        const maxValue = Math.max(...dayReadings);
-        const avgValue = Math.round(dayReadings.reduce((sum, val) => sum + val, 0) / dayReadings.length);
+      const dailyStats = Array.from(dailyData.entries()).map(([day, values]) => {
+        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const std = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length);
+        const highReadings = values.filter(v => v > 160).length;
+        const highPercentage = (highReadings / values.length) * 100;
+        const inRangeReadings = values.filter(v => v >= 80 && v <= 130).length;
+        const inRangePercentage = (inRangeReadings / values.length) * 100;
         
         return {
-          ...reading,
-          day: new Date(reading.timestamp).toLocaleDateString('en-US', { weekday: 'short' }),
-          time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
-            minute: '2-digit',
-            hour12: true 
-          }),
-          dayMin: minValue,
-          dayMax: maxValue,
-          dayAverage: avgValue,
-          dayReadingCount: dayReadings.length,
-          isLatest: reading.timestamp === Math.max(...last7Days.map(r => r.timestamp))
+          day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
+          fullDate: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          timestamp: new Date(day).getTime(),
+          average: Math.round(avg),
+          std: Math.round(std),
+          upperBand: Math.round(avg + std),
+          lowerBand: Math.round(avg - std),
+          isProblematic: highPercentage > 30,
+          inRangePercentage: Math.round(inRangePercentage),
+          readingCount: values.length,
+          highPercentage: Math.round(highPercentage)
         };
-      });
+      }).sort((a, b) => a.timestamp - b.timestamp);
 
-      // Generate contextual insights based on patterns
-      let contextualInsight = "";
-      const morningReadings = enrichedReadings.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        return hour >= 6 && hour <= 9;
-      });
+      const weeklyAverage = Math.round(
+        last7Days.reduce((sum, reading) => sum + reading.value, 0) / last7Days.length
+      );
+
+      // AI Summary generation
+      const problematicDays = dailyStats.filter(d => d.isProblematic);
+      const avgInRange = Math.round(dailyStats.reduce((sum, d) => sum + d.inRangePercentage, 0) / dailyStats.length);
       
-      const eveningReadings = enrichedReadings.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        return hour >= 18 && hour <= 21;
-      });
-
-      if (morningReadings.length > 0 && eveningReadings.length > 0) {
-        const avgMorning = morningReadings.reduce((sum, r) => sum + r.value, 0) / morningReadings.length;
-        const avgEvening = eveningReadings.reduce((sum, r) => sum + r.value, 0) / eveningReadings.length;
-        const difference = Math.round(avgEvening - avgMorning);
-        
-        if (difference > 30) {
-          contextualInsight = `Evening levels average ${difference} mg/dL higher than mornings. Consider lighter dinners.`;
-        } else if (difference < -10) {
-          contextualInsight = `Morning levels tend to be higher than evenings. Check overnight snacking.`;
-        } else {
-          contextualInsight = `Stable day-to-day pattern. Keep up the consistent routine!`;
-        }
-      } else if (enrichedReadings.length > 0) {
-        const highReadings = enrichedReadings.filter(r => r.value > 160).length;
-        const totalReadings = enrichedReadings.length;
-        const highPercentage = Math.round((highReadings / totalReadings) * 100);
-        
-        if (highPercentage > 20) {
-          contextualInsight = `${highPercentage}% of readings are elevated. Try walking after meals.`;
-        } else {
-          contextualInsight = "Good glucose control overall. Keep logging consistently.";
-        }
+      let aiSummary = "";
+      if (problematicDays.length > 2) {
+        aiSummary = `High glucose spikes detected on ${problematicDays.length} days this week. Consider reviewing meal choices and timing.`;
+      } else if (avgInRange >= 70) {
+        aiSummary = `Excellent control with ${avgInRange}% in target range. Keep up the consistent routine!`;
+      } else if (weeklyAverage > 140) {
+        aiSummary = `Weekly average is elevated. Focus on reducing refined carbs and increasing activity after meals.`;
+      } else {
+        aiSummary = "Tracking regularly helps identify patterns. Try logging meals for better insights.";
       }
 
-      return { 
-        chartData: enrichedReadings, 
-        weeklyAverage: 0, 
-        dailyStats: [], 
-        aiSummary: "", 
-        contextualInsight 
-      };
+      return { chartData: dailyStats, weeklyAverage, dailyStats, aiSummary };
     }
 
     if (viewMode === 'dailyChange') {
-      // Show daily averages and changes
-      const last7Days = glucoseData.filter(reading => 
-        reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
-      );
-
+      // Group by day and calculate daily averages and changes
       const dailyAverages = new Map();
+      
       last7Days.forEach(reading => {
         const day = new Date(reading.timestamp).toDateString();
         if (!dailyAverages.has(day)) {
@@ -322,10 +268,9 @@ const PreDiabeticGlucoseChart = ({
       const dailyData = Array.from(dailyAverages.entries()).map(([day, values]) => {
         const avg = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
         return {
-          day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
+          day: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           timestamp: new Date(day).getTime(),
-          average: Math.round(avg * 10) / 10,
-          readingCount: values.length
+          average: Math.round(avg * 10) / 10
         };
       }).sort((a, b) => a.timestamp - b.timestamp);
 
@@ -335,10 +280,10 @@ const PreDiabeticGlucoseChart = ({
         isImprovement: index > 0 ? item.average < dailyData[index - 1].average : false
       }));
 
-      return { chartData: processedDailyData, weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
+      return { chartData: processedDailyData, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     }
 
-    return { chartData: last5Days, weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
+    return { chartData: last7Days, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
   }, [glucoseData, viewMode]);
 
   // Generate insights
@@ -481,36 +426,23 @@ const PreDiabeticGlucoseChart = ({
           </div>
         </div>
 
-        {/* Time in Range with Interactive Window Toggle */}
+        {/* Time in Range Badge and Trend for Trend View */}
         {viewMode === 'trend' && (
-          <div className="flex flex-col items-center mb-2 space-y-2">
-            <button
-              onClick={() => {
-                const windows: TimeWindow[] = ['all', 'waking', 'sleeping'];
-                const currentIndex = windows.indexOf(timeWindow);
-                const nextIndex = (currentIndex + 1) % windows.length;
-                setTimeWindow(windows[nextIndex]);
-              }}
-              className="group"
-            >
-              <Badge className="bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200 transition-colors">
-                {timeInRangeData.normal}% in range during {timeInRangeData.label}
-              </Badge>
-              <div className="text-xs text-muted-foreground mt-1 opacity-70 group-hover:opacity-100">
-                Tap to toggle time window
-              </div>
-            </button>
+          <div className="flex flex-col items-center mb-2 space-y-1">
+            <Badge className="bg-green-100 text-green-800 border-green-200">
+              {timeInRangeData.normal}% in range this week
+            </Badge>
             {timeInRangeData.weeklyTrend !== 0 && (
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 {timeInRangeData.weeklyTrend > 0 ? (
                   <>
                     <TrendingUp className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600">↑ {Math.abs(timeInRangeData.weeklyTrend)}% from last period</span>
+                    <span className="text-green-600">↑ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
                   </>
                 ) : (
                   <>
                     <TrendingDown className="w-3 h-3 text-red-600" />
-                    <span className="text-red-600">↓ {Math.abs(timeInRangeData.weeklyTrend)}% from last period</span>
+                    <span className="text-red-600">↓ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
                   </>
                 )}
               </div>
@@ -543,24 +475,7 @@ const PreDiabeticGlucoseChart = ({
                     tickLine={false}
                     width={35}
                   />
-                  <Tooltip content={({ active, payload }: any) => {
-                    if (active && payload && payload.length) {
-                      const point = payload[0].payload;
-                      return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-                          <p className="font-medium text-gray-900">{point.day}</p>
-                          <p className="text-sm text-gray-600">Average: {point.average} mg/dL</p>
-                          <p className="text-sm text-gray-600">{point.readingCount} readings</p>
-                          {point.change !== 0 && (
-                            <p className={`text-sm ${point.isImprovement ? 'text-green-600' : 'text-red-600'}`}>
-                              {point.change > 0 ? '+' : ''}{Math.round(point.change * 10) / 10} mg/dL from yesterday
-                            </p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }} />
+                  <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
                   <Bar 
                     dataKey="change" 
@@ -574,120 +489,123 @@ const PreDiabeticGlucoseChart = ({
                   />
                 </BarChart>
               ) : (
-                <LineChart data={processedData.chartData} margin={{ top: 20, right: 15, left: 15, bottom: 35 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/40" />
+                <ComposedChart data={processedData.chartData} margin={{ top: 20, right: 10, left: 10, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
                   <XAxis 
-                    dataKey="timestamp"
-                    type="number"
-                    scale="time"
-                    domain={['dataMin', 'dataMax']}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return date.toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      });
-                    }}
-                    tick={{ fontSize: 10, fill: "#6B7280" }}
+                    dataKey="day" 
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis 
-                    domain={[60, 220]}
+                    domain={[60, 200]}
                     tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
                     width={35}
                   />
                   
-                  {/* Glucose zones */}
-                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
+                  {/* Glucose zones with labels */}
+                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.08} />
                   <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.08} />
-                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
-                  <ReferenceArea y1={160} y2={220} fill="#ef4444" fillOpacity={0.06} />
+                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.08} />
+                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.08} />
 
                   {/* Zone boundary lines */}
-                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
-                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+                  
+                  {/* Weekly average line */}
+                  {processedData.weeklyAverage > 0 && (
+                    <ReferenceLine 
+                      y={processedData.weeklyAverage} 
+                      stroke="#3B82F6" 
+                      strokeWidth={2} 
+                      strokeDasharray="8 4" 
+                      opacity={0.8}
+                    />
+                  )}
+                  
+                  {/* Variability bands */}
+                  <Area 
+                    type="monotone" 
+                    dataKey="upperBand" 
+                    stroke="none" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.1}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="lowerBand" 
+                    stroke="none" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.1}
+                  />
                   
                   <Tooltip content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       const point = payload[0].payload;
                       return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
-                          <div className="space-y-1">
-                            <p className="font-semibold text-gray-900">{point.value} mg/dL</p>
-                            <p className="text-sm text-gray-600">{point.day} at {point.time}</p>
-                            <div className="border-t pt-2 mt-2">
-                              <p className="text-xs text-gray-500 font-medium">Daily Range:</p>
-                              <p className="text-sm text-gray-700">
-                                {point.dayMin} - {point.dayMax} mg/dL
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Avg: {point.dayAverage} mg/dL ({point.dayReadingCount} readings)
-                              </p>
-                            </div>
-                          </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
+                          <p className="font-medium text-gray-900 text-sm">{point.fullDate}</p>
+                          <p className="text-xs text-gray-600">Avg: {point.average} mg/dL</p>
+                          <p className="text-xs text-gray-600">{point.readingCount} readings</p>
                         </div>
                       );
                     }
                     return null;
                   }} />
                   
-                  {/* Main glucose line */}
+                  {/* Main glucose line with enhanced styling for problematic days */}
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey="average" 
                     stroke="hsl(var(--primary))"
-                    strokeWidth={2.5}
+                    strokeWidth={3}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     dot={(props: any) => {
                       const { payload, cx, cy } = props;
-                      if (!payload) return null;
-                      
-                      const getColor = (value: number) => {
-                        if (value < 80) return "#f97316";
-                        if (value > 160) return "#ef4444";
-                        if (value > 130) return "#f59e0b";
-                        return "#22c55e";
-                      };
-                      
-                      const isLatest = payload.isLatest;
-                      
+                      const isProblematic = payload?.isProblematic;
                       return (
                         <circle
                           cx={cx}
                           cy={cy}
-                          r={isLatest ? 5 : 3}
-                          fill={getColor(payload.value)}
+                          r={isProblematic ? 6 : 4}
+                          fill={isProblematic ? "#ef4444" : "hsl(var(--primary))"}
                           stroke="white"
-                          strokeWidth={isLatest ? 2 : 1}
+                          strokeWidth={2}
+                          className="cursor-pointer hover:r-8 transition-all"
+                          onClick={() => {
+                            // Handle day click for detailed view
+                            console.log('Clicked day:', payload);
+                          }}
                         />
                       );
                     }}
                     activeDot={{ 
-                      r: 6, 
+                      r: 8, 
                       fill: "hsl(var(--primary))", 
                       stroke: "white", 
-                      strokeWidth: 2 
+                      strokeWidth: 3,
+                      className: "cursor-pointer"
                     }}
                   />
-                </LineChart>
+                </ComposedChart>
               )}
             </ResponsiveContainer>
           </ChartContainer>
         </div>
 
-        {/* Contextual Insight for Trend View */}
-        {viewMode === 'trend' && processedData.contextualInsight && (
-          <div className="mt-3 p-3 bg-blue-50/70 rounded-lg border border-blue-200/50">
+        {/* AI Summary for Trend View */}
+        {viewMode === 'trend' && processedData.aiSummary && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-start gap-2">
-              <div className="w-4 h-4 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mt-0.5">
-                <span className="text-white text-xs font-bold">💡</span>
+              <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mt-0.5">
+                <span className="text-white text-xs font-bold">AI</span>
               </div>
-              <p className="text-sm text-blue-800 leading-relaxed">{processedData.contextualInsight}</p>
+              <p className="text-sm text-blue-800 leading-relaxed">{processedData.aiSummary}</p>
             </div>
           </div>
         )}
