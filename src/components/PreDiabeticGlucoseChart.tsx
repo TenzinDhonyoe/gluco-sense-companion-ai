@@ -220,113 +220,30 @@ const PreDiabeticGlucoseChart = ({
     );
 
     if (viewMode === 'trend') {
-      // 5-day focused view with enhanced daily statistics
-      const dailyData = new Map();
-      
-      last5Days.forEach(reading => {
-        const day = new Date(reading.timestamp).toDateString();
-        if (!dailyData.has(day)) {
-          dailyData.set(day, []);
-        }
-        dailyData.get(day).push(reading.value);
-      });
-
-      const dailyStats = Array.from(dailyData.entries()).map(([day, values]) => {
-        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-        const highReadings = values.filter(v => v > 160).length;
-        const highPercentage = (highReadings / values.length) * 100;
-        const inRangeReadings = values.filter(v => v >= 80 && v <= 130).length;
-        const inRangePercentage = (inRangeReadings / values.length) * 100;
-        
-        return {
-          day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
-          fullDate: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          timestamp: new Date(day).getTime(),
-          average: Math.round(avg),
-          isProblematic: highPercentage > 30,
-          inRangePercentage: Math.round(inRangePercentage),
-          readingCount: values.length,
-          highPercentage: Math.round(highPercentage),
-          isLatest: false,
-          change: undefined as number | undefined
-        };
-      }).sort((a, b) => a.timestamp - b.timestamp);
-
-      // Mark the latest day and calculate change
-      if (dailyStats.length > 0) {
-        dailyStats[dailyStats.length - 1].isLatest = true;
-        if (dailyStats.length > 1) {
-          const latest = dailyStats[dailyStats.length - 1];
-          const previous = dailyStats[dailyStats.length - 2];
-          latest.change = latest.average - previous.average;
-        }
-      }
-
-      const weeklyAverage = Math.round(
-        last5Days.reduce((sum, reading) => sum + reading.value, 0) / last5Days.length
+      // Daily readings view - show individual readings, not aggregated
+      const last7Days = glucoseData.filter(reading => 
+        reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
       );
 
-      // Generate contextual insights
-      let contextualInsight = "";
-      const dinnerReadings = last5Days.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        return hour >= 18 && hour <= 21;
-      });
-      
-      const nightReadings = last5Days.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        return hour >= 22 || hour <= 6;
-      });
-
-      if (dinnerReadings.length > 0) {
-        const avgDinner = dinnerReadings.reduce((sum, r) => sum + r.value, 0) / dinnerReadings.length;
-        const predinnerReadings = last5Days.filter(reading => {
-          const hour = new Date(reading.timestamp).getHours();
-          return hour >= 15 && hour <= 17;
-        });
-        
-        if (predinnerReadings.length > 0) {
-          const avgPredinner = predinnerReadings.reduce((sum, r) => sum + r.value, 0) / predinnerReadings.length;
-          const dinnerSpike = Math.round(avgDinner - avgPredinner);
-          
-          if (dinnerSpike > 30) {
-            contextualInsight = `Your glucose rises ~${dinnerSpike} mg/dL after dinner. Try walking post-meal.`;
-          } else if (dinnerSpike > 20) {
-            contextualInsight = `Moderate dinner spike of ~${dinnerSpike} mg/dL. Consider smaller portions.`;
-          }
-        }
-      }
-
-      if (!contextualInsight && nightReadings.length > 0) {
-        const avgNight = nightReadings.reduce((sum, r) => sum + r.value, 0) / nightReadings.length;
-        if (avgNight > 140) {
-          contextualInsight = "You tend to go high at night. Consider adjusting late snacks.";
-        } else if (avgNight < 80) {
-          contextualInsight = "Overnight lows detected. Check with your healthcare provider.";
-        }
-      }
-
-      if (!contextualInsight) {
-        contextualInsight = "Keep logging consistently for more personalized insights.";
-      }
-
-      return { chartData: dailyStats, weeklyAverage, dailyStats, aiSummary: "", contextualInsight };
-    }
-
-    if (viewMode === 'dailyChange') {
-      // Detailed view showing multiple readings per day
-      const groupedByDay = new Map();
-      
-      last5Days.forEach(reading => {
+      // Group readings by day to calculate daily stats for tooltips
+      const dailyStatsMap = new Map();
+      last7Days.forEach(reading => {
         const day = new Date(reading.timestamp).toDateString();
-        if (!groupedByDay.has(day)) {
-          groupedByDay.set(day, []);
+        if (!dailyStatsMap.has(day)) {
+          dailyStatsMap.set(day, []);
         }
-        groupedByDay.get(day).push(reading);
+        dailyStatsMap.get(day).push(reading.value);
       });
 
-      const detailedData = Array.from(groupedByDay.entries()).flatMap(([day, readings]) => {
-        return readings.map((reading, index) => ({
+      // Add daily stats to each reading for hover information
+      const enrichedReadings = last7Days.map(reading => {
+        const day = new Date(reading.timestamp).toDateString();
+        const dayReadings = dailyStatsMap.get(day) || [];
+        const minValue = Math.min(...dayReadings);
+        const maxValue = Math.max(...dayReadings);
+        const avgValue = Math.round(dayReadings.reduce((sum, val) => sum + val, 0) / dayReadings.length);
+        
+        return {
           ...reading,
           day: new Date(reading.timestamp).toLocaleDateString('en-US', { weekday: 'short' }),
           time: new Date(reading.timestamp).toLocaleTimeString('en-US', { 
@@ -334,12 +251,91 @@ const PreDiabeticGlucoseChart = ({
             minute: '2-digit',
             hour12: true 
           }),
-          isFirst: index === 0,
-          dayReadingCount: readings.length
-        }));
+          dayMin: minValue,
+          dayMax: maxValue,
+          dayAverage: avgValue,
+          dayReadingCount: dayReadings.length,
+          isLatest: reading.timestamp === Math.max(...last7Days.map(r => r.timestamp))
+        };
+      });
+
+      // Generate contextual insights based on patterns
+      let contextualInsight = "";
+      const morningReadings = enrichedReadings.filter(reading => {
+        const hour = new Date(reading.timestamp).getHours();
+        return hour >= 6 && hour <= 9;
+      });
+      
+      const eveningReadings = enrichedReadings.filter(reading => {
+        const hour = new Date(reading.timestamp).getHours();
+        return hour >= 18 && hour <= 21;
+      });
+
+      if (morningReadings.length > 0 && eveningReadings.length > 0) {
+        const avgMorning = morningReadings.reduce((sum, r) => sum + r.value, 0) / morningReadings.length;
+        const avgEvening = eveningReadings.reduce((sum, r) => sum + r.value, 0) / eveningReadings.length;
+        const difference = Math.round(avgEvening - avgMorning);
+        
+        if (difference > 30) {
+          contextualInsight = `Evening levels average ${difference} mg/dL higher than mornings. Consider lighter dinners.`;
+        } else if (difference < -10) {
+          contextualInsight = `Morning levels tend to be higher than evenings. Check overnight snacking.`;
+        } else {
+          contextualInsight = `Stable day-to-day pattern. Keep up the consistent routine!`;
+        }
+      } else if (enrichedReadings.length > 0) {
+        const highReadings = enrichedReadings.filter(r => r.value > 160).length;
+        const totalReadings = enrichedReadings.length;
+        const highPercentage = Math.round((highReadings / totalReadings) * 100);
+        
+        if (highPercentage > 20) {
+          contextualInsight = `${highPercentage}% of readings are elevated. Try walking after meals.`;
+        } else {
+          contextualInsight = "Good glucose control overall. Keep logging consistently.";
+        }
+      }
+
+      return { 
+        chartData: enrichedReadings, 
+        weeklyAverage: 0, 
+        dailyStats: [], 
+        aiSummary: "", 
+        contextualInsight 
+      };
+    }
+
+    if (viewMode === 'dailyChange') {
+      // Show daily averages and changes
+      const last7Days = glucoseData.filter(reading => 
+        reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000
+      );
+
+      const dailyAverages = new Map();
+      last7Days.forEach(reading => {
+        const day = new Date(reading.timestamp).toDateString();
+        if (!dailyAverages.has(day)) {
+          dailyAverages.set(day, []);
+        }
+        dailyAverages.get(day).push(reading.value);
+      });
+
+      const dailyData = Array.from(dailyAverages.entries()).map(([day, values]) => {
+        const avg = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+        return {
+          day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
+          timestamp: new Date(day).getTime(),
+          average: Math.round(avg * 10) / 10,
+          readingCount: values.length
+        };
       }).sort((a, b) => a.timestamp - b.timestamp);
 
-      return { chartData: detailedData, weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
+      const processedDailyData = dailyData.map((item, index) => ({
+        ...item,
+        change: index > 0 ? item.average - dailyData[index - 1].average : 0,
+        isImprovement: index > 0 ? item.average < dailyData[index - 1].average : false
+      }));
+
+      return { chartData: processedDailyData, weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
     }
 
     return { chartData: last5Days, weeklyAverage: 0, dailyStats: [], aiSummary: "", contextualInsight: "" };
@@ -533,47 +529,120 @@ const PreDiabeticGlucoseChart = ({
           >
             <ResponsiveContainer width="100%" height="100%">
               {viewMode === 'dailyChange' ? (
-                <LineChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                <BarChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
                   <XAxis 
-                    dataKey="time" 
-                    tick={{ fontSize: 9, fill: "#6B7280" }}
+                    dataKey="day" 
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
-                    interval="preserveStartEnd"
                   />
                   <YAxis 
-                    domain={[60, 200]}
-                    tick={false}
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
-                    width={20}
+                    width={35}
+                  />
+                  <Tooltip content={({ active, payload }: any) => {
+                    if (active && payload && payload.length) {
+                      const point = payload[0].payload;
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+                          <p className="font-medium text-gray-900">{point.day}</p>
+                          <p className="text-sm text-gray-600">Average: {point.average} mg/dL</p>
+                          <p className="text-sm text-gray-600">{point.readingCount} readings</p>
+                          {point.change !== 0 && (
+                            <p className={`text-sm ${point.isImprovement ? 'text-green-600' : 'text-red-600'}`}>
+                              {point.change > 0 ? '+' : ''}{Math.round(point.change * 10) / 10} mg/dL from yesterday
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }} />
+                  <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
+                  <Bar 
+                    dataKey="change" 
+                    fill="#3B82F6"
+                    radius={[4, 4, 0, 0]}
+                    shape={(props: any) => {
+                      const { payload, ...rest } = props;
+                      const color = payload?.isImprovement ? "#10B981" : "#EF4444";
+                      return <rect {...rest} fill={color} />;
+                    }}
+                  />
+                </BarChart>
+              ) : (
+                <LineChart data={processedData.chartData} margin={{ top: 20, right: 15, left: 15, bottom: 35 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/40" />
+                  <XAxis 
+                    dataKey="timestamp"
+                    type="number"
+                    scale="time"
+                    domain={['dataMin', 'dataMax']}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      });
+                    }}
+                    tick={{ fontSize: 10, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    domain={[60, 220]}
+                    tick={{ fontSize: 11, fill: "#6B7280" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
                   />
                   
-                  {/* Simplified glucose zones */}
+                  {/* Glucose zones */}
+                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.06} />
                   <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.08} />
-                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.08} />
+                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.06} />
+                  <ReferenceArea y1={160} y2={220} fill="#ef4444" fillOpacity={0.06} />
+
+                  {/* Zone boundary lines */}
+                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
+                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.4} />
                   
                   <Tooltip content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       const point = payload[0].payload;
                       return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
-                          <p className="font-medium text-gray-900 text-sm">{point.value} mg/dL</p>
-                          <p className="text-xs text-gray-600">{point.day} at {point.time}</p>
-                          <p className="text-xs text-gray-500">{point.dayReadingCount} readings this day</p>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-gray-900">{point.value} mg/dL</p>
+                            <p className="text-sm text-gray-600">{point.day} at {point.time}</p>
+                            <div className="border-t pt-2 mt-2">
+                              <p className="text-xs text-gray-500 font-medium">Daily Range:</p>
+                              <p className="text-sm text-gray-700">
+                                {point.dayMin} - {point.dayMax} mg/dL
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Avg: {point.dayAverage} mg/dL ({point.dayReadingCount} readings)
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       );
                     }
                     return null;
                   }} />
                   
+                  {/* Main glucose line */}
                   <Line 
                     type="monotone" 
                     dataKey="value" 
                     stroke="hsl(var(--primary))"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                     dot={(props: any) => {
                       const { payload, cx, cy } = props;
                       if (!payload) return null;
@@ -585,97 +654,27 @@ const PreDiabeticGlucoseChart = ({
                         return "#22c55e";
                       };
                       
+                      const isLatest = payload.isLatest;
+                      
                       return (
                         <circle
                           cx={cx}
                           cy={cy}
-                          r={3}
+                          r={isLatest ? 5 : 3}
                           fill={getColor(payload.value)}
                           stroke="white"
-                          strokeWidth={1}
-                        />
-                      );
-                    }}
-                    activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "white", strokeWidth: 2 }}
-                  />
-                </LineChart>
-              ) : (
-                <ComposedChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200/40" />
-                  <XAxis 
-                    dataKey="day" 
-                    tick={{ fontSize: 10, fill: "#6B7280" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    domain={[60, 200]}
-                    tick={false}
-                    axisLine={false}
-                    tickLine={false}
-                    width={15}
-                  />
-                  
-                  {/* Simplified glucose zones - only in range and high */}
-                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.06} />
-                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.06} />
-
-                  {/* Minimal zone boundary lines */}
-                  <ReferenceLine y={130} stroke="#22c55e" strokeWidth={1} strokeDasharray="8 4" opacity={0.4} />
-                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="8 4" opacity={0.4} />
-                  
-                  <Tooltip content={({ active, payload }: any) => {
-                    if (active && payload && payload.length) {
-                      const point = payload[0].payload;
-                      return (
-                        <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
-                          <p className="font-medium text-gray-900 text-sm">{point.day}</p>
-                          <p className="text-xs text-gray-600">{point.average} mg/dL average</p>
-                          {point.change && (
-                            <p className={`text-xs ${point.change > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                              {point.change > 0 ? '+' : ''}{point.change} mg/dL from yesterday
-                            </p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }} />
-                  
-                  {/* Clean trend line */}
-                  <Line 
-                    type="monotone" 
-                    dataKey="average" 
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={3}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    dot={(props: any) => {
-                      const { payload, cx, cy } = props;
-                      if (!payload) return null;
-                      
-                      const isLatest = payload.isLatest;
-                      const isProblematic = payload.isProblematic;
-                      
-                      return (
-                        <circle
-                          cx={cx}
-                          cy={cy}
-                          r={isLatest ? 6 : (isProblematic ? 5 : 4)}
-                          fill={isProblematic ? "#ef4444" : "hsl(var(--primary))"}
-                          stroke="white"
-                          strokeWidth={isLatest ? 3 : 2}
+                          strokeWidth={isLatest ? 2 : 1}
                         />
                       );
                     }}
                     activeDot={{ 
-                      r: 8, 
+                      r: 6, 
                       fill: "hsl(var(--primary))", 
                       stroke: "white", 
-                      strokeWidth: 3
+                      strokeWidth: 2 
                     }}
                   />
-                </ComposedChart>
+                </LineChart>
               )}
             </ResponsiveContainer>
           </ChartContainer>
