@@ -113,9 +113,9 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Calculate time in range for last 7 days with time window filtering
+  // Calculate time in range for all time windows
   const timeInRangeData = useMemo(() => {
-    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, timeWindowLabel: 'all day' };
+    if (!glucoseData.length) return { allDay: 0, waking: 0, sleeping: 0, weeklyTrend: 0 };
     
     const now = Date.now();
     const last7Days = glucoseData.filter(reading => 
@@ -126,25 +126,7 @@ const PreDiabeticGlucoseChart = ({
       reading.timestamp < now - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, timeWindowLabel: 'all day' };
-
-    // Filter readings based on time window
-    const filterByTimeWindow = (readings: GlucoseReading[]) => {
-      return readings.filter(reading => {
-        const hour = new Date(reading.timestamp).getHours();
-        switch (timeWindow) {
-          case 'waking':
-            return hour >= 6 && hour <= 22; // 6 AM to 10 PM
-          case 'sleeping':
-            return hour < 6 || hour > 22; // 10 PM to 6 AM
-          default:
-            return true; // all day
-        }
-      });
-    };
-
-    const filteredLast7Days = filterByTimeWindow(last7Days);
-    const filteredPrevious7Days = filterByTimeWindow(previous7Days);
+    if (!last7Days.length) return { allDay: 0, waking: 0, sleeping: 0, weeklyTrend: 0 };
 
     const calculateTimeInRange = (readings: GlucoseReading[]) => {
       if (!readings.length) return 0;
@@ -153,33 +135,30 @@ const PreDiabeticGlucoseChart = ({
       return Math.round((normal / total) * 100);
     };
 
-    const currentWeekInRange = calculateTimeInRange(filteredLast7Days);
-    const previousWeekInRange = calculateTimeInRange(filteredPrevious7Days);
+    // Calculate for all time windows
+    const allDayReadings = last7Days;
+    const wakingReadings = last7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour >= 6 && hour <= 22; // 6 AM to 10 PM
+    });
+    const sleepingReadings = last7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour < 6 || hour > 22; // 10 PM to 6 AM
+    });
+
+    // Calculate previous week for trend (using all day)
+    const previousWeekInRange = calculateTimeInRange(previous7Days);
+    const currentWeekInRange = calculateTimeInRange(allDayReadings);
     const weeklyTrend = previousWeekInRange > 0 ? currentWeekInRange - previousWeekInRange : 0;
 
-    const total = filteredLast7Days.length;
-    const normal = filteredLast7Days.filter(r => r.value >= 80 && r.value <= 130).length;
-    const elevated = filteredLast7Days.filter(r => r.value > 130 && r.value <= 160).length;
-    const high = filteredLast7Days.filter(r => r.value > 160).length;
-    const low = filteredLast7Days.filter(r => r.value < 80).length;
-
-    // Generate time window label
-    const timeWindowLabels = {
-      all: 'all day',
-      waking: 'waking hours (6 AM - 10 PM)',
-      sleeping: 'overnight (10 PM - 6 AM)'
-    };
-
     return {
-      normal: total > 0 ? Math.round((normal / total) * 100) : 0,
-      elevated: total > 0 ? Math.round((elevated / total) * 100) : 0,
-      high: total > 0 ? Math.round((high / total) * 100) : 0,
-      low: total > 0 ? Math.round((low / total) * 100) : 0,
+      allDay: calculateTimeInRange(allDayReadings),
+      waking: calculateTimeInRange(wakingReadings),
+      sleeping: calculateTimeInRange(sleepingReadings),
       weeklyTrend,
-      timeWindowLabel: timeWindowLabels[timeWindow],
-      readingCount: total
+      readingCount: allDayReadings.length
     };
-  }, [glucoseData, timeWindow]);
+  }, [glucoseData]);
 
   // Calculate motivational insight
   const getMotivationalInsight = useMemo(() => {
@@ -204,7 +183,7 @@ const PreDiabeticGlucoseChart = ({
     }
 
     // Check if user has good time in range
-    if (timeInRangeData.normal >= 70) {
+    if (timeInRangeData.allDay >= 70) {
       return "Great glucose control this week!";
     }
 
@@ -215,7 +194,7 @@ const PreDiabeticGlucoseChart = ({
 
     // Default encouragement
     return "Try logging after meals for better trends";
-  }, [glucoseData, timeInRangeData.normal]);
+  }, [glucoseData, timeInRangeData.allDay]);
 
   // Enhanced data processing for Weekly View and other modes
   const processedData = useMemo(() => {
@@ -276,7 +255,7 @@ const PreDiabeticGlucoseChart = ({
       } else if (weeklyAverage > 140) {
         aiSummary = `Weekly average is elevated. Focus on reducing refined carbs and increasing activity after meals.`;
       } else {
-        aiSummary = "Tracking regularly helps identify patterns. Try logging meals for better insights.";
+        aiSummary = "Keep up the consistent tracking to identify patterns.";
       }
 
       return { chartData: dailyStats, weeklyAverage, dailyStats, aiSummary };
@@ -455,43 +434,21 @@ const PreDiabeticGlucoseChart = ({
           </div>
         </div>
 
-        {/* Time in Range Badge and Trend for Trend View */}
-        {viewMode === 'trend' && (
-          <div className="flex flex-col items-center mb-2 space-y-1">
-            <Badge 
-              className="bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200 transition-colors"
-              onClick={() => {
-                const nextWindow = timeWindow === 'all' ? 'waking' : timeWindow === 'waking' ? 'sleeping' : 'all';
-                setTimeWindow(nextWindow);
-              }}
-            >
-              {timeInRangeData.readingCount > 0 ? (
-                <>
-                  {timeInRangeData.normal}% in range during {timeInRangeData.timeWindowLabel}
-                  <span className="ml-1 text-xs opacity-70">↻</span>
-                </>
-              ) : (
-                `No readings for ${timeInRangeData.timeWindowLabel}`
-              )}
-            </Badge>
-            <div className="text-xs text-muted-foreground">
-              Tap to toggle: All day • Waking • Sleeping
+        {/* Weekly Trend for Trend View */}
+        {viewMode === 'trend' && timeInRangeData.weeklyTrend !== 0 && timeInRangeData.readingCount > 0 && (
+          <div className="flex justify-center mb-2">
+            <div className={cn(
+              "flex items-center gap-1 text-sm",
+              timeInRangeData.weeklyTrend > 0 ? "text-green-600" : "text-red-600"
+            )}>
+              {timeInRangeData.weeklyTrend > 0 ? 
+                <TrendingUp className="w-4 h-4" /> : 
+                <TrendingDown className="w-4 h-4" />
+              }
+              <span>
+                {timeInRangeData.weeklyTrend > 0 ? '+' : ''}{timeInRangeData.weeklyTrend}% from last week
+              </span>
             </div>
-            {timeInRangeData.weeklyTrend !== 0 && timeInRangeData.readingCount > 0 && (
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                {timeInRangeData.weeklyTrend > 0 ? (
-                  <>
-                    <TrendingUp className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600">↑ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="w-3 h-3 text-red-600" />
-                    <span className="text-red-600">↓ {Math.abs(timeInRangeData.weeklyTrend)}% from last week</span>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         )}
 
@@ -639,14 +596,32 @@ const PreDiabeticGlucoseChart = ({
           </ChartContainer>
         </div>
 
-        {/* AI Summary for Trend View */}
-        {viewMode === 'trend' && processedData.aiSummary && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-start gap-2">
-              <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mt-0.5">
-                <span className="text-white text-xs font-bold">AI</span>
+        {/* Time in Range Metrics Row - below graph for trend view */}
+        {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-lg font-semibold text-foreground">
+                {timeInRangeData.allDay}%
               </div>
-              <p className="text-sm text-blue-800 leading-relaxed">{processedData.aiSummary}</p>
+              <div className="text-xs text-muted-foreground">
+                All Day
+              </div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-lg font-semibold text-foreground">
+                {timeInRangeData.waking}%
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Waking (6 AM - 10 PM)
+              </div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="text-lg font-semibold text-foreground">
+                {timeInRangeData.sleeping}%
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Overnight (10 PM - 6 AM)
+              </div>
             </div>
           </div>
         )}
