@@ -462,14 +462,14 @@ const PreDiabeticGlucoseChart = ({
             <ResponsiveContainer width="100%" height="100%">
               {viewMode === 'dailyChange' ? (
                 <BarChart data={processedData.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <CartesianGrid strokeDasharray="none" className="stroke-transparent" />
                   <XAxis 
                     dataKey="day" 
                     tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
@@ -490,7 +490,7 @@ const PreDiabeticGlucoseChart = ({
                 </BarChart>
               ) : (
                 <ComposedChart data={processedData.chartData} margin={{ top: 20, right: 10, left: 10, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="2 4" className="stroke-gray-200/60" />
+                  <CartesianGrid strokeDasharray="none" className="stroke-transparent" />
                   <XAxis 
                     dataKey="day" 
                     tick={{ fontSize: 11, fill: "#6B7280" }}
@@ -511,10 +511,6 @@ const PreDiabeticGlucoseChart = ({
                   <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.08} />
                   <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.08} />
 
-                  {/* Zone boundary lines */}
-                  <ReferenceLine y={80} stroke="#f97316" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
-                  <ReferenceLine y={130} stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
-                  <ReferenceLine y={160} stroke="#ef4444" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
                   
                   {/* Weekly average line */}
                   {processedData.weeklyAverage > 0 && (
