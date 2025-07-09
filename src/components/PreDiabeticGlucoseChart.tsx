@@ -26,6 +26,7 @@ interface PreDiabeticGlucoseChartProps {
 }
 
 type ViewMode = 'trend' | 'dailyChange';
+type TimeWindow = 'all' | 'waking' | 'sleeping';
 
 const PreDiabeticGlucoseChart = ({ 
   data: propData, 
@@ -33,6 +34,7 @@ const PreDiabeticGlucoseChart = ({
   onDataUpdate
 }: PreDiabeticGlucoseChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('trend');
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>('all');
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,9 +113,9 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Calculate time in range for last 7 days and previous week comparison
+  // Calculate time in range for last 7 days with time window filtering
   const timeInRangeData = useMemo(() => {
-    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
+    if (!glucoseData.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, timeWindowLabel: 'all day' };
     
     const now = Date.now();
     const last7Days = glucoseData.filter(reading => 
@@ -124,7 +126,25 @@ const PreDiabeticGlucoseChart = ({
       reading.timestamp < now - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0 };
+    if (!last7Days.length) return { normal: 0, elevated: 0, high: 0, low: 0, weeklyTrend: 0, timeWindowLabel: 'all day' };
+
+    // Filter readings based on time window
+    const filterByTimeWindow = (readings: GlucoseReading[]) => {
+      return readings.filter(reading => {
+        const hour = new Date(reading.timestamp).getHours();
+        switch (timeWindow) {
+          case 'waking':
+            return hour >= 6 && hour <= 22; // 6 AM to 10 PM
+          case 'sleeping':
+            return hour < 6 || hour > 22; // 10 PM to 6 AM
+          default:
+            return true; // all day
+        }
+      });
+    };
+
+    const filteredLast7Days = filterByTimeWindow(last7Days);
+    const filteredPrevious7Days = filterByTimeWindow(previous7Days);
 
     const calculateTimeInRange = (readings: GlucoseReading[]) => {
       if (!readings.length) return 0;
@@ -133,24 +153,33 @@ const PreDiabeticGlucoseChart = ({
       return Math.round((normal / total) * 100);
     };
 
-    const currentWeekInRange = calculateTimeInRange(last7Days);
-    const previousWeekInRange = calculateTimeInRange(previous7Days);
+    const currentWeekInRange = calculateTimeInRange(filteredLast7Days);
+    const previousWeekInRange = calculateTimeInRange(filteredPrevious7Days);
     const weeklyTrend = previousWeekInRange > 0 ? currentWeekInRange - previousWeekInRange : 0;
 
-    const total = last7Days.length;
-    const normal = last7Days.filter(r => r.value >= 80 && r.value <= 130).length;
-    const elevated = last7Days.filter(r => r.value > 130 && r.value <= 160).length;
-    const high = last7Days.filter(r => r.value > 160).length;
-    const low = last7Days.filter(r => r.value < 80).length;
+    const total = filteredLast7Days.length;
+    const normal = filteredLast7Days.filter(r => r.value >= 80 && r.value <= 130).length;
+    const elevated = filteredLast7Days.filter(r => r.value > 130 && r.value <= 160).length;
+    const high = filteredLast7Days.filter(r => r.value > 160).length;
+    const low = filteredLast7Days.filter(r => r.value < 80).length;
+
+    // Generate time window label
+    const timeWindowLabels = {
+      all: 'all day',
+      waking: 'waking hours (6 AM - 10 PM)',
+      sleeping: 'overnight (10 PM - 6 AM)'
+    };
 
     return {
-      normal: Math.round((normal / total) * 100),
-      elevated: Math.round((elevated / total) * 100),
-      high: Math.round((high / total) * 100),
-      low: Math.round((low / total) * 100),
-      weeklyTrend
+      normal: total > 0 ? Math.round((normal / total) * 100) : 0,
+      elevated: total > 0 ? Math.round((elevated / total) * 100) : 0,
+      high: total > 0 ? Math.round((high / total) * 100) : 0,
+      low: total > 0 ? Math.round((low / total) * 100) : 0,
+      weeklyTrend,
+      timeWindowLabel: timeWindowLabels[timeWindow],
+      readingCount: total
     };
-  }, [glucoseData]);
+  }, [glucoseData, timeWindow]);
 
   // Calculate motivational insight
   const getMotivationalInsight = useMemo(() => {
@@ -429,10 +458,26 @@ const PreDiabeticGlucoseChart = ({
         {/* Time in Range Badge and Trend for Trend View */}
         {viewMode === 'trend' && (
           <div className="flex flex-col items-center mb-2 space-y-1">
-            <Badge className="bg-green-100 text-green-800 border-green-200">
-              {timeInRangeData.normal}% in range this week
+            <Badge 
+              className="bg-green-100 text-green-800 border-green-200 cursor-pointer hover:bg-green-200 transition-colors"
+              onClick={() => {
+                const nextWindow = timeWindow === 'all' ? 'waking' : timeWindow === 'waking' ? 'sleeping' : 'all';
+                setTimeWindow(nextWindow);
+              }}
+            >
+              {timeInRangeData.readingCount > 0 ? (
+                <>
+                  {timeInRangeData.normal}% in range during {timeInRangeData.timeWindowLabel}
+                  <span className="ml-1 text-xs opacity-70">↻</span>
+                </>
+              ) : (
+                `No readings for ${timeInRangeData.timeWindowLabel}`
+              )}
             </Badge>
-            {timeInRangeData.weeklyTrend !== 0 && (
+            <div className="text-xs text-muted-foreground">
+              Tap to toggle: All day • Waking • Sleeping
+            </div>
+            {timeInRangeData.weeklyTrend !== 0 && timeInRangeData.readingCount > 0 && (
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 {timeInRangeData.weeklyTrend > 0 ? (
                   <>
