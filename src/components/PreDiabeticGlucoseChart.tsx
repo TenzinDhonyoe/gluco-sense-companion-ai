@@ -608,45 +608,37 @@ const PreDiabeticGlucoseChart = ({
           </ChartContainer>
         </div>
 
-        {/* Time in Range Metrics Row - Streamlined Design */}
+        {/* Time in Range Metrics Row - Horizontal Layout */}
         {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
           <div className="flex flex-wrap gap-3 mt-4 justify-center">
             {/* All Day Metric */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm text-center hover:shadow-md transition-all duration-200">
-              <div className="text-base font-semibold text-gray-900">
-                {timeInRangeData.allDay}% <span className="font-normal text-gray-600 text-sm">All Day</span>
-              </div>
-              {timeInRangeData.allDayTrend !== 0 && (
-                <div className={cn(
-                  "flex items-center justify-center gap-1 text-xs mt-1",
-                  timeInRangeData.allDayTrend > 0 ? "text-emerald-600" : "text-orange-500"
-                )}>
-                  <span className="text-sm">
-                    {timeInRangeData.allDayTrend > 0 ? '↑' : '↓'} {Math.abs(timeInRangeData.allDayTrend)}% from last week
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
+                <span>{timeInRangeData.allDay}% All Day</span>
+                {timeInRangeData.allDayTrend !== 0 && (
+                  <span className={cn(
+                    "text-sm",
+                    timeInRangeData.allDayTrend > 0 ? "text-emerald-600" : "text-orange-500"
+                  )}>
+                    {timeInRangeData.allDayTrend > 0 ? '↑' : '↓'}{Math.abs(timeInRangeData.allDayTrend)}%
                   </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             
             {/* Overnight Metric */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm text-center hover:shadow-md transition-all duration-200">
-              <div className="text-base font-semibold text-gray-900">
-                {timeInRangeData.sleeping}% <span className="font-normal text-gray-600 text-sm">Overnight</span>
-              </div>
-              {timeInRangeData.sleepingTrend !== 0 ? (
-                <div className={cn(
-                  "flex items-center justify-center gap-1 text-xs mt-1",
-                  timeInRangeData.sleepingTrend > 0 ? "text-emerald-600" : "text-orange-500"
-                )}>
-                  <span className="text-sm">
-                    {timeInRangeData.sleepingTrend > 0 ? '↑' : '↓'} {Math.abs(timeInRangeData.sleepingTrend)}% from last week
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
+                <span>{timeInRangeData.sleeping}% Overnight</span>
+                {timeInRangeData.sleepingTrend !== 0 && (
+                  <span className={cn(
+                    "text-sm",
+                    timeInRangeData.sleepingTrend > 0 ? "text-emerald-600" : "text-orange-500"
+                  )}>
+                    {timeInRangeData.sleepingTrend > 0 ? '↑' : '↓'}{Math.abs(timeInRangeData.sleepingTrend)}%
                   </span>
-                </div>
-              ) : (
-                <div className="text-xs text-gray-500 mt-1">
-                  10 PM - 6 AM
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
