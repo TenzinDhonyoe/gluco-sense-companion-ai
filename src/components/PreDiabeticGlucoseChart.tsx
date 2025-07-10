@@ -113,9 +113,13 @@ const PreDiabeticGlucoseChart = ({
     };
   }, [fetchGlucoseReadings]);
 
-  // Calculate time in range for all time windows
+  // Calculate time in range for all time windows with individual trends
   const timeInRangeData = useMemo(() => {
-    if (!glucoseData.length) return { allDay: 0, waking: 0, sleeping: 0, weeklyTrend: 0 };
+    if (!glucoseData.length) return { 
+      allDay: 0, waking: 0, sleeping: 0, 
+      allDayTrend: 0, wakingTrend: 0, sleepingTrend: 0,
+      readingCount: 0
+    };
     
     const now = Date.now();
     const last7Days = glucoseData.filter(reading => 
@@ -126,7 +130,11 @@ const PreDiabeticGlucoseChart = ({
       reading.timestamp < now - 7 * 24 * 60 * 60 * 1000
     );
 
-    if (!last7Days.length) return { allDay: 0, waking: 0, sleeping: 0, weeklyTrend: 0 };
+    if (!last7Days.length) return { 
+      allDay: 0, waking: 0, sleeping: 0, 
+      allDayTrend: 0, wakingTrend: 0, sleepingTrend: 0,
+      readingCount: 0
+    };
 
     const calculateTimeInRange = (readings: GlucoseReading[]) => {
       if (!readings.length) return 0;
@@ -135,7 +143,7 @@ const PreDiabeticGlucoseChart = ({
       return Math.round((normal / total) * 100);
     };
 
-    // Calculate for all time windows
+    // Calculate for all time windows - current week
     const allDayReadings = last7Days;
     const wakingReadings = last7Days.filter(reading => {
       const hour = new Date(reading.timestamp).getHours();
@@ -146,16 +154,37 @@ const PreDiabeticGlucoseChart = ({
       return hour < 6 || hour > 22; // 10 PM to 6 AM
     });
 
-    // Calculate previous week for trend (using all day)
-    const previousWeekInRange = calculateTimeInRange(previous7Days);
-    const currentWeekInRange = calculateTimeInRange(allDayReadings);
-    const weeklyTrend = previousWeekInRange > 0 ? currentWeekInRange - previousWeekInRange : 0;
+    // Calculate for all time windows - previous week
+    const previousAllDayReadings = previous7Days;
+    const previousWakingReadings = previous7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour >= 6 && hour <= 22;
+    });
+    const previousSleepingReadings = previous7Days.filter(reading => {
+      const hour = new Date(reading.timestamp).getHours();
+      return hour < 6 || hour > 22;
+    });
+
+    // Calculate trends for each time window
+    const currentAllDay = calculateTimeInRange(allDayReadings);
+    const currentWaking = calculateTimeInRange(wakingReadings);
+    const currentSleeping = calculateTimeInRange(sleepingReadings);
+    
+    const previousAllDay = calculateTimeInRange(previousAllDayReadings);
+    const previousWaking = calculateTimeInRange(previousWakingReadings);
+    const previousSleeping = calculateTimeInRange(previousSleepingReadings);
+
+    const allDayTrend = previousAllDay > 0 ? currentAllDay - previousAllDay : 0;
+    const wakingTrend = previousWaking > 0 ? currentWaking - previousWaking : 0;
+    const sleepingTrend = previousSleeping > 0 ? currentSleeping - previousSleeping : 0;
 
     return {
-      allDay: calculateTimeInRange(allDayReadings),
-      waking: calculateTimeInRange(wakingReadings),
-      sleeping: calculateTimeInRange(sleepingReadings),
-      weeklyTrend,
+      allDay: currentAllDay,
+      waking: currentWaking,
+      sleeping: currentSleeping,
+      allDayTrend,
+      wakingTrend,
+      sleepingTrend,
       readingCount: allDayReadings.length
     };
   }, [glucoseData]);
@@ -579,43 +608,78 @@ const PreDiabeticGlucoseChart = ({
           </ChartContainer>
         </div>
 
-        {/* Time in Range Metrics Row - Compact Pill Design */}
+        {/* Time in Range Metrics Row - Enhanced with Individual Trends */}
         {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
           <div className="flex flex-col sm:flex-row gap-2 mt-4 justify-center">
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-sm text-center min-w-0 flex-1 sm:flex-none">
+            {/* All Day Metric */}
+            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-md text-center min-w-0 flex-1 sm:flex-none hover:shadow-lg transition-shadow">
               <div className="text-sm font-semibold text-gray-900">
                 {timeInRangeData.allDay}% <span className="font-normal text-gray-600">All Day</span>
               </div>
-              {timeInRangeData.weeklyTrend !== 0 && (
+              {timeInRangeData.allDayTrend !== 0 && (
                 <div className={cn(
                   "flex items-center justify-center gap-1 text-xs mt-0.5",
-                  timeInRangeData.weeklyTrend > 0 ? "text-green-600" : "text-red-600"
+                  timeInRangeData.allDayTrend > 0 ? "text-green-600" : "text-red-600"
                 )}>
-                  {timeInRangeData.weeklyTrend > 0 ? 
+                  {timeInRangeData.allDayTrend > 0 ? 
                     <TrendingUp className="w-3 h-3" /> : 
                     <TrendingDown className="w-3 h-3" />
                   }
                   <span>
-                    {timeInRangeData.weeklyTrend > 0 ? '+' : ''}{timeInRangeData.weeklyTrend}% from last week
+                    {timeInRangeData.allDayTrend > 0 ? '+' : ''}{timeInRangeData.allDayTrend}% vs last week
                   </span>
                 </div>
               )}
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-sm text-center min-w-0 flex-1 sm:flex-none">
+            
+            {/* Waking Hours Metric */}
+            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-md text-center min-w-0 flex-1 sm:flex-none hover:shadow-lg transition-shadow">
               <div className="text-sm font-semibold text-gray-900">
                 {timeInRangeData.waking}% <span className="font-normal text-gray-600">Waking</span>
               </div>
-              <div className="text-xs text-gray-500">
-                6 AM - 10 PM
-              </div>
+              {timeInRangeData.wakingTrend !== 0 ? (
+                <div className={cn(
+                  "flex items-center justify-center gap-1 text-xs mt-0.5",
+                  timeInRangeData.wakingTrend > 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {timeInRangeData.wakingTrend > 0 ? 
+                    <TrendingUp className="w-3 h-3" /> : 
+                    <TrendingDown className="w-3 h-3" />
+                  }
+                  <span>
+                    {timeInRangeData.wakingTrend > 0 ? '+' : ''}{timeInRangeData.wakingTrend}% vs last week
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500 mt-0.5">
+                  6 AM - 10 PM
+                </div>
+              )}
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-sm text-center min-w-0 flex-1 sm:flex-none">
+            
+            {/* Overnight Metric */}
+            <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-100 shadow-md text-center min-w-0 flex-1 sm:flex-none hover:shadow-lg transition-shadow">
               <div className="text-sm font-semibold text-gray-900">
                 {timeInRangeData.sleeping}% <span className="font-normal text-gray-600">Overnight</span>
               </div>
-              <div className="text-xs text-gray-500">
-                10 PM - 6 AM
-              </div>
+              {timeInRangeData.sleepingTrend !== 0 ? (
+                <div className={cn(
+                  "flex items-center justify-center gap-1 text-xs mt-0.5",
+                  timeInRangeData.sleepingTrend > 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {timeInRangeData.sleepingTrend > 0 ? 
+                    <TrendingUp className="w-3 h-3" /> : 
+                    <TrendingDown className="w-3 h-3" />
+                  }
+                  <span>
+                    {timeInRangeData.sleepingTrend > 0 ? '+' : ''}{timeInRangeData.sleepingTrend}% vs last week
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-500 mt-0.5">
+                  10 PM - 6 AM
+                </div>
+              )}
             </div>
           </div>
         )}
