@@ -610,9 +610,9 @@ const PreDiabeticGlucoseChart = ({
 
         {/* Time in Range Metrics Row - Horizontal Layout */}
         {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
-          <div className="flex flex-wrap gap-3 mt-4 justify-center">
+          <div className="flex flex-row flex-wrap gap-3 mt-4 justify-center items-center">
             {/* All Day Metric */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex-1 min-w-[200px] max-w-[280px] bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
                 <span>{timeInRangeData.allDay}% All Day</span>
                 {timeInRangeData.allDayTrend !== 0 && (
@@ -627,7 +627,7 @@ const PreDiabeticGlucoseChart = ({
             </div>
             
             {/* Overnight Metric */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex-1 min-w-[200px] max-w-[280px] bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
                 <span>{timeInRangeData.sleeping}% Overnight</span>
                 {timeInRangeData.sleepingTrend !== 0 && (
