@@ -610,14 +610,14 @@ const PreDiabeticGlucoseChart = ({
 
         {/* Time in Range Metrics Row - Horizontal Layout */}
         {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
-          <div className="flex flex-row flex-wrap gap-3 mt-4 justify-center items-center">
+          <div className="flex flex-row gap-2 mt-4 justify-center items-center">
             {/* All Day Metric */}
-            <div className="flex-1 min-w-[200px] max-w-[280px] bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
+            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900">
                 <span>{timeInRangeData.allDay}% All Day</span>
                 {timeInRangeData.allDayTrend !== 0 && (
                   <span className={cn(
-                    "text-sm",
+                    "text-xs sm:text-sm",
                     timeInRangeData.allDayTrend > 0 ? "text-emerald-600" : "text-orange-500"
                   )}>
                     {timeInRangeData.allDayTrend > 0 ? '↑' : '↓'}{Math.abs(timeInRangeData.allDayTrend)}%
@@ -627,12 +627,12 @@ const PreDiabeticGlucoseChart = ({
             </div>
             
             {/* Overnight Metric */}
-            <div className="flex-1 min-w-[200px] max-w-[280px] bg-white/95 backdrop-blur-sm rounded-2xl px-5 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-center gap-2 text-base font-semibold text-gray-900">
+            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900">
                 <span>{timeInRangeData.sleeping}% Overnight</span>
                 {timeInRangeData.sleepingTrend !== 0 && (
                   <span className={cn(
-                    "text-sm",
+                    "text-xs sm:text-sm",
                     timeInRangeData.sleepingTrend > 0 ? "text-emerald-600" : "text-orange-500"
                   )}>
                     {timeInRangeData.sleepingTrend > 0 ? '↑' : '↓'}{Math.abs(timeInRangeData.sleepingTrend)}%
