@@ -488,17 +488,36 @@ const PreDiabeticGlucoseChart = ({
                     axisLine={false}
                     tickLine={false}
                     width={35}
+                    domain={['dataMin - 2', 'dataMax + 2']}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
                   <Bar 
                     dataKey="change" 
-                    fill="#3B82F6"
-                    radius={[4, 4, 0, 0]}
                     shape={(props: any) => {
-                      const { payload, ...rest } = props;
-                      const color = payload?.isImprovement ? "#10B981" : "#EF4444";
-                      return <rect {...rest} fill={color} />;
+                      const { payload, x, y, width, height, ...rest } = props;
+                      const isNegative = payload.change < 0;
+                      const color = payload.change >= 0 ? "#EF4444" : "#10B981";
+                      
+                      // Ensure minimum visible height for small values
+                      const minHeight = 3;
+                      const actualHeight = Math.max(Math.abs(height), minHeight);
+                      
+                      // For negative values, adjust y position
+                      const adjustedY = isNegative ? y - actualHeight : y;
+                      
+                      return (
+                        <rect 
+                          {...rest}
+                          x={x}
+                          y={adjustedY}
+                          width={width}
+                          height={actualHeight}
+                          fill={color}
+                          rx={2}
+                          ry={2}
+                        />
+                      );
                     }}
                   />
                 </BarChart>
