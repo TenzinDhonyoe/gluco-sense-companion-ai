@@ -488,7 +488,8 @@ const PreDiabeticGlucoseChart = ({
                     axisLine={false}
                     tickLine={false}
                     width={35}
-                    domain={['dataMin - 2', 'dataMax + 2']}
+                    domain={[-20, 20]}
+                    tickFormatter={(value) => Math.round(value).toString()}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
