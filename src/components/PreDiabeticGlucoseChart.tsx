@@ -630,10 +630,10 @@ const PreDiabeticGlucoseChart = ({
 
         {/* Time in Range Metrics Row - Horizontal Layout */}
         {viewMode === 'trend' && timeInRangeData.readingCount > 0 && (
-          <div className="flex flex-row gap-2 mt-4 justify-center items-center">
+          <div className="flex flex-row gap-2 mt-4 justify-center items-stretch">
             {/* All Day Metric */}
-            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900">
+            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200 min-h-[60px] flex items-center">
+              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900 w-full">
                 <span>{timeInRangeData.allDay}% All Day</span>
                 {timeInRangeData.allDayTrend !== 0 && (
                   <span className={cn(
@@ -647,8 +647,8 @@ const PreDiabeticGlucoseChart = ({
             </div>
             
             {/* Overnight Metric */}
-            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900">
+            <div className="flex-1 w-[48%] bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-100/80 shadow-sm hover:shadow-md transition-all duration-200 min-h-[60px] flex items-center">
+              <div className="flex items-center justify-center gap-1 text-sm sm:text-base font-semibold text-gray-900 w-full">
                 <span>{timeInRangeData.sleeping}% Overnight</span>
                 {timeInRangeData.sleepingTrend !== 0 && (
                   <span className={cn(
