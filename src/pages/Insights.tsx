@@ -132,7 +132,7 @@ const Insights = () => {
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' 
       }}
     >
-      <div className="px-4 space-y-6 mt-6">
+      <div className="px-4 space-y-6">
         {/* Header */}
         <div className="py-4 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Insights</h1>

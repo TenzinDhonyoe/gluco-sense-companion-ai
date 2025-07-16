@@ -267,7 +267,7 @@ const Logs = () => {
     }}>
         <div className="px-4 space-y-6">
           {/* Header - Apple HIG compliant */}
-          <div className="py-4 mb-4 text-center">
+          <div className="py-4 text-center">
             <h1 className="text-2xl font-bold text-gray-900">Log Activity</h1>
             <p className="text-sm text-muted-foreground">Track your meals, workouts, and glucose</p>
           </div>

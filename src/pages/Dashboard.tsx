@@ -164,7 +164,7 @@ const Dashboard = () => {
     paddingRight: 'env(safe-area-inset-right)',
     paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)'
   }}>
-      <div className="px-4 space-y-5">
+      <div className="px-4 space-y-6">
         {/* Header - Apple HIG compliant */}
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
