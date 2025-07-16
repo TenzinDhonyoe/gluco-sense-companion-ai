@@ -210,49 +210,49 @@ const Dashboard = () => {
               <span>Today's Progress</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="relative">
-                  <CircularProgress value={stepsProgress} color="text-blue-500" size={64} strokeWidth={5} />
+          <CardContent className="px-4 sm:px-6 pb-6 pt-0">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6">
+              <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 min-h-[120px] justify-between">
+                <div className="relative flex-shrink-0">
+                  <CircularProgress value={stepsProgress} color="text-blue-500" size={56} strokeWidth={4} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold text-gray-900 leading-none">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900 leading-none">
                       {Math.round(todaysProgress.steps / 1000)}k
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-900">Steps</p>
+                <div className="space-y-1 flex-1 flex flex-col justify-center">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">Steps</p>
                   <p className="text-xs text-gray-500">{Math.round(stepsProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="relative">
-                  <CircularProgress value={sleepProgress} color="text-green-500" size={64} strokeWidth={5} />
+              <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 min-h-[120px] justify-between">
+                <div className="relative flex-shrink-0">
+                  <CircularProgress value={sleepProgress} color="text-green-500" size={56} strokeWidth={4} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold text-gray-900 leading-none">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900 leading-none">
                       {todaysProgress.sleep}h
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-900">Sleep</p>
+                <div className="space-y-1 flex-1 flex flex-col justify-center">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">Sleep</p>
                   <p className="text-xs text-gray-500">{Math.round(sleepProgress)}% of goal</p>
                 </div>
               </div>
               
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="relative">
-                  <CircularProgress value={mealsProgress} color="text-amber-500" size={64} strokeWidth={5} />
+              <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3 min-h-[120px] justify-between">
+                <div className="relative flex-shrink-0">
+                  <CircularProgress value={mealsProgress} color="text-amber-500" size={56} strokeWidth={4} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold text-gray-900 leading-none">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900 leading-none">
                       {todaysProgress.meals}
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-900">Meals</p>
+                <div className="space-y-1 flex-1 flex flex-col justify-center">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">Meals</p>
                   <p className="text-xs text-gray-500">{Math.round(mealsProgress)}% of goal</p>
                 </div>
               </div>
