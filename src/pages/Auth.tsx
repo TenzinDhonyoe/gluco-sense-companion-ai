@@ -116,7 +116,7 @@ const Auth = () => {
     <div 
       className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-yellow-50 flex flex-col"
       style={{ 
-        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingTop: 'max(3rem, env(safe-area-inset-top))',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
         paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)'

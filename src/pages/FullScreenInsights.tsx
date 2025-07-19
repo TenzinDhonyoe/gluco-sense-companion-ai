@@ -14,7 +14,7 @@ const FullScreenInsights = () => {
     <div 
       className="w-screen h-screen bg-white"
       style={{ 
-        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingTop: 'max(3rem, env(safe-area-inset-top))',
         paddingLeft: 'env(safe-area-inset-left)',
         paddingRight: 'env(safe-area-inset-right)',
         paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)'
