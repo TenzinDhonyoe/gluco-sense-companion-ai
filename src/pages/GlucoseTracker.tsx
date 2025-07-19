@@ -15,7 +15,7 @@ const GlucoseTracker = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 safe-area-top pb-20">
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>

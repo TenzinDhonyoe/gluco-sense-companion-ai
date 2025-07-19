@@ -11,7 +11,15 @@ const FullScreenInsights = () => {
   const trendDirection = state?.trendDirection ?? 'flat';
 
   return (
-    <div className="w-screen h-screen bg-white">
+    <div 
+      className="w-screen h-screen bg-white"
+      style={{ 
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)'
+      }}
+    >
       <div className="h-full w-full flex flex-col p-3 lg:p-4">
         <header className="flex-shrink-0">
           <Link
