@@ -1,10 +1,25 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  sanitizeInput,
+  validateRequest,
+  RateLimiter,
+  auditLog,
+  createErrorResponse,
+  createSuccessResponse,
+  SECURITY_HEADERS
+} from "../_shared/security-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Rate limit: 20 requests per hour for input parsing
+const RATE_LIMIT_CONFIG = {
+  windowMinutes: 60,
+  maxRequests: 20
 };
 
 interface ParsedMeal {
@@ -37,48 +52,85 @@ interface FoodNutrients {
   fiber: number;
 }
 
-interface USDAFood {
-  food_name: string;
-  serving_size_g?: number;
-  calories: number;
-  carbohydrates_total_g: number;
-  protein_g: number;
-  fat_total_g: number;
-  fiber_g: number;
-}
 
 // Cache for nutrition results to ensure consistency
-const nutritionCache = new Map<string, USDAFood>();
+const nutritionCache = new Map<string, FoodNutrients>();
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: { ...corsHeaders, ...SECURITY_HEADERS } });
   }
 
+  let user: any = null;
+  let supabase: any = null;
+
   try {
-    const { input } = await req.json();
-    console.log('Processing input:', input);
+    // Parse and validate request
+    const rawData = await req.json();
+    validateRequest(rawData);
+    
+    const { input } = rawData;
+    console.log('Processing input:', input?.slice(0, 100) + (input?.length > 100 ? '...' : ''));
 
     if (!input || typeof input !== 'string') {
       throw new Error('Input is required and must be a string');
+    }
+    
+    if (input.length > 1000) {
+      throw new Error('Input too long. Maximum 1000 characters allowed.');
+    }
+    
+    // Sanitize user input
+    const sanitizedInput = sanitizeInput(input, 1000);
+    if (!sanitizedInput.trim()) {
+      throw new Error('Input contains only invalid characters');
     }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get authenticated user
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header required');
+    }
     
-    if (userError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !authUser) {
       throw new Error('User not authenticated');
     }
+    
+    user = authUser;
+    
+    // Check rate limits
+    const rateLimiter = new RateLimiter(supabaseUrl, supabaseKey);
+    const rateLimitResult = await rateLimiter.checkRateLimit(
+      user.id, 
+      'parse-user-input', 
+      RATE_LIMIT_CONFIG
+    );
+    
+    if (!rateLimitResult.allowed) {
+      await auditLog(supabase, user.id, 'rate_limit_exceeded', 'parse-user-input', {
+        inputLength: sanitizedInput.length
+      }, false);
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Rate limit exceeded. Please try again later.',
+        rateLimitReset: rateLimitResult.resetTime
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, ...SECURITY_HEADERS, 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Parse input using rule-based system
-    const parsedData = parseInputWithRules(input);
+    // Parse input using AI with sanitized input
+    const parsedData = await parseInputWithAI(sanitizedInput);
     console.log('Parsed data:', parsedData);
 
     let result;
@@ -90,25 +142,123 @@ serve(async (req) => {
       throw new Error('Unable to determine if input is a meal or exercise');
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    // Log successful parsing
+    await auditLog(supabase, user.id, 'input_parsed', 'parse-user-input', {
+      inputType: parsedData.type,
+      inputLength: sanitizedInput.length,
+      outputType: result ? 'success' : 'failed'
+    }, true);
+
+    return createSuccessResponse({
       data: result,
-      message: `Successfully logged ${parsedData.type}` 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      message: `Successfully logged ${parsedData.type}`
+    }, corsHeaders);
 
   } catch (error) {
     console.error('Error in parse-user-input function:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error.message 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    // Log error if we have user context
+    if (user && supabase) {
+      await auditLog(supabase, user.id, 'function_error', 'parse-user-input', {
+        error: error.message
+      }, false);
+    }
+    
+    return createErrorResponse(error, 500, corsHeaders);
   }
 });
+
+async function parseInputWithAI(input: string): Promise<ParsedMeal | ParsedExercise> {
+  const hfApiToken = Deno.env.get('HF_API_TOKEN');
+  if (!hfApiToken) {
+    console.error('HF API token not found, falling back to rule-based parsing');
+    return parseInputWithRules(input);
+  }
+
+  const prompt = `You are an expert nutritionist and fitness specialist. Your task is to analyze user input and extract detailed, accurate information about meals or exercises.
+
+USER INPUT: "${input}"
+
+ANALYSIS PROCESS:
+1. First, reason through whether this describes food/meal consumption or physical exercise
+2. Extract all relevant details with intelligent inference
+3. Use context clues like time references, portion descriptions, and activity keywords
+4. For meals: identify individual food items, estimate reasonable quantities, determine meal timing
+5. For exercises: identify activity type, estimate duration and intensity based on descriptions
+
+RESPONSE FORMAT:
+Return a valid JSON object with this exact structure:
+
+FOR MEALS:
+{
+  "type": "meal",
+  "meal_type": "breakfast|lunch|dinner|snack",
+  "meal_name": "descriptive name for the entire meal",
+  "food_items": [
+    {
+      "food_name": "specific food item name",
+      "quantity": number,
+      "unit": "appropriate unit (serving, cup, slice, piece, etc.)"
+    }
+  ],
+  "timestamp": "current ISO timestamp"
+}
+
+FOR EXERCISES:
+{
+  "type": "exercise",
+  "exercise_name": "specific exercise/activity name",
+  "exercise_type": "cardio|strength|flexibility|other",
+  "duration_minutes": number,
+  "intensity": "low|moderate|high|very_high",
+  "timestamp": "current ISO timestamp"
+}
+
+IMPORTANT: Use your reasoning to make intelligent inferences about quantities, timing, and details that aren't explicitly stated.`;
+
+  try {
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${hfApiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert nutritionist and fitness specialist. Use your reasoning capabilities to accurately parse food and exercise descriptions. Always return valid JSON in the exact format specified. Think step-by-step to extract all relevant details.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('HF Router API error:', response.status);
+      return parseInputWithRules(input);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content;
+    
+    // Parse the JSON response
+    try {
+      const parsedResult = JSON.parse(aiResponse);
+      console.log('AI parsed result:', parsedResult);
+      return parsedResult;
+    } catch (jsonError) {
+      console.error('Failed to parse AI JSON response:', jsonError);
+      return parseInputWithRules(input);
+    }
+  } catch (error) {
+    console.error('AI parsing error:', error);
+    return parseInputWithRules(input);
+  }
+}
 
 function parseInputWithRules(input: string): ParsedMeal | ParsedExercise {
   const cleanInput = input.toLowerCase().trim();
@@ -228,143 +378,203 @@ function parseInputWithRules(input: string): ParsedMeal | ParsedExercise {
   }
 }
 
-async function searchUSDAFood(foodName: string): Promise<USDAFood | null> {
+async function getAINutritionData(foodName: string, quantity: number, unit: string): Promise<FoodNutrients | null> {
   // Check cache first for consistency
-  const cacheKey = foodName.toLowerCase().trim();
+  const cacheKey = `${foodName.toLowerCase().trim()}-${quantity}-${unit}`;
   if (nutritionCache.has(cacheKey)) {
-    console.log(`Using cached USDA data for: ${foodName}`);
+    console.log(`Using cached AI nutrition data for: ${foodName}`);
     return nutritionCache.get(cacheKey)!;
   }
 
-  const usdaApiKey = Deno.env.get('USDA_API_KEY');
-  if (!usdaApiKey) {
-    console.log('USDA API key not configured, skipping USDA API call');
+  const hfApiToken = Deno.env.get('HF_API_TOKEN');
+  if (!hfApiToken) {
+    console.error('HF API token not found, cannot get nutrition data');
     return null;
   }
 
   try {
-    // USDA FoodData Central API search endpoint
-    const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&api_key=${usdaApiKey}`;
+    const prompt = `You are an expert nutritionist and food scientist. Analyze the following food item and provide accurate nutritional information.
+
+FOOD ITEM: ${foodName}
+QUANTITY: ${quantity} ${unit}
+
+ANALYSIS REQUIREMENTS:
+1. Consider the specific portion size and unit provided
+2. Account for typical preparation methods and variations
+3. Provide realistic nutritional values based on your extensive knowledge
+4. Consider portion context (e.g., "large slice" vs "small piece")
+
+RESPONSE FORMAT:
+Return a JSON object with exact nutritional values per the specified quantity:
+{
+  "calories": number,
+  "carbs": number,
+  "protein": number,
+  "fat": number,
+  "fiber": number,
+  "confidence": number (0.1 to 1.0)
+}
+
+Be precise and realistic with your estimates. Factor in typical serving sizes and food density.`;
+
+    console.log(`Getting AI nutrition data for: ${foodName} (${quantity} ${unit})`);
     
-    console.log(`Attempting USDA API call for: ${foodName}`);
-    
-    // Create AbortController for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-    
-    const response = await fetch(searchUrl, {
-      method: 'GET',
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Supabase-Edge-Function/1.0',
+        'Authorization': `Bearer ${hfApiToken}`,
+        'Content-Type': 'application/json',
       },
-      signal: controller.signal
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert nutritionist. Use your reasoning capabilities to provide accurate nutritional analysis. Always return valid JSON with precise nutritional values.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 300,
+      }),
     });
 
-    clearTimeout(timeoutId);
-    console.log(`USDA API response status: ${response.status}`);
-    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`USDA API HTTP error for ${foodName}:`, response.status, errorText);
+      console.error('HF Router API error for nutrition analysis:', response.status);
       return null;
     }
 
     const data = await response.json();
-    console.log(`USDA API response structure:`, Object.keys(data));
+    const aiResponse = data.choices[0].message.content;
     
-    if (data.foods && data.foods.length > 0) {
-      const food = data.foods[0];
-      console.log(`Found USDA food: ${food.description}`);
+    try {
+      const nutritionData = JSON.parse(aiResponse);
       
-      // Extract nutrients from USDA response
-      const nutrients = food.foodNutrients || [];
-      console.log(`Available USDA nutrients count:`, nutrients.length);
-      
-      const nutritionData: USDAFood = {
-        food_name: food.description,
-        calories: 0,
-        carbohydrates_total_g: 0,
-        protein_g: 0,
-        fat_total_g: 0,
-        fiber_g: 0,
-      };
-
-      // Extract nutrients based on nutrient IDs
-      nutrients.forEach((nutrient: any) => {
-        const nutrientId = nutrient.nutrientId;
-        const value = nutrient.value || 0;
+      // Validate the response structure
+      if (typeof nutritionData.calories === 'number' && 
+          typeof nutritionData.carbs === 'number' &&
+          typeof nutritionData.protein === 'number' &&
+          typeof nutritionData.fat === 'number' &&
+          typeof nutritionData.fiber === 'number') {
         
-        switch (nutrientId) {
-          case 1008: // Energy (kcal)
-            nutritionData.calories = Math.round(value);
-            break;
-          case 1005: // Carbohydrate
-            nutritionData.carbohydrates_total_g = Math.round(value * 100) / 100;
-            break;
-          case 1003: // Protein
-            nutritionData.protein_g = Math.round(value * 100) / 100;
-            break;
-          case 1004: // Fat
-            nutritionData.fat_total_g = Math.round(value * 100) / 100;
-            break;
-          case 1079: // Fiber
-            nutritionData.fiber_g = Math.round(value * 100) / 100;
-            break;
-        }
-      });
-
-      console.log(`Successfully processed USDA nutrition data:`, nutritionData);
-
-      // Cache the result for consistency
-      nutritionCache.set(cacheKey, nutritionData);
-      return nutritionData;
-    }
-    
-    console.log(`No USDA data found for ${foodName}`);
-    return null;
-    
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error(`USDA API timeout for ${foodName}`);
-    } else {
-      console.error(`USDA API error for ${foodName}:`, error.message);
-    }
-    
-    return null;
-  }
-}
-
-function extractNutrients(nutritionData: USDAFood): Partial<FoodNutrients> {
-  const nutrients: Partial<FoodNutrients> = {
-    calories: nutritionData.calories || 0,
-    carbs: nutritionData.carbohydrates_total_g || 0,
-    protein: nutritionData.protein_g || 0,
-    fat: nutritionData.fat_total_g || 0,
-    fiber: nutritionData.fiber_g || 0,
-  };
-
-  console.log(`Extracted nutrients from USDA data:`, nutrients);
-  return nutrients;
-}
-
-function getFallbackNutrients(partialData?: Partial<FoodNutrients>): FoodNutrients {
-  const fallbackNutrients: FoodNutrients = {
-    calories: 100,
-    carbs: 15,
-    protein: 3,
-    fat: 2,
-    fiber: 1,
-  };
-
-  // Use any partial API data we have
-  if (partialData) {
-    Object.keys(partialData).forEach(key => {
-      if (partialData[key] !== null && partialData[key] !== undefined) {
-        fallbackNutrients[key] = partialData[key];
+        console.log(`AI nutrition analysis for ${foodName}:`, nutritionData);
+        
+        // Cache the result
+        nutritionCache.set(cacheKey, nutritionData);
+        return nutritionData;
+      } else {
+        console.error('Invalid AI nutrition response structure');
+        return null;
       }
-    });
+    } catch (jsonError) {
+      console.error('Failed to parse AI nutrition response:', jsonError);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error getting AI nutrition data:', error.message);
+    return null;
   }
+}
+
+async function getAIExerciseData(exerciseName: string, duration?: number, intensity?: string): Promise<{ duration: number, intensity: string, calories: number, confidence: number } | null> {
+  const hfApiToken = Deno.env.get('HF_API_TOKEN');
+  if (!hfApiToken) {
+    console.error('HF API token not found, cannot get exercise data');
+    return null;
+  }
+
+  try {
+    const prompt = `You are an expert exercise physiologist and fitness specialist. Analyze the following exercise activity and provide accurate estimates.
+
+EXERCISE: ${exerciseName}
+PROVIDED DURATION: ${duration ? `${duration} minutes` : 'not specified'}
+PROVIDED INTENSITY: ${intensity || 'not specified'}
+
+ANALYSIS REQUIREMENTS:
+1. If duration is missing, estimate based on typical activity patterns and context clues
+2. If intensity is missing, analyze the description for intensity keywords
+3. Calculate realistic calorie burn for an average adult (70kg/154lbs)
+4. Consider the specific type of exercise and its metabolic demands
+5. Use your expertise to make intelligent inferences
+
+RESPONSE FORMAT:
+Return a JSON object with exercise analysis:
+{
+  "duration_minutes": number,
+  "intensity": "low|moderate|high|very_high", 
+  "calories_burned": number,
+  "confidence": number (0.1 to 1.0)
+}
+
+Be realistic with estimates. Consider typical activity patterns and energy expenditure.`;
+
+    console.log(`Getting AI exercise data for: ${exerciseName}`);
+    
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${hfApiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert exercise physiologist. Use your reasoning capabilities to provide accurate exercise analysis. Always return valid JSON with precise estimates.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 300,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('HF Router API error for exercise analysis:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content;
+    
+    try {
+      const exerciseData = JSON.parse(aiResponse);
+      
+      // Validate the response structure
+      if (typeof exerciseData.duration_minutes === 'number' && 
+          typeof exerciseData.calories_burned === 'number' &&
+          ['low', 'moderate', 'high', 'very_high'].includes(exerciseData.intensity)) {
+        
+        console.log(`AI exercise analysis for ${exerciseName}:`, exerciseData);
+        return {
+          duration: exerciseData.duration_minutes,
+          intensity: exerciseData.intensity,
+          calories: exerciseData.calories_burned,
+          confidence: exerciseData.confidence || 0.8
+        };
+      } else {
+        console.error('Invalid AI exercise response structure');
+        return null;
+      }
+    } catch (jsonError) {
+      console.error('Failed to parse AI exercise response:', jsonError);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error getting AI exercise data:', error.message);
+    return null;
+  }
+}
+
+function getFallbackNutrients(): FoodNutrients {
+  const fallbackNutrients: FoodNutrients = {
+    calories: 150,
+    carbs: 20,
+    protein: 5,
+    fat: 3,
+    fiber: 2,
+  };
 
   console.log(`Using fallback nutrients:`, fallbackNutrients);
   return fallbackNutrients;
@@ -402,19 +612,17 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
   for (const item of parsedMeal.food_items) {
     console.log(`Processing food item: ${item.food_name} (${item.quantity} ${item.unit})`);
     
-    // Try to get nutrition data from USDA
-    const nutritionData = await searchUSDAFood(item.food_name);
-    let partialNutrients: Partial<FoodNutrients> = {};
+    // Get AI-powered nutrition data
+    const aiNutrientData = await getAINutritionData(item.food_name, item.quantity, item.unit);
+    let completeNutrients: FoodNutrients;
     
-    if (nutritionData) {
-      partialNutrients = extractNutrients(nutritionData);
-      console.log(`Using USDA data for ${item.food_name}:`, partialNutrients);
+    if (aiNutrientData) {
+      completeNutrients = aiNutrientData;
+      console.log(`Using AI nutrition data for ${item.food_name}:`, completeNutrients);
     } else {
-      console.log(`USDA data unavailable for ${item.food_name}, using fallback estimates`);
+      console.log(`AI nutrition data unavailable for ${item.food_name}, using fallback estimates`);
+      completeNutrients = getFallbackNutrients();
     }
-
-    // Get complete nutrients (USDA + fallback for missing values)
-    const completeNutrients = getFallbackNutrients(partialNutrients);
 
     console.log(`Final nutrients for ${item.food_name}:`, completeNutrients);
 
@@ -489,25 +697,41 @@ async function processMeal(parsedMeal: ParsedMeal, userId: string, supabase: any
 async function processExercise(parsedExercise: ParsedExercise, userId: string, supabase: any) {
   console.log('Processing exercise:', parsedExercise.exercise_name);
 
-  // Simple calorie estimation based on exercise type and duration
-  let caloriesBurned = parsedExercise.calories_burned;
-  if (!caloriesBurned || caloriesBurned <= 0) {
+  // Get AI-powered exercise analysis
+  const aiExerciseData = await getAIExerciseData(
+    parsedExercise.exercise_name, 
+    parsedExercise.duration_minutes,
+    parsedExercise.intensity
+  );
+
+  let finalDuration = parsedExercise.duration_minutes || 30;
+  let finalIntensity = parsedExercise.intensity || 'moderate';
+  let caloriesBurned = 100; // fallback
+
+  if (aiExerciseData) {
+    finalDuration = aiExerciseData.duration;
+    finalIntensity = aiExerciseData.intensity;
+    caloriesBurned = aiExerciseData.calories;
+    console.log(`Using AI exercise data:`, aiExerciseData);
+  } else {
+    console.log('AI exercise data unavailable, using basic estimates');
+    // Fallback calculation
     const baseRates = {
       'low': 4,
-      'moderate': 6,
+      'moderate': 6, 
       'high': 8,
       'very_high': 10
     };
-    const rate = baseRates[parsedExercise.intensity] || 6;
-    caloriesBurned = Math.round(rate * parsedExercise.duration_minutes);
+    const rate = baseRates[finalIntensity as keyof typeof baseRates] || 6;
+    caloriesBurned = Math.round(rate * finalDuration);
   }
 
   const exerciseData = {
     user_id: userId,
     exercise_name: parsedExercise.exercise_name,
     exercise_type: parsedExercise.exercise_type,
-    duration_minutes: parsedExercise.duration_minutes,
-    intensity: parsedExercise.intensity,
+    duration_minutes: finalDuration,
+    intensity: finalIntensity,
     calories_burned: caloriesBurned,
     timestamp: new Date().toISOString(),
   };

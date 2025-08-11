@@ -45,6 +45,9 @@ verify_jwt = false
 [functions.generate-glucose-reading]
 verify_jwt = false
 
+[functions.ai-chat-standalone]
+verify_jwt = true
+
 [analytics]
 enabled = false
 port = 54327

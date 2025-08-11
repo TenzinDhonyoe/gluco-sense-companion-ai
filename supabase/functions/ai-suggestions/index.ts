@@ -2,96 +2,201 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  sanitizeObject,
+  validateRequest,
+  RateLimiter,
+  auditLog,
+  createErrorResponse,
+  createSuccessResponse,
+  SECURITY_HEADERS
+} from "../_shared/security-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limit: 15 requests per hour for AI suggestions
+const RATE_LIMIT_CONFIG = {
+  windowMinutes: 60,
+  maxRequests: 15
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: { ...corsHeaders, ...SECURITY_HEADERS } });
   }
 
+  let user: any = null;
+  let supabase: any = null;
+
   try {
-    const { glucoseData, logs } = await req.json();
-    console.log('Processing AI suggestions request');
+    // Parse and validate request
+    const rawData = await req.json();
+    validateRequest(rawData);
+    
+    // Sanitize input data
+    const sanitizedData = sanitizeObject(rawData);
+    const { glucoseData, logs, userProfile } = sanitizedData;
+    
+    console.log('Processing comprehensive AI analysis request');
 
     if (!glucoseData || glucoseData.length === 0) {
-      return new Response(JSON.stringify({ suggestions: [] }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return createSuccessResponse({ suggestions: [] }, corsHeaders);
     }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get authenticated user
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header required');
+    }
     
-    if (userError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !authUser) {
       throw new Error('User not authenticated');
     }
+    
+    user = authUser;
+    
+    // Check rate limits
+    const rateLimiter = new RateLimiter(supabaseUrl, supabaseKey);
+    const rateLimitResult = await rateLimiter.checkRateLimit(
+      user.id, 
+      'ai-suggestions', 
+      RATE_LIMIT_CONFIG
+    );
+    
+    if (!rateLimitResult.allowed) {
+      await auditLog(supabase, user.id, 'rate_limit_exceeded', 'ai-suggestions', {
+        dataPoints: {
+          glucose: glucoseData?.length || 0,
+          logs: logs?.length || 0
+        }
+      }, false);
+      
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Rate limit exceeded. Please try again later.',
+        suggestions: [],
+        rateLimitReset: rateLimitResult.resetTime
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, ...SECURITY_HEADERS, 'Content-Type': 'application/json' }
+      });
+    }
 
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    if (!openRouterApiKey) {
-      console.error('OpenRouter API key not found in environment');
-      throw new Error('OpenRouter API key not configured');
+    const hfApiToken = Deno.env.get('HF_API_TOKEN');
+    if (!hfApiToken) {
+      await auditLog(supabase, user.id, 'api_key_missing', 'ai-suggestions', {}, false);
+      console.error('Hugging Face API token not found in environment');
+      throw new Error('Hugging Face API token not configured');
     }
 
     // Add logging to check if API key is present (without exposing the key)
-    console.log('OpenRouter API key is present:', !!openRouterApiKey);
-    console.log('API key length:', openRouterApiKey?.length || 0);
+    console.log('HF API token is present:', !!hfApiToken);
+    console.log('Token length:', hfApiToken?.length || 0);
 
-    const glucose_series = glucoseData.slice(-20).map((d: any) => `${d.value} at ${d.time}`).join(', ');
+    // Prepare comprehensive user analysis data with safety checks
+    const safeGlucoseData = (glucoseData || []).filter(d => 
+      d && typeof d.value === 'number' && d.value > 0 && d.value < 500
+    ).slice(-100); // Limit to last 100 readings
     
-    const formatLogs = (logType: string | string[], defaultText: string) => {
-      const types = Array.isArray(logType) ? logType : [logType];
-      const relevantLogs = logs.filter((log: any) => types.includes(log.type));
-      if (relevantLogs.length === 0) return defaultText;
-      return relevantLogs.map((log: any) => log.description).join('; ');
-    };
+    const recentGlucose = safeGlucoseData.slice(-50).map((d: any) => ({
+      value: Math.max(40, Math.min(400, d.value)), // Clamp values
+      time: String(d.time || '').slice(0, 50),
+      timestamp: String(d.timestamp || '').slice(0, 30)
+    }));
     
-    const meal_log = formatLogs(['meal', 'snack', 'beverage'], "No meals or snacks logged.");
-    const exercise_log = formatLogs('exercise', "No exercise logged.");
+    const allGlucose = safeGlucoseData.map((d: any) => ({
+      value: Math.max(40, Math.min(400, d.value)),
+      time: String(d.time || '').slice(0, 50),
+      timestamp: String(d.timestamp || '').slice(0, 30)
+    }));
+
+    const safeLogs = (logs || []).slice(0, 200); // Limit total logs
+    const meals = safeLogs.filter((log: any) => 
+      log && ['meal', 'snack', 'beverage'].includes(log.type)
+    ).slice(0, 100); // Limit meals
     
-    const sleep_hours = 7; // Placeholder
-    const steps = 8500; // Placeholder
-
-    const prompt = `You are a certified diabetes educator focusing on pre-diabetes prevention. Your tone is encouraging and actionable.
-
-    Based on the following data for a user, return exactly 3 bullet-point suggestions to help keep glucose in a healthy range.
-    Each suggestion must be 75 characters or less.
-    Start each suggestion with a '•' character, and separate them with a new line.
-    Do not include any other text, titles, or pleasantries in your response. Just the 3 bullet points.
+    const exercises = safeLogs.filter((log: any) => 
+      log && log.type === 'exercise'
+    ).slice(0, 50); // Limit exercises
     
-    ---
-    DATA:
-    Past 24h readings (mg/dL): ${glucose_series}
-    User's Recent Logs:
-      – Meals/Snacks/Beverages: ${meal_log} 
-      – Exercise: ${exercise_log}
-    Vitals: ${sleep_hours}h sleep, ${steps} steps
-    ---`;
+    // Calculate user patterns with safety checks
+    const avgGlucose = allGlucose.length > 0 
+      ? allGlucose.reduce((sum: number, r: any) => sum + r.value, 0) / allGlucose.length
+      : 100;
+    const highReadings = allGlucose.filter((r: any) => r.value > 140).length;
+    const lowReadings = allGlucose.filter((r: any) => r.value < 70).length;
+    const totalReadings = allGlucose.length;
 
-    console.log('Making request to OpenRouter API...');
+    // Sanitize meal and exercise descriptions
+    const safeMeals = meals.slice(-20).map((m: any) => ({
+      description: String(m.description || 'Unknown meal').slice(0, 100),
+      time: String(m.time || '').slice(0, 50)
+    }));
+    
+    const safeExercises = exercises.slice(-15).map((e: any) => ({
+      description: String(e.description || 'Unknown exercise').slice(0, 100),
+      time: String(e.time || '').slice(0, 50)
+    }));
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const prompt = `You are an expert diabetes educator and personalized health coach with access to comprehensive user data. Your task is to provide deeply personalized health insights.
+
+USER PROFILE ANALYSIS:
+Total Glucose Readings: ${totalReadings}
+Average Glucose: ${Math.round(avgGlucose)} mg/dL
+High Readings (>140): ${highReadings} (${totalReadings > 0 ? Math.round(highReadings/totalReadings*100) : 0}%)
+Low Readings (<70): ${lowReadings} (${totalReadings > 0 ? Math.round(lowReadings/totalReadings*100) : 0}%)
+
+RECENT GLUCOSE PATTERN (Last 50 readings):
+${recentGlucose.map((r: any) => `${r.value}mg/dL at ${r.time}`).join(', ')}
+
+MEAL HISTORY ANALYSIS:
+${safeMeals.map((m: any) => `${m.description} at ${m.time}`).join('\n')}
+
+EXERCISE HISTORY ANALYSIS:  
+${safeExercises.map((e: any) => `${e.description} at ${e.time}`).join('\n')}
+
+PERSONALIZATION TASK:
+1. Identify unique patterns in THIS USER'S glucose responses to meals and exercise
+2. Find correlations between specific foods/activities and glucose spikes/drops
+3. Recognize timing patterns (meal timing, exercise timing, glucose patterns by time of day)
+4. Understand this user's individual glucose sensitivity and response patterns
+5. Provide coaching based on what SPECIFICALLY works/doesn't work for THIS USER
+
+RESPONSE REQUIREMENTS:
+- Provide exactly 3 deeply personalized suggestions
+- Each suggestion max 75 characters, start with '•'
+- Base recommendations on THIS USER'S specific patterns and history
+- Reference specific foods/activities from their history when relevant
+- Focus on actionable insights unique to their glucose response patterns
+
+Think step-by-step: Analyze patterns → Identify correlations → Generate personalized recommendations.`;
+
+    console.log('Making request to Hugging Face Router API...');
+
+    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Authorization': `Bearer ${hfApiToken}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://your-app.lovable.app', // Optional: helps with rate limiting
-        'X-Title': 'Glucose Tracker AI Suggestions', // Optional: for OpenRouter dashboard
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-v3',
+        model: 'openai/gpt-oss-120b',
         messages: [
-          { role: 'system', content: 'You are a certified diabetes educator. Provide exactly 3 bullet-point suggestions, each 75 characters or less, starting with •' },
+          { 
+            role: 'system', 
+            content: 'You are an expert personalized health coach specializing in glucose management. Your strength is identifying unique patterns in individual user data and providing tailored recommendations. Use advanced reasoning to find correlations between foods, exercise, timing, and glucose responses specific to each user. Always provide exactly 3 personalized bullet points starting with •' 
+          },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
@@ -99,12 +204,12 @@ serve(async (req) => {
       }),
     });
 
-    console.log('OpenRouter API response status:', response.status);
+    console.log('HF Router API response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenRouter API error response:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+      console.error('HF Router API error response:', errorText);
+      throw new Error(`HF Router API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -117,21 +222,39 @@ serve(async (req) => {
     }
 
     console.log(`Generated ${parsedSuggestions.length} suggestions`);
+    
+    // Log successful analysis
+    await auditLog(supabase, user.id, 'ai_suggestions_generated', 'ai-suggestions', {
+      suggestionsCount: parsedSuggestions.length,
+      dataPoints: {
+        glucose: totalReadings,
+        meals: meals.length,
+        exercises: exercises.length
+      }
+    }, true);
 
-    return new Response(JSON.stringify({ 
-      suggestions: parsedSuggestions 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createSuccessResponse({ suggestions: parsedSuggestions }, corsHeaders);
 
   } catch (error) {
     console.error('Error in ai-suggestions function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      suggestions: []
+    
+    // Log error if we have user context
+    if (user && supabase) {
+      await auditLog(supabase, user.id, 'function_error', 'ai-suggestions', {
+        error: error.message
+      }, false);
+    }
+    
+    // Return error response with fallback suggestions
+    const errorResponse = createErrorResponse(error, 500, corsHeaders);
+    const errorData = JSON.parse(await errorResponse.text());
+    
+    return new Response(JSON.stringify({
+      ...errorData,
+      suggestions: [] // Always provide suggestions array for app compatibility
     }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: errorResponse.status,
+      headers: errorResponse.headers
     });
   }
 });

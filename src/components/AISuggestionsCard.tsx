@@ -15,7 +15,7 @@ const AISuggestionsCard = ({
 }: AISuggestionsCardProps) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const generateSuggestions = () => {
+  const generateSuggestions = async () => {
     if (glucoseData.length === 0) {
       setSuggestions([]);
       return;
@@ -51,8 +51,8 @@ const AISuggestionsCard = ({
         intensity: undefined // LogEntry doesn't have intensity property
       }));
 
-      // Generate suggestions using rule-based engine
-      const newSuggestions = getSuggestions(aiGlucoseReadings, meals, exercises);
+      // Generate suggestions using AI-powered engine
+      const newSuggestions = await getSuggestions(aiGlucoseReadings, meals, exercises);
       setSuggestions(newSuggestions);
     } catch (error) {
       console.error('Error generating suggestions:', error);

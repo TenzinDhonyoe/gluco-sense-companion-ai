@@ -1,175 +1,91 @@
 
 import { ParsedMeal, ParsedExercise } from './types';
+import { supabase } from '../../integrations/supabase/client';
 
-export class RuleBasedParser {
-  // Common food keywords and their estimated values
-  private readonly FOOD_DATABASE = {
-    // Fruits
-    'apple': { calories: 80, carbs: 21 },
-    'banana': { calories: 105, carbs: 27 },
-    'orange': { calories: 65, carbs: 16 },
-    'berries': { calories: 50, carbs: 12 },
-    'grapes': { calories: 90, carbs: 23 },
-    
-    // Proteins
-    'chicken': { calories: 200, carbs: 0 },
-    'salmon': { calories: 250, carbs: 0 },
-    'egg': { calories: 70, carbs: 1 },
-    'eggs': { calories: 140, carbs: 2 },
-    'tuna': { calories: 150, carbs: 0 },
-    
-    // Grains/Starches
-    'rice': { calories: 150, carbs: 33 },
-    'pasta': { calories: 200, carbs: 40 },
-    'bread': { calories: 80, carbs: 15 },
-    'quinoa': { calories: 160, carbs: 30 },
-    'oatmeal': { calories: 120, carbs: 22 },
-    
-    // Vegetables
-    'salad': { calories: 50, carbs: 10 },
-    'broccoli': { calories: 30, carbs: 6 },
-    'spinach': { calories: 20, carbs: 3 },
-    'carrots': { calories: 40, carbs: 9 },
-    
-    // Fast food
-    'pizza': { calories: 300, carbs: 35 },
-    'burger': { calories: 400, carbs: 30 },
-    'fries': { calories: 300, carbs: 40 },
-    'sandwich': { calories: 250, carbs: 25 },
-    
-    // Snacks
-    'yogurt': { calories: 100, carbs: 15 },
-    'nuts': { calories: 200, carbs: 8 },
-    'cheese': { calories: 100, carbs: 2 },
-    'crackers': { calories: 120, carbs: 20 }
-  };
+export class AIParser {
+  
+  async parseMealInput(input: string): Promise<ParsedMeal> {
+    try {
+      // Call the AI-powered parse-user-input function
+      const { data, error } = await supabase.functions.invoke('parse-user-input', {
+        body: { input }
+      });
 
-  private readonly EXERCISE_DATABASE = {
-    'walk': { duration: 30, intensity: 'low' as const, type: 'cardio' },
-    'walking': { duration: 30, intensity: 'low' as const, type: 'cardio' },
-    'run': { duration: 20, intensity: 'high' as const, type: 'cardio' },
-    'running': { duration: 20, intensity: 'high' as const, type: 'cardio' },
-    'jog': { duration: 25, intensity: 'moderate' as const, type: 'cardio' },
-    'jogging': { duration: 25, intensity: 'moderate' as const, type: 'cardio' },
-    'bike': { duration: 30, intensity: 'moderate' as const, type: 'cardio' },
-    'cycling': { duration: 30, intensity: 'moderate' as const, type: 'cardio' },
-    'swim': { duration: 30, intensity: 'moderate' as const, type: 'cardio' },
-    'swimming': { duration: 30, intensity: 'moderate' as const, type: 'cardio' },
-    'yoga': { duration: 45, intensity: 'low' as const, type: 'flexibility' },
-    'pilates': { duration: 45, intensity: 'low' as const, type: 'flexibility' },
-    'weights': { duration: 45, intensity: 'moderate' as const, type: 'strength' },
-    'weightlifting': { duration: 45, intensity: 'moderate' as const, type: 'strength' },
-    'gym': { duration: 60, intensity: 'moderate' as const, type: 'strength' }
-  };
-
-  parseMealInput(input: string): ParsedMeal {
-    const cleanInput = input.toLowerCase().trim();
-    
-    // Extract quantities
-    const quantityMatch = cleanInput.match(/(\d+)\s*(slice|slices|piece|pieces|cup|cups|bowl|bowls)?/);
-    const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
-    
-    // Determine meal type based on time or keywords
-    const mealType = this.determineMealType(cleanInput);
-    
-    // Calculate nutrition estimates
-    let totalCalories = 0;
-    let totalCarbs = 0;
-    let confidence = 0;
-    
-    const foundFoods = [];
-    
-    for (const [food, nutrition] of Object.entries(this.FOOD_DATABASE)) {
-      if (cleanInput.includes(food)) {
-        foundFoods.push({ food, nutrition, quantity });
-        totalCalories += nutrition.calories * quantity;
-        totalCarbs += nutrition.carbs * quantity;
-        confidence += 0.8; // High confidence for known foods
+      if (error) {
+        console.error('AI parsing error:', error);
+        return this.fallbackMealParsing(input);
       }
-    }
-    
-    // If no specific foods found, make general estimates
-    if (foundFoods.length === 0) {
-      if (this.containsKeywords(cleanInput, ['meal', 'dinner', 'lunch'])) {
-        totalCalories = 400;
-        totalCarbs = 50;
-        confidence = 0.3;
-      } else if (this.containsKeywords(cleanInput, ['snack', 'small'])) {
-        totalCalories = 150;
-        totalCarbs = 20;
-        confidence = 0.3;
-      } else {
-        totalCalories = 250;
-        totalCarbs = 30;
-        confidence = 0.2;
+
+      if (data?.success && data?.data?.type === 'meal') {
+        // Convert the AI response to our ParsedMeal format
+        const aiResult = data.data;
+        return {
+          description: aiResult.meal_name || input,
+          estimatedCalories: aiResult.total_calories || 200,
+          estimatedCarbs: aiResult.total_carbs || 25,
+          mealType: aiResult.meal_type || this.determineMealType(input),
+          confidence: 0.8 // High confidence for AI parsing
+        };
       }
+
+      return this.fallbackMealParsing(input);
+    } catch (error) {
+      console.error('Error calling AI parser:', error);
+      return this.fallbackMealParsing(input);
     }
-    
-    // Adjust confidence based on input quality
-    confidence = Math.min(confidence, 1.0);
-    if (cleanInput.length < 5) confidence *= 0.5;
-    
+  }
+
+  private fallbackMealParsing(input: string): ParsedMeal {
+    // Simple fallback when AI is unavailable
+    const mealType = this.determineMealType(input);
     return {
       description: input,
-      estimatedCalories: Math.round(totalCalories),
-      estimatedCarbs: Math.round(totalCarbs),
+      estimatedCalories: 200,
+      estimatedCarbs: 25,
       mealType,
-      confidence: Math.round(confidence * 100) / 100
+      confidence: 0.3
     };
   }
 
-  parseExerciseInput(input: string): ParsedExercise {
-    const cleanInput = input.toLowerCase().trim();
-    
-    // Extract duration
-    const durationMatch = cleanInput.match(/(\d+)\s*(min|minutes|hour|hours|hrs?)/);
-    let duration = durationMatch ? parseInt(durationMatch[1]) : undefined;
-    
-    // Convert hours to minutes
-    if (durationMatch && (durationMatch[2].includes('hour') || durationMatch[2].includes('hr'))) {
-      duration = duration! * 60;
-    }
-    
-    let exerciseType = 'other';
-    let intensity: 'low' | 'moderate' | 'high' | 'very_high' = 'moderate';
-    let confidence = 0;
-    
-    // Find matching exercises
-    for (const [exercise, data] of Object.entries(this.EXERCISE_DATABASE)) {
-      if (cleanInput.includes(exercise)) {
-        exerciseType = data.type;
-        intensity = data.intensity;
-        if (!duration) duration = data.duration;
-        confidence += 0.8;
-        break;
+  async parseExerciseInput(input: string): Promise<ParsedExercise> {
+    try {
+      // Call the AI-powered parse-user-input function
+      const { data, error } = await supabase.functions.invoke('parse-user-input', {
+        body: { input }
+      });
+
+      if (error) {
+        console.error('AI parsing error:', error);
+        return this.fallbackExerciseParsing(input);
       }
+
+      if (data?.success && data?.data?.type === 'exercise') {
+        // Convert the AI response to our ParsedExercise format
+        const aiResult = data.data;
+        return {
+          description: aiResult.exercise_name || input,
+          estimatedDuration: aiResult.duration_minutes || 30,
+          intensity: aiResult.intensity || 'moderate',
+          exerciseType: aiResult.exercise_type || 'other',
+          confidence: 0.8 // High confidence for AI parsing
+        };
+      }
+
+      return this.fallbackExerciseParsing(input);
+    } catch (error) {
+      console.error('Error calling AI parser:', error);
+      return this.fallbackExerciseParsing(input);
     }
-    
-    // Determine intensity from keywords
-    if (this.containsKeywords(cleanInput, ['light', 'easy', 'gentle'])) {
-      intensity = 'low';
-    } else if (this.containsKeywords(cleanInput, ['intense', 'hard', 'vigorous', 'fast'])) {
-      intensity = 'high';
-    } else if (this.containsKeywords(cleanInput, ['moderate', 'medium'])) {
-      intensity = 'moderate';
-    }
-    
-    // Default estimates if nothing specific found
-    if (confidence === 0) {
-      duration = duration || 20;
-      confidence = 0.3;
-    }
-    
-    // Adjust confidence
-    confidence = Math.min(confidence, 1.0);
-    if (cleanInput.length < 5) confidence *= 0.5;
-    
+  }
+
+  private fallbackExerciseParsing(input: string): ParsedExercise {
+    // Simple fallback when AI is unavailable
     return {
       description: input,
-      estimatedDuration: duration,
-      intensity,
-      exerciseType,
-      confidence: Math.round(confidence * 100) / 100
+      estimatedDuration: 30,
+      intensity: 'moderate',
+      exerciseType: 'other',
+      confidence: 0.3
     };
   }
 
@@ -198,12 +114,16 @@ export class RuleBasedParser {
   }
 }
 
-export const parseMealInput = (input: string): ParsedMeal => {
-  const parser = new RuleBasedParser();
+// Update exports to use new AI parser
+export const parseMealInput = async (input: string): Promise<ParsedMeal> => {
+  const parser = new AIParser();
   return parser.parseMealInput(input);
 };
 
-export const parseExerciseInput = (input: string): ParsedExercise => {
-  const parser = new RuleBasedParser();
+export const parseExerciseInput = async (input: string): Promise<ParsedExercise> => {
+  const parser = new AIParser();
   return parser.parseExerciseInput(input);
 };
+
+// Keep the old class name for backwards compatibility
+export const RuleBasedParser = AIParser;

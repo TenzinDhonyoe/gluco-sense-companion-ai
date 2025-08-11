@@ -2,7 +2,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, FileText, BarChart3, MessageSquare } from "lucide-react";
 
-const BottomNav = () => {
+const BottomNav = ({ onInsightsClick }: { onInsightsClick?: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,7 +24,13 @@ const BottomNav = () => {
           return (
             <button
               key={path}
-              onClick={() => navigate(path)}
+              onClick={() => {
+                navigate(path);
+                // Trigger refresh for insights tab
+                if (path === "/insights" && onInsightsClick) {
+                  onInsightsClick();
+                }
+              }}
               className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-colors min-w-11 min-h-11 ${
                 isActive 
                   ? "text-blue-600 bg-blue-50" 

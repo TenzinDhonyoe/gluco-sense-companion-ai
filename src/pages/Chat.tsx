@@ -63,7 +63,7 @@ const Chat = () => {
       const welcomeMessage: Message = {
         id: '1',
         type: 'bot',
-        content: `Hi ${userName} 👋 Welcome back! Your average glucose trend this week is stable. How can I help you today?`,
+        content: `Hi ${userName}! I'm GlucoCoach AI, your personal diabetes management assistant. I can help you understand your glucose patterns, provide meal suggestions, and answer questions about your wellness journey. How can I assist you today?`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
@@ -89,35 +89,114 @@ const Chat = () => {
     return timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
-  const generateBotResponse = (userMessage: string): string => {
+  const generateBotResponse = async (userMessage: string): Promise<string> => {
+    try {
+      // Gather user context from recent data
+      const userContext = await gatherUserContext();
+      
+      // Prepare conversation history (last 10 messages)
+      const conversationHistory = messages.slice(-10).map(msg => ({
+        type: msg.type,
+        content: msg.content
+      }));
+
+      // Call the AI chat function
+      console.log('Calling ai-chat function with context:', {
+        messageLength: userMessage.length,
+        conversationLength: conversationHistory.length,
+        hasGlucoseData: userContext.recentGlucose?.length > 0,
+        hasMealData: userContext.recentMeals?.length > 0,
+        hasExerciseData: userContext.recentExercises?.length > 0
+      });
+
+      const { data, error } = await supabase.functions.invoke('ai-chat-standalone', {
+        body: {
+          message: userMessage,
+          conversationHistory,
+          userContext
+        }
+      });
+
+      if (error) {
+        console.error('AI chat error:', error);
+        console.log('Using fallback response due to AI chat error');
+        // Fallback to simple response
+        return generateFallbackResponse(userMessage);
+      }
+
+      console.log('AI chat response received:', {
+        hasResponse: !!data?.response,
+        source: data?.source || 'unknown',
+        responseLength: data?.response?.length || 0
+      });
+
+      return data.response || 'I apologize, but I could not process your request right now. Please try again.';
+    } catch (error) {
+      console.error('Error calling AI chat:', error);
+      return generateFallbackResponse(userMessage);
+    }
+  };
+
+  const gatherUserContext = async () => {
+    if (!userId) return {};
+
+    try {
+      // Get recent glucose readings
+      const { data: recentGlucose } = await supabase
+        .from('glucose_readings')
+        .select('value, timestamp')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(20);
+
+      // Get recent meals
+      const { data: recentMeals } = await supabase
+        .from('meals')
+        .select('meal_name, meal_type, timestamp, total_calories')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+      // Get recent exercises
+      const { data: recentExercises } = await supabase
+        .from('exercises')
+        .select('exercise_name, exercise_type, duration_minutes, timestamp')
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(10);
+
+      return {
+        recentGlucose: recentGlucose || [],
+        recentMeals: recentMeals || [],
+        recentExercises: recentExercises || []
+      };
+    } catch (error) {
+      console.error('Error gathering user context:', error);
+      return {};
+    }
+  };
+
+  const generateFallbackResponse = (userMessage: string): string => {
+    console.log('Using fallback response for message:', userMessage);
     const lowerMessage = userMessage.toLowerCase();
     
-    // Handle greetings differently
     if (lowerMessage.includes('hi') || lowerMessage.includes('hello') || lowerMessage.includes('hey')) {
-      return `Hi ${userName}! How can I help you today? 😊 I can assist with glucose patterns, meal suggestions, or answer any diabetes management questions you have.`;
+      return `Hi ${userName}! I'm here to help with your diabetes management. How can I assist you today?`;
     }
     
     if (lowerMessage.includes('glucose') || lowerMessage.includes('blood sugar') || lowerMessage.includes('trend')) {
-      return "📈 Based on your recent readings, I notice your glucose levels have been mostly in range. Your average this week is 142 mg/dL with good stability. To maintain control, try balanced meals with protein and fiber. Would you like specific meal suggestions?";
-    }
-    
-    if (lowerMessage.includes('exercise') || lowerMessage.includes('workout')) {
-      return "💪 Great question! Exercise is excellent for glucose management. I see you've been logging workouts regularly. Try exercising 30-60 minutes after meals for the best glucose response. Even a 10-minute walk can help reduce post-meal spikes.";
+      return "I can help you understand your glucose patterns! Start logging some readings so I can provide personalized insights about your trends and management strategies.";
     }
     
     if (lowerMessage.includes('food') || lowerMessage.includes('meal') || lowerMessage.includes('eat')) {
-      return "🍽️ For better glucose control, focus on: 1) Eating protein first, then vegetables, then carbs 2) Choosing complex carbs over simple sugars 3) Adding fiber to slow glucose absorption. What specific foods are you curious about?";
+      return "For better glucose control, focus on balanced meals with protein, fiber, and complex carbs. Eating protein first can help reduce glucose spikes. What specific foods would you like to know about?";
     }
     
-    if (lowerMessage.includes('spike') || lowerMessage.includes('high')) {
-      return "⚠️ Post-meal spikes are common but manageable! Try these strategies: eat smaller portions, add a 10-minute walk after eating, drink water before meals, and consider the order you eat your food (protein first). What caused your last spike?";
+    if (lowerMessage.includes('exercise') || lowerMessage.includes('workout')) {
+      return "Exercise is excellent for glucose management! Try a 10-15 minute walk after meals to help reduce glucose spikes. What type of activities do you enjoy?";
     }
     
-    if (lowerMessage.includes('sleep')) {
-      return "😴 Sleep significantly affects glucose control! Poor sleep can increase insulin resistance. Aim for 7-8 hours consistently. I notice irregular sleep patterns can correlate with higher morning glucose. How has your sleep been lately?";
-    }
-    
-    return `That's a great question, ${userName}! Based on your data, I'd recommend focusing on consistent meal timing and regular monitoring. Your recent patterns show good progress. Is there a specific aspect of diabetes management you'd like to explore further?`;
+    return `That's a great question, ${userName}! I'm here to help with diabetes management, including glucose trends, meal planning, and exercise timing. What specific aspect would you like to explore?`;
   };
 
   const sendMessage = async (messageText?: string) => {
@@ -135,18 +214,32 @@ const Chat = () => {
     setInputMessage("");
     setIsLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
+    try {
+      // Get AI response
+      const aiResponse = await generateBotResponse(textToSend);
+      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'bot',
-        content: generateBotResponse(textToSend),
+        content: aiResponse,
         timestamp: new Date()
       };
       
       addMessage(botMessage);
+    } catch (error) {
+      console.error('Error generating response:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
+        timestamp: new Date()
+      };
+      
+      addMessage(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 800 + Math.random() * 1200);
+    }
   };
 
   const handleQuickReply = (quickReply: typeof quickReplies[0]) => {

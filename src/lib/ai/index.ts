@@ -1,7 +1,7 @@
 
-// GlucoAI SDK - Token-free rule-based AI engine
-export { getSuggestions, RuleBasedSuggestionEngine } from './suggestions';
-export { parseMealInput, parseExerciseInput, RuleBasedParser } from './parser';
+// GlucoAI SDK - AI-powered engine using OpenAI gpt-oss-120b
+export { getSuggestions, AISuggestionEngine } from './suggestions';
+export { parseMealInput, parseExerciseInput, AIParser } from './parser';
 export type {
   GlucoseReading,
   MealLog,

@@ -11,7 +11,6 @@ import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import PreDiabeticGlucoseChart from "@/components/PreDiabeticGlucoseChart";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
-import RewardsCard from "@/components/RewardsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
@@ -260,10 +259,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Rewards - Responsive card */}
-        <div className="w-full">
-          <RewardsCard />
-        </div>
 
         {/* Timeline - Chronological list of all activity */}
         <div className="w-full">

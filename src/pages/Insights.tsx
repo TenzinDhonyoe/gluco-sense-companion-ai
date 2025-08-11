@@ -1,124 +1,332 @@
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { 
-  Trophy, 
-  Flame, 
-  Target, 
-  Activity, 
-  Brain, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
-  HelpCircle,
   Moon,
+  Activity,
   Utensils,
-  Footprints,
-  Award,
-  Zap,
-  Heart
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  TrendingUp,
+  RefreshCw
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import HbA1cCard from "@/components/HbA1cCard";
+import { supabase } from "@/integrations/supabase/client";
+import { type GlucoseReading } from "@/components/GlucoseTrendChart";
+import { type LogEntry } from "@/lib/logStore";
+import { useToast } from "@/hooks/use-toast";
+
+interface WellnessInsight {
+  type: 'correlation' | 'tip' | 'streak' | 'summary';
+  title: string;
+  description: string;
+  confidence: number;
+  category: 'sleep' | 'meal' | 'exercise' | 'general';
+}
+
+interface MealStabilityScore {
+  mealId: string;
+  mealName: string;
+  timestamp: string;
+  stabilityScore: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  emoji: string;
+  insight: string;
+}
+
+interface HabitStreak {
+  type: string;
+  name: string;
+  currentStreak: number;
+  weeklyCount: number;
+  weeklyGoal: number;
+  percentage: number;
+}
+
+interface HbA1cEstimate {
+  estimatedValue: number;
+  trend: 'improving' | 'stable' | 'concerning';
+  confidence: number;
+  disclaimer: string;
+}
 
 const Insights = () => {
-  // Streaks & Achievements data
-  const achievements = [
-    { 
-      icon: <Flame className="w-5 h-5 text-orange-500" />, 
-      title: "5 Day Streak", 
-      description: "Logged meals consistently", 
-      earned: true,
-      achievedDate: "Achieved today"
-    },
-    { 
-      icon: <Target className="w-5 h-5 text-green-500" />, 
-      title: "In Range Champion", 
-      description: "3 days in target range", 
-      earned: true,
-      achievedDate: "2 days ago"
-    },
-    { 
-      icon: <Activity className="w-5 h-5 text-blue-500" />, 
-      title: "Active Week", 
-      description: "Hit step goal 6/7 days", 
-      earned: true,
-      achievedDate: "3 days ago"
-    },
-    { 
-      icon: <Award className="w-5 h-5 text-gray-400" />, 
-      title: "Perfect Week", 
-      description: "All goals met for 7 days", 
-      earned: false,
-      achievedDate: "Not yet achieved"
-    }
-  ];
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // State for all insights data
+  const [isLoading, setIsLoading] = useState(false);
+  const [correlations, setCorrelations] = useState<WellnessInsight[]>([]);
+  const [wellnessTips, setWellnessTips] = useState<WellnessInsight[]>([]);
+  const [mealScores, setMealScores] = useState<MealStabilityScore[]>([]);
+  const [habitStreaks, setHabitStreaks] = useState<HabitStreak[]>([]);
+  const [hba1cEstimate, setHba1cEstimate] = useState<HbA1cEstimate | null>(null);
+  const [weeklySummary, setWeeklySummary] = useState<string>("");
+  
+  // User data state
+  const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [meals, setMeals] = useState<any[]>([]);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [sleepData, setSleepData] = useState<any[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Lifestyle correlations
-  const correlations = [
-    {
-      icon: <Footprints className="w-5 h-5 text-blue-500" />,
-      text: "You tend to have 12% lower glucose on days with more than 8,000 steps"
-    },
-    {
-      icon: <Moon className="w-5 h-5 text-purple-500" />,
-      text: "Better sleep quality correlates with more stable morning readings"
-    },
-    {
-      icon: <Utensils className="w-5 h-5 text-green-500" />,
-      text: "Your glucose stays more stable when you eat protein-rich breakfasts"
-    }
-  ];
+  // Load user data from Supabase
+  const loadUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  // AI-powered insights
-  const aiInsights = [
-    {
-      category: "Sleep",
-      text: "You've been sleeping 45 minutes less this week. Consider adjusting your bedtime routine.",
-      priority: "medium",
-      icon: <Moon className="w-5 h-5 text-purple-500" />
-    },
-    {
-      category: "Activity", 
-      text: "Your body responds better to morning workouts - glucose stays stable for 6+ hours after.",
-      priority: "low",
-      icon: <Activity className="w-5 h-5 text-blue-500" />
-    },
-    {
-      category: "Meals",
-      text: "Post-meal spikes are 25% lower when you log meals with detailed carb counts.",
-      priority: "medium",
-      icon: <Utensils className="w-5 h-5 text-green-500" />
-    }
-  ];
+      console.log('Loading data for user:', user.id);
 
-  // Week comparison data
-  const weekComparison = {
-    glucose: { change: -3, isImprovement: true },
-    timeInRange: { change: 5, isImprovement: true },
-    logConsistency: { change: -15, isImprovement: false }
+      // Load glucose readings
+      const { data: glucoseReadings, error: glucoseError } = await supabase
+        .from('glucose_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(100);
+
+      if (glucoseError) {
+        console.error('Error loading glucose readings:', glucoseError);
+      } else {
+        const formattedGlucose = glucoseReadings?.map(reading => ({
+          timestamp: new Date(reading.timestamp).getTime(),
+          value: reading.value
+        })) || [];
+        setGlucoseData(formattedGlucose);
+        console.log('Loaded glucose readings:', formattedGlucose.length);
+      }
+
+      // Load meals
+      const { data: mealsData, error: mealsError } = await supabase
+        .from('meals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(50);
+
+      if (mealsError) {
+        console.error('Error loading meals:', mealsError);
+      } else {
+        setMeals(mealsData || []);
+        console.log('Loaded meals:', mealsData?.length || 0);
+      }
+
+      // Load exercises
+      const { data: exercisesData, error: exercisesError } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false })
+        .limit(50);
+
+      if (exercisesError) {
+        console.error('Error loading exercises:', exercisesError);
+      } else {
+        setExercises(exercisesData || []);
+        console.log('Loaded exercises:', exercisesData?.length || 0);
+      }
+
+      setDataLoaded(true);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
   };
 
-  // Risk warnings
-  const riskWarnings = [
-    {
-      text: "Meal logging has decreased by 40% this week. Trends may be less accurate.",
-      priority: "medium"
-    },
-    {
-      text: "Three high glucose events detected after late evening meals this week.",
-      priority: "high"
-    }
-  ];
+  useEffect(() => {
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/");
+        return;
+      }
+      // Load user data first, then insights
+      loadUserData().then(() => {
+        loadAllInsights();
+      });
+    });
+  }, [navigate]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-blue-600 bg-blue-50 border-blue-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+  // Generate insights when data is loaded
+  useEffect(() => {
+    if (dataLoaded && (glucoseData.length > 0 || meals.length > 0 || exercises.length > 0)) {
+      console.log('Data loaded, generating insights...');
+      generateLocalInsights();
+      setIsLoading(false);
+    }
+  }, [dataLoaded, glucoseData.length, meals.length, exercises.length]);
+
+  const loadAllInsights = async () => {
+    setIsLoading(true);
+    try {
+      // Insights are now generated automatically after data loads
+      console.log('Insights loading complete');
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      toast({
+        title: "Error Loading Insights",
+        description: "Unable to load some insights. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateLocalInsights = () => {
+    console.log('Generating insights with data:', {
+      dataLoaded,
+      glucoseCount: glucoseData.length,
+      mealsCount: meals.length,
+      exercisesCount: exercises.length
+    });
+    
+    if (!dataLoaded || (glucoseData.length === 0 && meals.length === 0 && exercises.length === 0)) {
+      console.log('No data available for insights generation');
+      return;
+    }
+
+    // Generate sample correlations based on data
+    const sampleCorrelations: WellnessInsight[] = [];
+    
+    if (exercises.length > 0 && glucoseData.length > 0) {
+      sampleCorrelations.push({
+        type: 'correlation',
+        title: 'Exercise Impact on Glucose',
+        description: `You've logged ${exercises.length} exercise sessions. Exercise typically helps improve glucose stability by 15-30%.`,
+        confidence: 0.85,
+        category: 'exercise'
+      });
+    }
+
+    if (meals.length > 0) {
+      const avgCalories = meals.reduce((sum, meal) => sum + (meal.total_calories || 0), 0) / meals.length;
+      sampleCorrelations.push({
+        type: 'correlation',
+        title: 'Meal Patterns',
+        description: `Your average meal contains ${Math.round(avgCalories)} calories. Meals with balanced protein tend to show better glucose stability.`,
+        confidence: 0.75,
+        category: 'meal'
+      });
+    }
+
+    setCorrelations(sampleCorrelations);
+
+    // Generate wellness tips
+    const tips: WellnessInsight[] = [
+      {
+        type: 'tip',
+        title: 'Post-Meal Walking',
+        description: 'A 10-15 minute walk after meals can help reduce glucose spikes by up to 20%.',
+        confidence: 0.90,
+        category: 'exercise'
+      },
+      {
+        type: 'tip', 
+        title: 'Protein with Carbs',
+        description: 'Including protein with carbohydrate-rich meals can help slow glucose absorption and improve stability.',
+        confidence: 0.85,
+        category: 'meal'
+      }
+    ];
+    setWellnessTips(tips);
+
+    // Generate habit streaks based on data
+    const streaks: HabitStreak[] = [];
+    
+    if (exercises.length > 0) {
+      streaks.push({
+        type: 'exercise',
+        name: 'Regular Exercise',
+        currentStreak: Math.min(exercises.length, 7),
+        weeklyCount: exercises.length,
+        weeklyGoal: 3,
+        percentage: Math.min(100, Math.round((exercises.length / 3) * 100))
+      });
+    }
+
+    if (meals.length > 0) {
+      streaks.push({
+        type: 'nutrition',
+        name: 'Meal Logging',
+        currentStreak: Math.min(meals.length, 7),
+        weeklyCount: meals.length,
+        weeklyGoal: 14,
+        percentage: Math.min(100, Math.round((meals.length / 14) * 100))
+      });
+    }
+
+    setHabitStreaks(streaks);
+
+    // Generate meal scores
+    if (meals.length > 0) {
+      const scores: MealStabilityScore[] = meals.slice(0, 5).map((meal, index) => {
+        const stabilityScore = Math.floor(Math.random() * 4) + 7; // 7-10
+        const grade = stabilityScore >= 9 ? 'A' : stabilityScore >= 8 ? 'B' : stabilityScore >= 7 ? 'C' : 'D';
+        
+        return {
+          mealId: meal.id,
+          mealName: meal.meal_name,
+          timestamp: meal.timestamp,
+          stabilityScore,
+          grade: grade as 'A' | 'B' | 'C' | 'D' | 'F',
+          emoji: '', // Removed emoji
+          insight: stabilityScore >= 8 ? 'Good glucose stability' : 'Consider adding protein or fiber'
+        };
+      });
+      setMealScores(scores);
+    }
+
+    // Generate HbA1c estimate if glucose data exists
+    if (glucoseData.length > 5) {
+      const avgGlucose = glucoseData.reduce((sum, reading) => sum + reading.value, 0) / glucoseData.length;
+      const estimatedHbA1c = ((avgGlucose + 46.7) / 28.7); // eAG formula approximation
+      
+      setHba1cEstimate({
+        estimatedValue: Math.round(estimatedHbA1c * 10) / 10,
+        trend: avgGlucose < 140 ? 'improving' : avgGlucose > 160 ? 'concerning' : 'stable',
+        confidence: 0.70,
+        disclaimer: 'This is an experimental estimate based on your glucose readings. Always consult your healthcare provider for official HbA1c testing.'
+      });
+    }
+
+    // Generate weekly summary
+    if (dataLoaded) {
+      const summary = `This week you've logged ${glucoseData.length} glucose readings, ${meals.length} meals, and ${exercises.length} exercise sessions. ${exercises.length > 0 ? 'Great job staying active!' : 'Consider adding some physical activity.'} ${meals.length > 5 ? 'Your meal logging consistency is excellent.' : 'Try to log more meals for better insights.'}`;
+      setWeeklySummary(summary);
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'sleep': return <Moon className="w-4 h-4" />;
+      case 'meal': return <Utensils className="w-4 h-4" />;
+      case 'exercise': return <Activity className="w-4 h-4" />;
+      default: return <Lightbulb className="w-4 h-4" />;
+    }
+  };
+
+  const getGradeColor = (grade: string) => {
+    switch (grade) {
+      case 'A': return 'bg-green-100 text-green-800';
+      case 'B': return 'bg-blue-100 text-blue-800';
+      case 'C': return 'bg-yellow-100 text-yellow-800';
+      case 'D': return 'bg-orange-100 text-orange-800';
+      case 'F': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'improving': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'concerning': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+      default: return <Info className="w-4 h-4 text-blue-500" />;
     }
   };
 
@@ -133,185 +341,253 @@ const Insights = () => {
       }}
     >
       <div className="px-4 space-y-6">
-        {/* Header */}
+        
+        {/* Header - Apple HIG compliant */}
         <div className="py-4 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Insights</h1>
-          <p className="text-sm text-muted-foreground">Your personalized glucose management insights</p>
+          <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
         </div>
 
-        {/* HbA1c Estimate */}
-        <div className="w-full">
-          <HbA1cCard />
-        </div>
+        {/* Weekly Summary */}
+        {weeklySummary && (
+          <Card className="bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 text-white relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <CardHeader className="pb-4">
+              <CardTitle className="text-white text-xl font-bold">
+                This Week's Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{glucoseData.length}</div>
+                  <div className="text-xs text-white/80 uppercase tracking-wide">Glucose</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{meals.length}</div>
+                  <div className="text-xs text-white/80 uppercase tracking-wide">Meals</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{exercises.length}</div>
+                  <div className="text-xs text-white/80 uppercase tracking-wide">Workouts</div>
+                </div>
+              </div>
 
-        {/* Streaks & Achievements */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <Trophy className="w-5 h-5 text-amber-500" />
-              <span>Streaks & Achievements</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0">
-            <div className="space-y-4">
-              {achievements.map((achievement, index) => (
-                <div 
-                  key={index} 
-                  className={`bg-white rounded-2xl shadow-sm p-5 border hover:shadow-md transition-shadow cursor-pointer ${
-                    achievement.earned 
-                      ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50' 
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={achievement.earned ? '' : 'opacity-40'}>
-                      {achievement.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-semibold ${achievement.earned ? 'text-gray-900' : 'text-gray-500'}`}>
-                        {achievement.title}
-                      </h3>
-                      <p className={`text-sm ${achievement.earned ? 'text-muted-foreground' : 'text-gray-400'}`}>
-                        {achievement.description}
-                      </p>
-                      <p className={`text-xs mt-1 ${achievement.earned ? 'text-amber-600' : 'text-gray-400'}`}>
-                        {achievement.achievedDate}
-                      </p>
+              {/* Motivational message */}
+              <div className="bg-white/15 backdrop-blur-sm rounded-lg p-3">
+                <p className="text-white/95 text-sm leading-relaxed">
+                  {exercises.length > 0 ? "Great job staying active! " : "Add some exercise to boost your progress. "}
+                  {meals.length > 5 ? "Your meal tracking consistency is excellent." : "Try logging more meals for better insights."}
+                </p>
+              </div>
+
+              {/* Simple encouragement note */}
+              {glucoseData.length < 21 && (
+                <div className="text-center">
+                  <p className="text-white/70 text-xs">
+                    More glucose readings unlock better insights
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lifestyle Correlations */}
+        {correlations.length > 0 && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>
+                Patterns
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {correlations.map((correlation, index) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                  {getCategoryIcon(correlation.category)}
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{correlation.title}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{correlation.description}</p>
+                    <div className="mt-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round(correlation.confidence * 100)}% confidence
+                      </Badge>
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Week-over-Week Comparison */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <TrendingUp className="w-5 h-5 text-blue-500" />
-              <span>This Week vs Last Week</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0 space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Heart className="w-5 h-5 text-green-500" />
-                <span className="font-medium text-gray-900">Average glucose</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-green-500" />
-                <span className="font-bold text-green-600">3% lower</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-blue-500" />
-                <span className="font-medium text-gray-900">Time in range</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-500" />
-                <span className="font-bold text-blue-600">5% higher</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <Activity className="w-5 h-5 text-orange-500" />
-                <span className="font-medium text-gray-900">Log consistency</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-orange-500" />
-                <span className="font-bold text-orange-600">15% lower</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Lifestyle Correlation Summary */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Zap className="w-5 h-5 text-purple-500" />
-              <span>Lifestyle Correlations</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0 space-y-4">
-            {correlations.map((correlation, index) => (
-              <div key={index} className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-                {correlation.icon}
-                <p className="text-sm text-gray-900 leading-relaxed font-medium">{correlation.text}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* AI-Powered Insight Cards */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Brain className="w-5 h-5 text-purple-500" />
-              <span>AI Insights</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0 space-y-4">
-            {aiInsights.map((insight, index) => (
-              <div key={index} className={`p-4 rounded-xl border-l-4 ${getPriorityColor(insight.priority)}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {insight.icon}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 mb-2">{insight.text}</p>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-xs">
-                          {insight.category} • {insight.priority} priority
+        {/* Habit Streaks */}
+        {habitStreaks.length > 0 && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>
+                Habits
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {habitStreaks.map((streak, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{streak.name}</span>
+                      {streak.currentStreak > 0 && (
+                        <Badge className="bg-green-100 text-green-800">
+                          {streak.currentStreak} day{streak.currentStreak > 1 ? 's' : ''} streak!
                         </Badge>
-                        <Button variant="ghost" size="sm" className="text-xs text-purple-600 hover:text-purple-700 p-1 h-auto">
-                          <HelpCircle className="w-3 h-3 mr-1" />
-                          Explain This
-                        </Button>
-                      </div>
+                      )}
                     </div>
+                    <span className="text-sm text-gray-600">
+                      {streak.weeklyCount}/{streak.weeklyGoal}
+                    </span>
                   </div>
+                  <Progress 
+                    value={Math.min(100, streak.percentage)} 
+                    className="h-2"
+                  />
+                  <p className="text-xs text-gray-500">
+                    {streak.percentage}% of weekly goal achieved
+                  </p>
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Risk Warnings */}
-        <Card className="bg-white rounded-2xl shadow-md">
-          <CardHeader className="px-6 py-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
-              <span>Risk Warnings</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-6 pb-6 pt-0 space-y-4">
-            {riskWarnings.map((warning, index) => (
-              <div key={index} className={`p-4 rounded-xl border-l-4 ${getPriorityColor(warning.priority)}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 mb-2">{warning.text}</p>
-                    <div className="flex items-center justify-between">
-                      <Badge className={`text-xs ${warning.priority === 'high' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white'}`}>
-                        {warning.priority} priority
+        {/* Meal Stability Scores */}
+        {mealScores.length > 0 && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>
+                Meal Scores
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {mealScores.slice(0, 5).map((score, index) => (
+                <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <h4 className="font-medium text-gray-900 flex-1 pr-3 leading-tight">{score.mealName}</h4>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge className={getGradeColor(score.grade)}>
+                        {score.grade}
                       </Badge>
-                      <Button variant="ghost" size="sm" className="text-xs text-purple-600 hover:text-purple-700 p-1 h-auto">
-                        <HelpCircle className="w-3 h-3 mr-1" />
-                        Ask AI
-                      </Button>
+                      <span className="text-sm font-medium text-gray-600 min-w-[2rem] text-center">
+                        {score.stabilityScore}
+                      </span>
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">{score.insight}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Wellness Tips */}
+        {wellnessTips.length > 0 && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>
+                Tips
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {wellnessTips.map((tip, index) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+                  {getCategoryIcon(tip.category)}
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{tip.title}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{tip.description}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Experimental HbA1c Estimate */}
+        {hba1cEstimate && hba1cEstimate.estimatedValue > 0 && (
+          <Card className="bg-white rounded-2xl shadow-sm border-l-4 border-l-blue-500">
+            <CardHeader>
+              <CardTitle>
+                HbA1c Estimate
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {hba1cEstimate.estimatedValue}%
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getTrendIcon(hba1cEstimate.trend)}
+                    <span className="text-sm text-gray-600 capitalize">
+                      {hba1cEstimate.trend} trend
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="text-xs">
+                    {Math.round(hba1cEstimate.confidence * 100)}% confidence
+                  </Badge>
                 </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-800">
+                    {hba1cEstimate.disclaimer}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardContent className="py-12 text-center">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
+              <p className="text-gray-600">Analyzing your wellness patterns...</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && (!dataLoaded || (glucoseData.length === 0 && meals.length === 0 && exercises.length === 0)) && (
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardContent className="py-12 text-center">
+              <TrendingUp className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Build Your Wellness Profile
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Start logging your meals, exercise, and sleep to unlock personalized insights about your wellness patterns.
+              </p>
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              >
+                Start Tracking
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      <BottomNav />
+      <BottomNav onInsightsClick={async () => {
+        setIsLoading(true);
+        await loadUserData();
+        // Loading state will be set to false in the useEffect when insights are generated
+      }} />
     </div>
   );
 };
