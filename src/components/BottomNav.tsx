@@ -1,22 +1,24 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, BarChart3, MessageSquare } from "lucide-react";
+import { Home, FileText, BarChart3, Target } from "lucide-react";
 
 const BottomNav = ({ onInsightsClick }: { onInsightsClick?: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const navItems = [
-    { path: "/dashboard", icon: Home, label: "Dashboard" },
+    { path: "/dashboard", icon: Home, label: "Home" },
     { path: "/logs", icon: FileText, label: "Log" },
     { path: "/insights", icon: BarChart3, label: "Insights" },
-    { path: "/chat", icon: MessageSquare, label: "Chat" },
+    { path: "/plan", icon: Target, label: "Plan" },
   ];
 
   return (
-    <div 
+    <nav 
       className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
+      aria-label="Main navigation"
+      role="navigation"
     >
       <div className="flex justify-around max-w-md mx-auto">
         {navItems.map(({ path, icon: Icon, label }) => {
@@ -36,14 +38,18 @@ const BottomNav = ({ onInsightsClick }: { onInsightsClick?: () => void }) => {
                   ? "text-blue-600 bg-blue-50" 
                   : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
               }`}
+              aria-label={`Navigate to ${label}`}
+              aria-current={isActive ? "page" : undefined}
+              role="tab"
+              tabIndex={0}
             >
-              <Icon className="w-6 h-6" />
+              <Icon className="w-6 h-6" aria-hidden="true" />
               <span className="text-xs font-medium">{label}</span>
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 };
 

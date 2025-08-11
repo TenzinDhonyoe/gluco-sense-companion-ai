@@ -8,8 +8,10 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Logs from "./pages/Logs";
 import Insights from "./pages/Insights";
+import Plan from "./pages/Plan";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import FullScreenInsights from "./pages/FullScreenInsights";
 import GlucoseTracker from "./pages/GlucoseTracker";
@@ -27,8 +29,10 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/insights" element={<Insights />} />
+          <Route path="/plan" element={<Plan />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/glucose" element={<GlucoseTracker />} />
           <Route path="/insights/full" element={<FullScreenInsights />} />
           <Route path="*" element={<NotFound />} />

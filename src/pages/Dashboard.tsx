@@ -5,22 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils } from "lucide-react";
+import { Activity, Footprints, Flame, Moon, Plus, TrendingUp, Clock, Utensils, RotateCcw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import GlucoseTrendCard from "@/components/GlucoseTrendCard";
 import PreDiabeticGlucoseChart from "@/components/PreDiabeticGlucoseChart";
 import QuickAddDrawer from "@/components/QuickAddDrawer";
 import AISuggestionsCard from "@/components/AISuggestionsCard";
+import StabilityPill from "@/components/StabilityPill";
 import { supabase } from "@/integrations/supabase/client";
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
 import DynamicAvatar from "@/components/DynamicAvatar";
 import ClearDataButton from "@/components/ClearDataButton";
 import Timeline from "@/components/Timeline";
+import { 
+  loadUserPreferences, 
+  updatePreferredUnit, 
+  formatGlucoseValue,
+  type GlucoseUnit 
+} from "@/lib/units";
+import { 
+  calculateStabilityScore, 
+  getWeeklyStabilityScore,
+  type StabilityScore 
+} from "@/lib/analysis/stabilityScore";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
+  const [preferredUnit, setPreferredUnit] = useState<GlucoseUnit>('mg/dL');
+  const [stabilityScore, setStabilityScore] = useState<StabilityScore | null>(null);
   const [todaysProgress, setTodaysProgress] = useState({
     steps: 8432,
     stepsGoal: 10000,
@@ -30,11 +44,33 @@ const Dashboard = () => {
     mealsGoal: 3
   });
 
+  // Initialize user preferences
+  useEffect(() => {
+    const preferences = loadUserPreferences();
+    setPreferredUnit(preferences.preferredUnit);
+  }, []);
+
   // Callback to handle glucose data updates from the chart component
   const handleGlucoseDataUpdate = useCallback((data: GlucoseReading[]) => {
     console.log('Dashboard received glucose data update:', data.length, 'readings');
     setGlucoseData(data);
+    
+    // Calculate stability score when glucose data updates
+    if (data.length > 0) {
+      const mockMeals = []; // TODO: Load real meal data
+      const score = getWeeklyStabilityScore(
+        data.map(d => ({ value: d.value, timestamp: d.timestamp })),
+        mockMeals
+      );
+      setStabilityScore(score);
+    }
   }, []);
+
+  const toggleUnit = () => {
+    const newUnit = preferredUnit === 'mg/dL' ? 'mmol/L' : 'mg/dL';
+    setPreferredUnit(newUnit);
+    updatePreferredUnit(newUnit);
+  };
 
   // Calculate weekly summary from glucose data
   const weeklySummary = useMemo(() => {
@@ -43,7 +79,7 @@ const Dashboard = () => {
       inRange: 0,
       elevated: 0,
       status: 'normal',
-      statusText: 'Good control',
+      statusText: 'Looking steady',
       statusColor: 'green'
     };
     const last7Days = glucoseData.filter(reading => reading.timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -52,7 +88,7 @@ const Dashboard = () => {
       inRange: 0,
       elevated: 0,
       status: 'normal',
-      statusText: 'Good control',
+      statusText: 'Looking steady',
       statusColor: 'green'
     };
     const total = last7Days.length;
@@ -60,21 +96,21 @@ const Dashboard = () => {
     const inRange = Math.round(last7Days.filter(r => r.value >= 80 && r.value <= 130).length / total * 100);
     const elevated = Math.round(last7Days.filter(r => r.value > 130).length / total * 100);
 
-    // Determine status based on average glucose
+    // Determine status based on average glucose (using wellness-safe language)
     let status = 'normal';
-    let statusText = 'Good control';
+    let statusText = 'Looking steady';
     let statusColor = 'green';
     if (average >= 80 && average <= 130) {
       status = 'normal';
-      statusText = 'Good control';
+      statusText = 'Looking steady';
       statusColor = 'green';
     } else if (average > 130 && average <= 160) {
       status = 'elevated';
-      statusText = 'Elevated';
+      statusText = 'Some variation';
       statusColor = 'yellow';
     } else if (average > 160) {
       status = 'high';
-      statusText = 'Needs attention';
+      statusText = 'Wide patterns';
       statusColor = 'red';
     }
     return {
@@ -174,15 +210,37 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Clean Weekly Summary Card - Centered Layout */}
-        <Card className="bg-white rounded-full shadow-sm border-2">
-          <CardContent className="px-6 py-3 text-center">
-            <div className="space-y-1.5">
+        {/* Weekly Summary Card with Units Toggle */}
+        <Card className="bg-white rounded-2xl shadow-sm border-2">
+          <CardContent className="px-6 py-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wide">Weekly Average</p>
-              <p className="text-2xl font-bold">{weeklySummary.average} mg/dL</p>
-              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${weeklySummary.statusColor === 'green' ? 'bg-green-500' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                {weeklySummary.statusText}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={toggleUnit}
+                className="h-8 px-2 text-xs font-medium"
+                aria-label={`Switch to ${preferredUnit === 'mg/dL' ? 'mmol/L' : 'mg/dL'}`}
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                {preferredUnit}
+              </Button>
+            </div>
+            
+            <div className="text-center space-y-3">
+              <p className="text-3xl font-bold">
+                {formatGlucoseValue(weeklySummary.average, preferredUnit)}
+              </p>
+              
+              <div className="flex items-center justify-center gap-3">
+                <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${weeklySummary.statusColor === 'green' ? 'bg-green-100 text-green-700' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${weeklySummary.statusColor === 'green' ? 'bg-green-500' : weeklySummary.statusColor === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  {weeklySummary.statusText}
+                </div>
+                
+                {stabilityScore && (
+                  <StabilityPill score={stabilityScore} size="sm" showValue={false} />
+                )}
               </div>
             </div>
           </CardContent>

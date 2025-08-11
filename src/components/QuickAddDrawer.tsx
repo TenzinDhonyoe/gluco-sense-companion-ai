@@ -169,15 +169,19 @@ const QuickAddDrawer = () => {
           }
       }}>
         <DrawerTrigger asChild>
-          <Button size="icon" className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105">
-            <Plus className="h-5 w-5" />
+          <Button 
+            size="icon" 
+            className="bg-gradient-to-br from-green-600 to-yellow-500 text-white rounded-full shadow-lg transition hover:scale-105"
+            aria-label="Open quick add menu to log meals, exercise, or glucose readings"
+          >
+            <Plus className="h-5 w-5" aria-hidden="true" />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
           {loggingStep === 0 ? (
             <>
               <DrawerHeader className="text-left">
-                <DrawerTitle>Quick Add</DrawerTitle>
+                <DrawerTitle id="quick-add-title">Quick Add</DrawerTitle>
               </DrawerHeader>
               <div className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -186,8 +190,10 @@ const QuickAddDrawer = () => {
                     onClick={handleMealPhoto}
                     variant="outline"
                     className="flex flex-col items-center justify-center space-y-2 h-auto py-4 border-blue-200 hover:bg-blue-50"
+                    aria-label="Log a meal using camera"
+                    aria-describedby="quick-add-title"
                   >
-                    <Camera className="w-6 h-6 text-blue-500" />
+                    <Camera className="w-6 h-6 text-blue-500" aria-hidden="true" />
                     <span className="text-sm font-medium text-gray-800">Log Meal</span>
                   </Button>
                   {logOptions.map((action) => {
@@ -198,8 +204,10 @@ const QuickAddDrawer = () => {
                         onClick={() => handleStartLogging(action)}
                         variant="outline"
                         className={`flex flex-col items-center justify-center space-y-2 h-auto py-4 ${action.borderColor} ${action.hoverBg}`}
+                        aria-label={`Log ${action.label.toLowerCase()}`}
+                        aria-describedby="quick-add-title"
                       >
-                        <Icon className={`w-6 h-6 ${action.color}`} />
+                        <Icon className={`w-6 h-6 ${action.color}`} aria-hidden="true" />
                         <span className="text-sm font-medium text-gray-800">{action.label}</span>
                       </Button>
                     );
@@ -210,8 +218,10 @@ const QuickAddDrawer = () => {
                 <Button
                   onClick={handleGlucoseLog}
                   className="w-full h-12 bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center space-x-2"
+                  aria-label="Log glucose reading"
+                  aria-describedby="quick-add-title"
                 >
-                  <Droplets className="w-5 h-5" />
+                  <Droplets className="w-5 h-5" aria-hidden="true" />
                   <span className="text-sm font-medium">Log Glucose</span>
                 </Button>
               </div>
@@ -229,10 +239,24 @@ const QuickAddDrawer = () => {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder={`E.g., ${currentLog.defaultDescription}`}
                       className="border-gray-200"
+                      aria-label={`Enter ${currentLog.label.toLowerCase()} description`}
+                      id="activity-description"
+                      required
                   />
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                      <Button variant="outline" onClick={handleCancelLogging}>Cancel</Button>
-                      <Button onClick={handleFinalLog}>Log Activity</Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCancelLogging}
+                        aria-label="Cancel logging"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleFinalLog}
+                        aria-label={`Save ${currentLog?.label.toLowerCase()} entry`}
+                      >
+                        Log Activity
+                      </Button>
                   </div>
               </div>
           )}
