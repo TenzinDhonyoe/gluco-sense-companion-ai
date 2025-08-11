@@ -119,6 +119,14 @@ export const loadUserPreferences = (): UserPreferences => {
 };
 
 /**
+ * Get current preferred unit
+ */
+export const getPreferredUnit = (): GlucoseUnit => {
+  const preferences = loadUserPreferences();
+  return preferences.preferredUnit;
+};
+
+/**
  * Update preferred unit and persist
  */
 export const updatePreferredUnit = (unit: GlucoseUnit): void => {
