@@ -72,41 +72,80 @@ const Logs = () => {
     };
   }, []);
   useEffect(() => {
-    fetchDetailedDatabaseLogs();
+    // Add a small delay to prioritize local data loading first
+    const timer = setTimeout(() => {
+      fetchDetailedDatabaseLogs();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
+
   const fetchDetailedDatabaseLogs = async () => {
     setIsLoadingDatabase(true);
-    try {
-      const {
-        data: {
-          user
+    
+    // Check cache first for performance
+    const cacheKey = 'logs_cache';
+    const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+    const cached = localStorage.getItem(cacheKey);
+    
+    if (cached) {
+      try {
+        const { data: cachedLogs, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheExpiry) {
+          console.log('Using cached logs for better performance');
+          setDatabaseLogs(cachedLogs.map((log: any) => ({
+            ...log,
+            time: new Date(log.time)
+          })));
+          setIsLoadingDatabase(false);
+          return;
         }
-      } = await supabase.auth.getUser();
-      if (!user) {
+      } catch (error) {
+        console.log('Cache parse error, fetching fresh data');
+      }
+    }
+    
+    try {
+      // Check if user is authenticated (optional for demo mode)
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (!user || authError) {
+        console.log('No authenticated user or auth error - using local data only');
+        setDatabaseLogs([]);
         setIsLoadingDatabase(false);
         return;
       }
 
-      // Fetch meals with all nutrition data
-      const {
-        data: mealsData,
-        error: mealsError
-      } = await supabase.from('meals').select('id, meal_name, meal_type, timestamp, total_calories, total_carbs, total_protein, total_fat, total_fiber, notes').eq('user_id', user.id).order('timestamp', {
-        ascending: false
-      }).limit(10);
+      // Use Promise.allSettled for parallel requests with error isolation
+      const [mealsResult, exercisesResult] = await Promise.allSettled([
+        supabase
+          .from('meals')
+          .select('id, meal_name, meal_type, timestamp, total_calories, total_carbs, total_protein, total_fat, total_fiber, notes')
+          .eq('user_id', user.id)
+          .order('timestamp', { ascending: false })
+          .limit(10),
+        supabase
+          .from('exercises')
+          .select('id, exercise_name, exercise_type, timestamp, duration_minutes, intensity, calories_burned, average_heart_rate, max_heart_rate, notes')
+          .eq('user_id', user.id)
+          .order('timestamp', { ascending: false })
+          .limit(10)
+      ]);
 
-      // Fetch exercises with all workout data
-      const {
-        data: exercisesData,
-        error: exercisesError
-      } = await supabase.from('exercises').select('id, exercise_name, exercise_type, timestamp, duration_minutes, intensity, calories_burned, average_heart_rate, max_heart_rate, notes').eq('user_id', user.id).order('timestamp', {
-        ascending: false
-      }).limit(10);
-      if (mealsError) {
-        console.error('Error fetching meals:', mealsError);
+      // Handle meals data
+      let mealsData = null;
+      if (mealsResult.status === 'fulfilled' && !mealsResult.value.error) {
+        mealsData = mealsResult.value.data;
+      } else {
+        console.log('Meals table not available or error:', mealsResult.status === 'fulfilled' ? mealsResult.value.error : mealsResult.reason);
       }
-      if (exercisesError) {
-        console.error('Error fetching exercises:', exercisesError);
+
+      // Handle exercises data
+      let exercisesData = null;
+      if (exercisesResult.status === 'fulfilled' && !exercisesResult.value.error) {
+        exercisesData = exercisesResult.value.data;
+      } else {
+        console.log('Exercises table not available or error:', exercisesResult.status === 'fulfilled' ? exercisesResult.value.error : exercisesResult.reason);
       }
       const combinedLogs: DatabaseLog[] = [];
 
@@ -151,8 +190,21 @@ const Logs = () => {
       // Sort by time (most recent first)
       combinedLogs.sort((a, b) => b.time.getTime() - a.time.getTime());
       setDatabaseLogs(combinedLogs);
+      
+      // Cache the results for performance
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: combinedLogs,
+          timestamp: Date.now()
+        }));
+      } catch (cacheError) {
+        console.log('Failed to cache logs:', cacheError);
+      }
+      
     } catch (error) {
       console.error('Error fetching database logs:', error);
+      // Still try to show local storage data on error
+      setDatabaseLogs([]);
     } finally {
       setIsLoadingDatabase(false);
     }
