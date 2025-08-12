@@ -14,6 +14,13 @@ export class AISuggestionEngine {
     exercises: ExerciseLog[]
   ): Promise<Suggestion[]> {
     try {
+      // For now, use rule-based suggestions until AI function is properly deployed
+      // This ensures the app works smoothly in development
+      console.log('Using rule-based suggestions engine for stable experience');
+      return this.getFallbackSuggestions(glucoseReadings, meals, exercises);
+
+      // AI function call is commented out until backend is properly configured
+      /*
       // Prepare data for AI analysis
       const glucoseData = glucoseReadings.map(reading => ({
         value: reading.value,
@@ -36,8 +43,8 @@ export class AISuggestionEngine {
       // Call the AI-powered suggestions function with comprehensive user data
       const { data, error } = await supabase.functions.invoke('ai-suggestions', {
         body: { 
-          glucoseData: glucoseData, // ALL glucose readings for pattern analysis
-          logs: logs, // ALL logs for comprehensive history analysis
+          glucoseData: glucoseData,
+          logs: logs,
           userProfile: {
             totalGlucoseReadings: glucoseData.length,
             totalLogs: logs.length,
@@ -55,13 +62,13 @@ export class AISuggestionEngine {
       }
 
       if (data?.suggestions && Array.isArray(data.suggestions)) {
-        // Convert AI suggestions to our Suggestion format
         return data.suggestions.slice(0, 3).map((suggestion: string, index: number) => ({
           text: suggestion,
           level: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
           category: this.categorizeSuggestion(suggestion)
         }));
       }
+      */
 
       return this.getFallbackSuggestions(glucoseReadings, meals, exercises);
     } catch (error) {
@@ -87,34 +94,103 @@ export class AISuggestionEngine {
     meals: MealLog[],
     exercises: ExerciseLog[]
   ): Suggestion[] {
-    // Simple fallback suggestions when AI is unavailable
     const suggestions: Suggestion[] = [];
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    
+    // Filter recent data (last 24 hours)
+    const recentReadings = glucoseReadings.filter(r => 
+      new Date(r.timestamp).getTime() > oneDayAgo
+    );
+    const recentMeals = meals.filter(m => 
+      new Date(m.timestamp).getTime() > oneDayAgo
+    );
+    const recentExercises = exercises.filter(e => 
+      new Date(e.timestamp).getTime() > oneDayAgo
+    );
 
-    // Check for recent high readings
-    const recentHigh = glucoseReadings.some(r => r.value > 140);
-    if (recentHigh) {
+    // Analyze glucose patterns
+    const avgGlucose = recentReadings.length > 0 
+      ? recentReadings.reduce((sum, r) => sum + r.value, 0) / recentReadings.length 
+      : 100;
+    const highReadings = recentReadings.filter(r => r.value > 140).length;
+    const lowReadings = recentReadings.filter(r => r.value < 70).length;
+
+    // High glucose pattern detected
+    if (highReadings > recentReadings.length * 0.3 && recentReadings.length > 3) {
       suggestions.push({
-        text: 'Consider a 10-minute walk to help lower glucose levels',
+        text: 'Try a 15-minute walk after meals to help manage levels',
+        level: 'high',
+        category: 'exercise'
+      });
+    }
+
+    // Low activity pattern
+    if (recentExercises.length === 0 && suggestions.length < 3) {
+      suggestions.push({
+        text: 'Add gentle movement like stretching or walking today',
         level: 'medium',
         category: 'exercise'
       });
     }
 
-    // Check for no exercise
-    if (exercises.length === 0) {
+    // Meal frequency analysis
+    if (recentMeals.length < 2 && suggestions.length < 3) {
       suggestions.push({
-        text: 'Try to get at least 30 minutes of activity today',
-        level: 'low',
-        category: 'exercise'
+        text: 'Consider consistent meal timing for steady levels',
+        level: 'medium',
+        category: 'meal'
       });
     }
 
-    // General healthy advice
-    suggestions.push({
-      text: 'Stay hydrated and monitor your glucose regularly',
-      level: 'low',
-      category: 'general'
-    });
+    // Average glucose is high
+    if (avgGlucose > 150 && suggestions.length < 3) {
+      suggestions.push({
+        text: 'Focus on portion control and fiber-rich foods',
+        level: 'high',
+        category: 'meal'
+      });
+    }
+
+    // Good glucose control encouragement
+    if (avgGlucose >= 80 && avgGlucose <= 130 && lowReadings === 0 && suggestions.length < 3) {
+      suggestions.push({
+        text: 'Your levels are looking steady - keep up the great work!',
+        level: 'low',
+        category: 'general'
+      });
+    }
+
+    // Default wellness suggestions if no specific patterns found
+    const defaultSuggestions = [
+      {
+        text: 'Stay hydrated with water throughout the day',
+        level: 'low',
+        category: 'general'
+      },
+      {
+        text: 'Consider logging your next meal for better tracking',
+        level: 'low',
+        category: 'meal'
+      },
+      {
+        text: 'Take a few deep breaths - stress affects glucose too',
+        level: 'low',
+        category: 'general'
+      }
+    ];
+
+    // Fill remaining slots with default suggestions
+    while (suggestions.length < 3) {
+      const remainingDefaults = defaultSuggestions.filter(def => 
+        !suggestions.some(s => s.text === def.text)
+      );
+      if (remainingDefaults.length > 0) {
+        suggestions.push(remainingDefaults[0]);
+      } else {
+        break;
+      }
+    }
 
     return suggestions.slice(0, 3);
   }
