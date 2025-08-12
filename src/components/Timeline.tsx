@@ -11,7 +11,7 @@ import {
 import { Clock, Utensils, Activity, Droplets, Calendar, Filter, ChevronDown, Edit, Copy, Trash2, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { type LogEntry } from '@/lib/logStore';
+import { type LogEntry, getLogs } from '@/lib/logStore';
 import { convertGlucoseValue, getPreferredUnit } from '@/lib/units';
 
 interface TimelineEntry {
@@ -54,39 +54,104 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
     setPreferredUnit(getPreferredUnit());
   }, []);
 
-  // Fetch data from Supabase
+  // Fetch and combine data from multiple sources
   useEffect(() => {
     const fetchTimelineData = async () => {
       try {
+        // Always load local storage data first for instant display
+        const localStorageLogs = getLogs();
+        
+        // Convert local storage logs to timeline entries immediately
+        const localEntries: TimelineEntry[] = localStorageLogs.map(log => ({
+          id: `local-${log.id}`,
+          type: log.type === 'snack' || log.type === 'beverage' ? 'meal' : log.type,
+          title: log.description,
+          description: `${log.type} • ${log.points || 0} points`,
+          timestamp: new Date(log.time),
+          icon: log.type === 'meal' || log.type === 'snack' || log.type === 'beverage' ? Utensils : Activity,
+          color: log.type === 'meal' || log.type === 'snack' || log.type === 'beverage' ? 'text-orange-600' : 'text-green-600',
+          bgColor: log.type === 'meal' || log.type === 'snack' || log.type === 'beverage' ? 'bg-orange-50' : 'bg-green-50'
+        }));
+
+        // Create glucose entries from passed glucose data
+        const glucoseEntries: TimelineEntry[] = (glucoseData || []).map(reading => {
+          const glucoseValue = reading.value;
+          const displayValue = convertGlucoseValue(glucoseValue, 'mg/dL', preferredUnit);
+          
+          let glucoseStatus = 'Looking steady';
+          let statusColor = 'text-green-600';
+          
+          if (glucoseValue < 80) {
+            glucoseStatus = 'Lower range';
+            statusColor = 'text-blue-600';
+          } else if (glucoseValue > 130) {
+            glucoseStatus = 'Higher than usual';
+            statusColor = 'text-orange-600';
+          } else if (glucoseValue > 160) {
+            glucoseStatus = 'Elevated';
+            statusColor = 'text-red-600';
+          }
+
+          return {
+            id: `glucose-${reading.timestamp}`,
+            type: 'glucose',
+            title: `${displayValue} ${preferredUnit}`,
+            description: `${glucoseStatus} • Manual entry`,
+            timestamp: new Date(reading.timestamp),
+            glucoseValue,
+            icon: Droplets,
+            color: statusColor,
+            bgColor: 'bg-blue-50'
+          };
+        });
+
+        // Set local entries immediately for real-time feel
+        setTimelineEntries(() => {
+          const combined = [...localEntries, ...glucoseEntries];
+          return combined.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        });
+        setLoading(false);
+
+        // Try to fetch from Supabase asynchronously to enhance data
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          setLoading(false);
           return;
         }
 
-        // Fetch meals
-        const { data: meals } = await supabase
-          .from('meals')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false })
-          .limit(20);
+        // Fetch additional data from Supabase in parallel (non-blocking)
+        const [mealsResult, exercisesResult, glucoseResult] = await Promise.allSettled([
+          supabase
+            .from('meals')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('timestamp', { ascending: false })
+            .limit(20),
+          supabase
+            .from('exercises')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('timestamp', { ascending: false })
+            .limit(20),
+          supabase
+            .from('glucose_readings')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('timestamp', { ascending: false })
+            .limit(20)
+        ]);
 
-        // Fetch exercises
-        const { data: exercises } = await supabase
-          .from('exercises')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false })
-          .limit(20);
-
-        // Fetch glucose readings
-        const { data: glucose } = await supabase
-          .from('glucose_readings')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false })
-          .limit(20);
+        // Process Supabase data if available
+        let meals = null, exercises = null, glucose = null;
+        
+        if (mealsResult.status === 'fulfilled' && !mealsResult.value.error) {
+          meals = mealsResult.value.data;
+        }
+        if (exercisesResult.status === 'fulfilled' && !exercisesResult.value.error) {
+          exercises = exercisesResult.value.data;
+        }
+        if (glucoseResult.status === 'fulfilled' && !glucoseResult.value.error) {
+          glucose = glucoseResult.value.data;
+        }
 
         // Combine all entries
         const entries: TimelineEntry[] = [];
@@ -184,7 +249,18 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
     };
 
     fetchTimelineData();
-  }, [preferredUnit]);
+
+    // Listen for real-time updates when logs change
+    const handleLogsChanged = () => {
+      console.log('Timeline detected logs change - refreshing...');
+      fetchTimelineData();
+    };
+
+    window.addEventListener('logsChanged', handleLogsChanged);
+    return () => {
+      window.removeEventListener('logsChanged', handleLogsChanged);
+    };
+  }, [preferredUnit, glucoseData]);
 
   // Function to calculate post-meal glucose delta
   const calculatePostMealDelta = (mealTime: Date, glucoseReadings: any[]) => {

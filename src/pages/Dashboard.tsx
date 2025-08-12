@@ -29,12 +29,14 @@ import {
   getWeeklyStabilityScore,
   type StabilityScore 
 } from "@/lib/analysis/stabilityScore";
+import { getLogs, type LogEntry as StoredLogEntry } from "@/lib/logStore";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [preferredUnit, setPreferredUnit] = useState<GlucoseUnit>('mg/dL');
   const [stabilityScore, setStabilityScore] = useState<StabilityScore | null>(null);
+  const [realLogs, setRealLogs] = useState<LogEntry[]>([]);
   const [todaysProgress, setTodaysProgress] = useState({
     steps: 8432,
     stepsGoal: 10000,
@@ -48,6 +50,31 @@ const Dashboard = () => {
   useEffect(() => {
     const preferences = loadUserPreferences();
     setPreferredUnit(preferences.preferredUnit);
+  }, []);
+
+  // Load real logs and listen for changes
+  useEffect(() => {
+    const loadLogs = () => {
+      const storedLogs = getLogs().map(log => ({
+        ...log,
+        time: new Date(log.time) // Convert ISO string back to Date
+      }));
+      setRealLogs(storedLogs);
+      console.log('Dashboard loaded', storedLogs.length, 'real logs');
+    };
+
+    loadLogs(); // Initial load
+
+    // Listen for real-time updates
+    const handleLogsChanged = () => {
+      console.log('Dashboard detected logs change - updating...');
+      loadLogs();
+    };
+
+    window.addEventListener('logsChanged', handleLogsChanged);
+    return () => {
+      window.removeEventListener('logsChanged', handleLogsChanged);
+    };
   }, []);
 
   // Callback to handle glucose data updates from the chart component
@@ -256,7 +283,7 @@ const Dashboard = () => {
 
         {/* AI Suggestions - Responsive card */}
         <div className="w-full">
-          <AISuggestionsCard glucoseData={glucoseData} logs={mockLogs} />
+          <AISuggestionsCard glucoseData={glucoseData} logs={realLogs} />
         </div>
 
         {/* Today's Progress - Harmonized spacing */}
@@ -320,7 +347,7 @@ const Dashboard = () => {
 
         {/* Timeline - Chronological list of all activity */}
         <div className="w-full">
-          <Timeline glucoseData={glucoseData} logs={mockLogs} />
+          <Timeline glucoseData={glucoseData} logs={realLogs} />
         </div>
 
         {/* Clear Data Button - Apple HIG compliant */}
