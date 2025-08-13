@@ -58,9 +58,11 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
   useEffect(() => {
     const fetchTimelineData = async () => {
       try {
-        // Always load local storage data first for instant display
-        const localStorageLogs = getLogs();
-        
+        // Use passed logs prop or fallback to localStorage
+        const localStorageLogs = logs.length > 0 ? logs.map(log => ({
+          ...log,
+          time: log.time.toISOString() // Convert Date to ISO string
+        })) : getLogs();
         // Convert local storage logs to timeline entries immediately
         const localEntries: TimelineEntry[] = localStorageLogs.map(log => ({
           id: `local-${log.id}`,
@@ -260,7 +262,7 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
     return () => {
       window.removeEventListener('logsChanged', handleLogsChanged);
     };
-  }, [preferredUnit, glucoseData]);
+  }, [preferredUnit, glucoseData, logs]);
 
   // Function to calculate post-meal glucose delta
   const calculatePostMealDelta = (mealTime: Date, glucoseReadings: any[]) => {
