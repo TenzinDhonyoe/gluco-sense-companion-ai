@@ -178,6 +178,8 @@ export type Database = {
           updated_at: string
           user_id: string
           value: number
+          value_mg_dl: number | null
+          value_mmol_l: number | null
         }
         Insert: {
           calibration_offset?: number | null
@@ -194,6 +196,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           value: number
+          value_mg_dl?: number | null
+          value_mmol_l?: number | null
         }
         Update: {
           calibration_offset?: number | null
@@ -210,6 +214,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           value?: number
+          value_mg_dl?: number | null
+          value_mmol_l?: number | null
         }
         Relationships: []
       }

@@ -133,4 +133,9 @@ export const updatePreferredUnit = (unit: GlucoseUnit): void => {
   const preferences = loadUserPreferences();
   preferences.preferredUnit = unit;
   saveUserPreferences(preferences);
+  
+  // Dispatch custom event for real-time updates in the same page
+  window.dispatchEvent(new CustomEvent('glucoseUnitsChanged', { 
+    detail: { preferredUnit: unit } 
+  }));
 };

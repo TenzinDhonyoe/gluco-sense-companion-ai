@@ -14,13 +14,14 @@ export class AISuggestionEngine {
     exercises: ExerciseLog[]
   ): Promise<Suggestion[]> {
     try {
-      // For now, use rule-based suggestions until AI function is properly deployed
-      // This ensures the app works smoothly in development
-      console.log('Using rule-based suggestions engine for stable experience');
-      return this.getFallbackSuggestions(glucoseReadings, meals, exercises);
-
-      // AI function call is commented out until backend is properly configured
-      /*
+      // Try AI-powered suggestions first, fall back to rule-based if needed
+      console.log('Attempting AI-powered suggestions with backend');
+      
+      // Validate we have enough data for meaningful analysis
+      if (glucoseReadings.length === 0) {
+        console.log('No glucose data available, using fallback suggestions');
+        return this.getFallbackSuggestions(glucoseReadings, meals, exercises);
+      }
       // Prepare data for AI analysis
       const glucoseData = glucoseReadings.map(reading => ({
         value: reading.value,
@@ -62,14 +63,16 @@ export class AISuggestionEngine {
       }
 
       if (data?.suggestions && Array.isArray(data.suggestions)) {
+        console.log('AI suggestions received:', data.suggestions.length);
         return data.suggestions.slice(0, 3).map((suggestion: string, index: number) => ({
           text: suggestion,
           level: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
           category: this.categorizeSuggestion(suggestion)
         }));
       }
-      */
 
+      console.log('AI function returned data but no suggestions array, falling back to rule-based');
+      console.log('AI response data:', data);
       return this.getFallbackSuggestions(glucoseReadings, meals, exercises);
     } catch (error) {
       console.error('Error calling AI suggestions:', error);

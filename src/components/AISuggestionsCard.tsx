@@ -5,6 +5,8 @@ import { Lightbulb, RefreshCw, CheckCircle, Clock, X, HelpCircle } from "lucide-
 import { type GlucoseReading } from "@/components/GlucoseTrendChart";
 import { type LogEntry } from "@/lib/logStore";
 import { getSuggestions, type Suggestion, type GlucoseReading as AIGlucoseReading, type MealLog, type ExerciseLog } from "@/lib/ai";
+import { shouldShowSampleData, generateSampleInsights } from "@/lib/sampleData";
+import SampleDataWatermark from "@/components/SampleDataWatermark";
 interface AISuggestionsCardProps {
   glucoseData: GlucoseReading[];
   logs: LogEntry[];
@@ -101,6 +103,22 @@ const AISuggestionsCard = ({
       return;
     }
     setIsLoading(true);
+
+    // Check if showing sample data and use sample insights instead
+    const isUsingSampleData = shouldShowSampleData(glucoseData, logs);
+    if (isUsingSampleData) {
+      const sampleInsights = generateSampleInsights();
+      const mappedSuggestions = sampleInsights.map(insight => ({
+        id: insight.id,
+        text: insight.description,
+        type: insight.type,
+        priority: insight.priority,
+        actionable: insight.actionable
+      }));
+      setSuggestions(mappedSuggestions.filter(shouldShowSuggestion));
+      setIsLoading(false);
+      return;
+    }
     try {
       // Transform glucose data to AI format
       const aiGlucoseReadings: AIGlucoseReading[] = glucoseData.map((reading, index) => ({
@@ -159,7 +177,12 @@ const AISuggestionsCard = ({
         return 'border-blue-400 bg-blue-50';
     }
   };
-  return <Card className="bg-white rounded-2xl shadow-md">
+  const isUsingSampleData = shouldShowSampleData(glucoseData, logs);
+
+  return <Card className="bg-white rounded-2xl shadow-md relative">
+      {/* Sample Data Watermark */}
+      {isUsingSampleData && <SampleDataWatermark size="sm" opacity={0.12} />}
+      
       <CardHeader className="px-4 sm:px-6 py-4">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">

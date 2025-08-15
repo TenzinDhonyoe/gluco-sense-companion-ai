@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, TrendingDown, Utensils, Activity, Moon, Calendar, AlertTriangle } from "lucide-react";
+import { generateSampleGlucoseData, shouldShowSampleData } from "@/lib/sampleData";
+import SampleDataWatermark from "@/components/SampleDataWatermark";
+import { 
+  loadUserPreferences, 
+  formatGlucoseValue,
+  convertGlucoseValue,
+  type GlucoseUnit 
+} from "@/lib/units";
 
 export interface GlucoseReading {
   time: string;
@@ -37,6 +45,8 @@ const PreDiabeticGlucoseChart = ({
   const [timeWindow, setTimeWindow] = useState<TimeWindow>('all');
   const [glucoseData, setGlucoseData] = useState<GlucoseReading[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showingSampleData, setShowingSampleData] = useState(false);
+  const [preferredUnit, setPreferredUnit] = useState<GlucoseUnit>('mg/dL');
 
   const fetchGlucoseReadings = useCallback(async () => {
     try {
@@ -75,10 +85,24 @@ const PreDiabeticGlucoseChart = ({
           };
         });
       
-      setGlucoseData(transformedData);
+      // Check if we should show sample data
+      const shouldUseSampleData = shouldShowSampleData(transformedData, []);
       
-      if (onDataUpdate) {
-        onDataUpdate(transformedData);
+      if (shouldUseSampleData) {
+        const sampleData = generateSampleGlucoseData();
+        setGlucoseData(sampleData);
+        setShowingSampleData(true);
+        
+        if (onDataUpdate) {
+          onDataUpdate(sampleData);
+        }
+      } else {
+        setGlucoseData(transformedData);
+        setShowingSampleData(false);
+        
+        if (onDataUpdate) {
+          onDataUpdate(transformedData);
+        }
       }
     } catch (error) {
       console.error('Error in fetchGlucoseReadings:', error);
@@ -112,6 +136,56 @@ const PreDiabeticGlucoseChart = ({
       supabase.removeChannel(channel);
     };
   }, [fetchGlucoseReadings]);
+
+  // Load user preferences and listen for unit changes
+  useEffect(() => {
+    const preferences = loadUserPreferences();
+    setPreferredUnit(preferences.preferredUnit);
+
+    // Listen for custom event to update units in real-time
+    const handleUnitsChange = (e: CustomEvent) => {
+      setPreferredUnit(e.detail.preferredUnit);
+    };
+
+    window.addEventListener('glucoseUnitsChanged', handleUnitsChange as EventListener);
+    return () => {
+      window.removeEventListener('glucoseUnitsChanged', handleUnitsChange as EventListener);
+    };
+  }, []);
+
+  // Helper function to get Y-axis domain based on preferred unit
+  const getYAxisDomain = useMemo(() => {
+    if (preferredUnit === 'mmol/L') {
+      return [3.0, 11.0]; // mmol/L range (roughly 54-200 mg/dL)
+    }
+    return [60, 200]; // mg/dL range
+  }, [preferredUnit]);
+
+  // Helper function to get daily change domain
+  const getDailyChangeDomain = useMemo(() => {
+    if (preferredUnit === 'mmol/L') {
+      return [-1.1, 1.1]; // mmol/L change range (roughly -20 to +20 mg/dL)
+    }
+    return [-20, 20]; // mg/dL change range
+  }, [preferredUnit]);
+
+  // Helper function to get reference areas for glucose zones
+  const getGlucoseZones = useMemo(() => {
+    if (preferredUnit === 'mmol/L') {
+      return {
+        low: { y1: 3.0, y2: 4.4 }, // 54-80 mg/dL
+        normal: { y1: 4.4, y2: 7.2 }, // 80-130 mg/dL  
+        elevated: { y1: 7.2, y2: 8.9 }, // 130-160 mg/dL
+        high: { y1: 8.9, y2: 11.0 } // 160-200 mg/dL
+      };
+    }
+    return {
+      low: { y1: 60, y2: 80 },
+      normal: { y1: 80, y2: 130 },
+      elevated: { y1: 130, y2: 160 },
+      high: { y1: 160, y2: 200 }
+    };
+  }, [preferredUnit]);
 
   // Calculate time in range for all time windows with individual trends
   const timeInRangeData = useMemo(() => {
@@ -242,7 +316,11 @@ const PreDiabeticGlucoseChart = ({
         if (!dailyData.has(day)) {
           dailyData.set(day, []);
         }
-        dailyData.get(day).push(reading.value);
+        // Use native values based on preferred unit to avoid conversion rounding errors
+        const nativeValue = preferredUnit === 'mmol/L' ? 
+          (reading.value_mmol_l ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mmol/L')) :
+          (reading.value_mg_dl ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mg/dL'));
+        dailyData.get(day).push(nativeValue);
       });
 
       const dailyStats = Array.from(dailyData.entries()).map(([day, values]) => {
@@ -257,7 +335,7 @@ const PreDiabeticGlucoseChart = ({
           day: new Date(day).toLocaleDateString('en-US', { weekday: 'short' }),
           fullDate: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           timestamp: new Date(day).getTime(),
-          average: Math.round(avg),
+          average: preferredUnit === 'mmol/L' ? Math.round(avg * 10) / 10 : Math.round(avg),
           std: Math.round(std),
           upperBand: Math.round(avg + std),
           lowerBand: Math.round(avg - std),
@@ -320,8 +398,16 @@ const PreDiabeticGlucoseChart = ({
       return { chartData: processedDailyData, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
     }
 
-    return { chartData: last7Days, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
-  }, [glucoseData, viewMode]);
+    // Use native values based on preferred unit to avoid conversion rounding errors
+    const nativeReadings = last7Days.map(reading => ({
+      ...reading,
+      value: preferredUnit === 'mmol/L' ? 
+        (reading.value_mmol_l ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mmol/L')) :
+        (reading.value_mg_dl ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mg/dL'))
+    }));
+    
+    return { chartData: nativeReadings, weeklyAverage: 0, dailyStats: [], aiSummary: "" };
+  }, [glucoseData, viewMode, preferredUnit]);
 
   // Generate insights
   const insights = useMemo(() => {
@@ -333,17 +419,25 @@ const PreDiabeticGlucoseChart = ({
 
     if (!last7Days.length) return [];
 
-    const lowest = last7Days.reduce((min, reading) => reading.value < min.value ? reading : min);
-    const highest = last7Days.reduce((max, reading) => reading.value > max.value ? reading : max);
+    // Get native values for accurate insights
+    const readingsWithNativeValues = last7Days.map(reading => ({
+      ...reading,
+      nativeValue: preferredUnit === 'mmol/L' ? 
+        (reading.value_mmol_l ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mmol/L')) :
+        (reading.value_mg_dl ?? convertGlucoseValue(reading.value, reading.unit || 'mg/dL', 'mg/dL'))
+    }));
+
+    const lowest = readingsWithNativeValues.reduce((min, reading) => reading.nativeValue < min.nativeValue ? reading : min);
+    const highest = readingsWithNativeValues.reduce((max, reading) => reading.nativeValue > max.nativeValue ? reading : max);
     
     // Calculate most stable day (lowest variance)
     const dailyVariances = new Map();
-    last7Days.forEach(reading => {
+    readingsWithNativeValues.forEach(reading => {
       const day = new Date(reading.timestamp).toDateString();
       if (!dailyVariances.has(day)) {
         dailyVariances.set(day, []);
       }
-      dailyVariances.get(day).push(reading.value);
+      dailyVariances.get(day).push(reading.nativeValue);
     });
 
     let mostStableDay = '';
@@ -363,13 +457,13 @@ const PreDiabeticGlucoseChart = ({
     return [
       {
         icon: TrendingDown,
-        text: `Lowest reading: ${lowest.value} mg/dL`,
+        text: `Lowest reading: ${lowest.nativeValue} ${preferredUnit}`,
         subtext: new Date(lowest.timestamp).toLocaleDateString(),
         color: 'text-green-600'
       },
       {
         icon: TrendingUp,
-        text: `Highest reading: ${highest.value} mg/dL`,
+        text: `Highest reading: ${highest.nativeValue} ${preferredUnit}`,
         subtext: new Date(highest.timestamp).toLocaleDateString(),
         color: 'text-red-600'
       },
@@ -380,7 +474,7 @@ const PreDiabeticGlucoseChart = ({
         color: 'text-blue-600'
       }] : [])
     ];
-  }, [glucoseData]);
+  }, [glucoseData, preferredUnit]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -390,10 +484,10 @@ const PreDiabeticGlucoseChart = ({
         return (
           <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
             <p className="font-medium text-gray-900">{point.day}</p>
-            <p className="text-sm text-gray-600">Average: {point.average} mg/dL</p>
+            <p className="text-sm text-gray-600">Average: {point.average} {preferredUnit}</p>
             {point.change !== 0 && (
               <p className={`text-sm ${point.isImprovement ? 'text-green-600' : 'text-red-600'}`}>
-                {point.change > 0 ? '+' : ''}{Math.round(point.change * 10) / 10} mg/dL from yesterday
+                {point.change > 0 ? '+' : ''}{formatGlucoseValue(Math.abs(point.change), preferredUnit, false)} from yesterday
               </p>
             )}
           </div>
@@ -402,7 +496,7 @@ const PreDiabeticGlucoseChart = ({
 
       return (
         <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-          <p className="font-medium text-gray-900">{point.value} mg/dL</p>
+          <p className="font-medium text-gray-900">{point.value} {preferredUnit}</p>
           <p className="text-sm text-gray-600">{new Date(point.timestamp).toLocaleString()}</p>
         </div>
       );
@@ -465,10 +559,13 @@ const PreDiabeticGlucoseChart = ({
 
 
         {/* Enhanced Chart */}
-        <div className="h-[200px] w-full animate-fade-in">
+        <div className="h-[200px] w-full animate-fade-in relative">
+          {/* Sample Data Watermark */}
+          {showingSampleData && <SampleDataWatermark />}
+          
           <ChartContainer 
             config={{ 
-              glucose: { label: "Glucose (mg/dL)", color: "#3B82F6" },
+              glucose: { label: `Glucose (${preferredUnit})`, color: "#3B82F6" },
               change: { label: "Daily Change", color: "#10B981" }
             }} 
             className="h-full w-full"
@@ -488,8 +585,8 @@ const PreDiabeticGlucoseChart = ({
                     axisLine={false}
                     tickLine={false}
                     width={35}
-                    domain={[-20, 20]}
-                    tickFormatter={(value) => Math.round(value).toString()}
+                    domain={getDailyChangeDomain}
+                    tickFormatter={(value) => preferredUnit === 'mmol/L' ? value.toFixed(1) : Math.round(value).toString()}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
@@ -532,18 +629,19 @@ const PreDiabeticGlucoseChart = ({
                     tickLine={false}
                   />
                   <YAxis 
-                    domain={[60, 200]}
+                    domain={getYAxisDomain}
                     tick={{ fontSize: 11, fill: "#6B7280" }}
                     axisLine={false}
                     tickLine={false}
                     width={35}
+                    tickFormatter={(value) => preferredUnit === 'mmol/L' ? value.toFixed(1) : Math.round(value).toString()}
                   />
                   
                   {/* Glucose zones with labels */}
-                  <ReferenceArea y1={60} y2={80} fill="#f97316" fillOpacity={0.08} />
-                  <ReferenceArea y1={80} y2={130} fill="#22c55e" fillOpacity={0.08} />
-                  <ReferenceArea y1={130} y2={160} fill="#f59e0b" fillOpacity={0.08} />
-                  <ReferenceArea y1={160} y2={200} fill="#ef4444" fillOpacity={0.08} />
+                  <ReferenceArea y1={getGlucoseZones.low.y1} y2={getGlucoseZones.low.y2} fill="#f97316" fillOpacity={0.08} />
+                  <ReferenceArea y1={getGlucoseZones.normal.y1} y2={getGlucoseZones.normal.y2} fill="#22c55e" fillOpacity={0.08} />
+                  <ReferenceArea y1={getGlucoseZones.elevated.y1} y2={getGlucoseZones.elevated.y2} fill="#f59e0b" fillOpacity={0.08} />
+                  <ReferenceArea y1={getGlucoseZones.high.y1} y2={getGlucoseZones.high.y2} fill="#ef4444" fillOpacity={0.08} />
 
                   
                   {/* Weekly average line */}
@@ -579,7 +677,7 @@ const PreDiabeticGlucoseChart = ({
                       return (
                         <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-lg">
                           <p className="font-medium text-gray-900 text-sm">{point.fullDate}</p>
-                          <p className="text-xs text-gray-600">Avg: {point.average} mg/dL</p>
+                          <p className="text-xs text-gray-600">Avg: {point.average} {preferredUnit}</p>
                           <p className="text-xs text-gray-600">{point.readingCount} readings</p>
                         </div>
                       );

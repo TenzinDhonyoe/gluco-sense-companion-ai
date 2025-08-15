@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Clock, Utensils, Activity, Droplets, Calendar, Filter, ChevronDown, Edit, Copy, Trash2, ChevronUp } from 'lucide-react';
+import { Clock, Utensils, Activity, Droplets, Calendar, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { type LogEntry, getLogs } from '@/lib/logStore';
 import { convertGlucoseValue, getPreferredUnit } from '@/lib/units';
+import { shouldShowSampleData } from '@/lib/sampleData';
+import SampleDataWatermark from '@/components/SampleDataWatermark';
 
 interface TimelineEntry {
   id: string;
@@ -45,8 +47,6 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
   const [timelineEntries, setTimelineEntries] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const [swipeStates, setSwipeStates] = useState<Record<string, { isOpen: boolean; startX: number; currentX: number }>>({});
-  const swipeRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [preferredUnit, setPreferredUnit] = useState<'mg/dL' | 'mmol/L'>('mg/dL');
 
   // Load preferred unit
@@ -61,7 +61,7 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
         // Use passed logs prop or fallback to localStorage
         const localStorageLogs = logs.length > 0 ? logs.map(log => ({
           ...log,
-          time: log.time.toISOString() // Convert Date to ISO string
+          time: log.time instanceof Date ? log.time.toISOString() : log.time
         })) : getLogs();
         // Convert local storage logs to timeline entries immediately
         const localEntries: TimelineEntry[] = localStorageLogs.map(log => ({
@@ -245,6 +245,7 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
         setTimelineEntries(entries);
       } catch (error) {
         console.error('Error fetching timeline data:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
       } finally {
         setLoading(false);
       }
@@ -305,73 +306,6 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
       timeSpan: peakTime < 60 ? `${peakTime}min` : `${Math.round(peakTime/60)}h`,
       peakTime
     };
-  };
-
-  // Touch event handlers for swipe actions
-  const handleTouchStart = (entryId: string, e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setSwipeStates(prev => ({
-      ...prev,
-      [entryId]: { isOpen: false, startX: touch.clientX, currentX: touch.clientX }
-    }));
-  };
-
-  const handleTouchMove = (entryId: string, e: React.TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const swipeState = swipeStates[entryId];
-    
-    if (!swipeState) return;
-    
-    const deltaX = touch.clientX - swipeState.startX;
-    const shouldOpen = deltaX < -50; // Swipe left to reveal actions
-    
-    setSwipeStates(prev => ({
-      ...prev,
-      [entryId]: { ...swipeState, currentX: touch.clientX, isOpen: shouldOpen }
-    }));
-    
-    // Apply transform to show swipe progress
-    const element = swipeRefs.current[entryId];
-    if (element) {
-      const transform = Math.max(deltaX, -120); // Limit swipe distance
-      element.style.transform = `translateX(${transform}px)`;
-    }
-  };
-
-  const handleTouchEnd = (entryId: string) => {
-    const swipeState = swipeStates[entryId];
-    if (!swipeState) return;
-    
-    const element = swipeRefs.current[entryId];
-    if (element) {
-      if (swipeState.isOpen) {
-        element.style.transform = 'translateX(-120px)';
-      } else {
-        element.style.transform = 'translateX(0px)';
-      }
-    }
-  };
-
-  const closeSwipe = (entryId: string) => {
-    setSwipeStates(prev => ({
-      ...prev,
-      [entryId]: { ...prev[entryId], isOpen: false }
-    }));
-    const element = swipeRefs.current[entryId];
-    if (element) {
-      element.style.transform = 'translateX(0px)';
-    }
-  };
-
-  const handleSwipeAction = (entryId: string, actionType: 'edit' | 'duplicate' | 'delete') => {
-    console.log(`${actionType} action for entry:`, entryId);
-    closeSwipe(entryId);
-    
-    // Here you would implement the actual actions:
-    // - Edit: Open edit modal/form
-    // - Duplicate: Create copy of entry
-    // - Delete: Remove entry with confirmation
   };
 
   // Filter entries based on selected filter
@@ -467,8 +401,16 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
     );
   }
 
+  const isUsingSampleData = shouldShowSampleData(
+    glucoseData.map(d => ({ timestamp: d.timestamp, value: d.value, time: '', trendIndex: 0 })), 
+    logs
+  );
+
   return (
-    <Card className="bg-white rounded-2xl shadow-sm">
+    <Card className="bg-white rounded-2xl shadow-sm relative">
+      {/* Sample Data Watermark */}
+      {isUsingSampleData && <SampleDataWatermark size="sm" opacity={0.1} />}
+      
       <CardHeader className="px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -556,51 +498,12 @@ const Timeline = ({ glucoseData = [], logs = [] }: TimelineProps) => {
                   <div className="space-y-1.5 sm:space-y-2">
                     {entries.map((entry) => {
                       const Icon = entry.icon;
-                      const swipeState = swipeStates[entry.id];
                       
                       return (
-                        <div key={entry.id} className="relative overflow-hidden rounded-lg">
-                          {/* Swipe Actions Background */}
-                          {swipeState?.isOpen && (
-                            <div className="absolute right-0 top-0 bottom-0 flex items-center bg-gray-100 rounded-r-lg">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSwipeAction(entry.id, 'edit')}
-                                className="h-full px-3 text-blue-600 hover:bg-blue-50 rounded-none"
-                                aria-label="Edit entry"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSwipeAction(entry.id, 'duplicate')}
-                                className="h-full px-3 text-green-600 hover:bg-green-50 rounded-none"
-                                aria-label="Duplicate entry"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSwipeAction(entry.id, 'delete')}
-                                className="h-full px-3 text-red-600 hover:bg-red-50 rounded-none"
-                                aria-label="Delete entry"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
+                        <div key={entry.id} className="rounded-lg">
                           
                           {/* Main Entry Content */}
-                          <div
-                            ref={el => swipeRefs.current[entry.id] = el}
-                            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg hover:bg-gray-50 transition-all cursor-pointer group bg-white relative z-10"
-                            onTouchStart={(e) => handleTouchStart(entry.id, e)}
-                            onTouchMove={(e) => handleTouchMove(entry.id, e)}
-                            onTouchEnd={() => handleTouchEnd(entry.id)}
-                            onClick={() => swipeState?.isOpen ? closeSwipe(entry.id) : undefined}
+                          <div className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg hover:bg-gray-50 transition-all bg-white"
                           >
                             <div className={cn("p-1.5 sm:p-2 rounded-full flex-shrink-0", entry.bgColor)}>
                               <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", entry.color)} />

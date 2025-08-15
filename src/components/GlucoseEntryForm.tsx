@@ -93,10 +93,16 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
       // Combine date and time
       const timestamp = new Date(`${data.date}T${data.time}`).toISOString();
       
+      // Calculate both mg/dL and mmol/L values for accurate storage
+      const value_mg_dl = data.unit === 'mg/dL' ? value : convertGlucoseValue(value, 'mmol/L', 'mg/dL');
+      const value_mmol_l = data.unit === 'mmol/L' ? value : convertGlucoseValue(value, 'mg/dL', 'mmol/L');
+
       const glucoseData = {
         user_id: user.id,
         value,
         unit: data.unit,
+        value_mg_dl,
+        value_mmol_l,
         timestamp,
         tag: data.tag || null,
         notes: data.notes.trim() || null,

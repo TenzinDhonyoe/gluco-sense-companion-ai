@@ -345,6 +345,7 @@ const Insights = () => {
         {/* Header - Apple HIG compliant */}
         <div className="py-4 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
+          <p className="text-sm text-muted-foreground">Discover patterns and wellness trends</p>
         </div>
 
         {/* Weekly Summary */}

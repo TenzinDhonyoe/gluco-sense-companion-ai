@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Settings, Bell, Bluetooth, Heart, Activity, Target, Trophy, Shield, HelpCircle, LogOut } from "lucide-react";
+import { Settings, Bell, Bluetooth, Heart, Activity, Target, Trophy, Shield, HelpCircle, LogOut, RotateCcw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  loadUserPreferences, 
+  updatePreferredUnit, 
+  type GlucoseUnit 
+} from "@/lib/units";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -19,6 +24,7 @@ const Profile = () => {
   const [highAlerts, setHighAlerts] = useState(true);
   const [userName, setUserName] = useState("User");
   const [userInitials, setUserInitials] = useState("U");
+  const [preferredUnit, setPreferredUnit] = useState<GlucoseUnit>('mg/dL');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -45,6 +51,15 @@ const Profile = () => {
     };
 
     fetchUserProfile();
+    
+    // Initialize user preferences for units
+    const preferences = loadUserPreferences();
+    setPreferredUnit(preferences.preferredUnit);
+  }, []);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   const handleSettingChange = (setting: string, value: boolean) => {
@@ -65,6 +80,16 @@ const Profile = () => {
     });
   };
 
+  const toggleUnit = () => {
+    const newUnit = preferredUnit === 'mg/dL' ? 'mmol/L' : 'mg/dL';
+    setPreferredUnit(newUnit);
+    updatePreferredUnit(newUnit);
+    toast({
+      title: "Units Updated",
+      description: `Glucose units changed to ${newUnit}`
+    });
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -81,6 +106,9 @@ const Profile = () => {
       }}
     >
       <div className="px-4 space-y-6">
+        {/* Header spacing to match other screens */}
+        <div className="py-4"></div>
+        
         {/* Profile Header - Apple HIG compliant */}
         <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-md">
           <CardContent className="px-4 py-6">
@@ -178,6 +206,38 @@ const Profile = () => {
                 <span className="text-gray-900 text-base">High Glucose Alerts</span>
               </div>
               <Switch checked={highAlerts} onCheckedChange={(value) => handleSettingChange('highAlerts', value)} />
+            </div>
+
+            <div className="flex items-center justify-between min-h-11">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <RotateCcw className="w-5 h-5 text-gray-500" />
+                <span className="text-gray-900 text-base">Glucose Units</span>
+              </div>
+              <div 
+                onClick={toggleUnit}
+                className="relative inline-flex h-10 w-36 cursor-pointer rounded-full bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                role="switch"
+                aria-checked={preferredUnit === 'mmol/L'}
+                aria-label="Toggle glucose units"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out ${
+                    preferredUnit === 'mmol/L' ? 'translate-x-full' : 'translate-x-0'
+                  }`}
+                />
+                <div className="absolute inset-0 flex">
+                  <div className="flex-1 flex items-center justify-center px-2">
+                    <span className={`text-sm font-medium whitespace-nowrap ${preferredUnit === 'mg/dL' ? 'text-blue-600' : 'text-gray-500'}`}>
+                      mg/dL
+                    </span>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center px-2">
+                    <span className={`text-sm font-medium whitespace-nowrap ${preferredUnit === 'mmol/L' ? 'text-blue-600' : 'text-gray-500'}`}>
+                      mmol/L
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <Button variant="outline" className="w-full justify-start h-12 text-base min-h-11">

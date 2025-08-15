@@ -12,6 +12,8 @@ import QuickGlucoseEntry from "@/components/QuickGlucoseEntry";
 import LogDetailModal from "@/components/LogDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { shouldShowSampleData, generateSampleLogs } from "@/lib/sampleData";
+import SampleDataWatermark from "@/components/SampleDataWatermark";
 
 // This interface is now for documentation, the source of truth is in logStore.ts
 export interface LogEntry {
@@ -48,6 +50,7 @@ const Logs = () => {
   } = useToast();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [databaseLogs, setDatabaseLogs] = useState<DatabaseLog[]>([]);
+  const [displayLogs, setDisplayLogs] = useState<LogEntry[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -55,6 +58,11 @@ const Logs = () => {
   const [isLoadingDatabase, setIsLoadingDatabase] = useState(true);
   const [selectedLog, setSelectedLog] = useState<DatabaseLog | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const fetchLogs = () => {
       const storedLogs = getLogs().map(log => ({
@@ -71,6 +79,21 @@ const Logs = () => {
       window.removeEventListener('logsChanged', handleLogsChanged);
     };
   }, []);
+
+  // Update display logs based on whether we should show sample data
+  useEffect(() => {
+    const shouldUseSampleData = shouldShowSampleData([], logs);
+    
+    if (shouldUseSampleData) {
+      const sampleLogs = generateSampleLogs().map(log => ({
+        ...log,
+        time: new Date(log.time)
+      }));
+      setDisplayLogs(sampleLogs);
+    } else {
+      setDisplayLogs(logs);
+    }
+  }, [logs]);
   useEffect(() => {
     // Add a small delay to prioritize local data loading first
     const timer = setTimeout(() => {
@@ -310,6 +333,43 @@ const Logs = () => {
     if (logFilter === 'all') return true;
     return log.type === logFilter;
   });
+
+  // Use sample logs when appropriate for display
+  const isUsingSampleData = shouldShowSampleData([], logs);
+  
+  const finalFilteredLogs = isUsingSampleData ? 
+    // Show sample logs for new users
+    displayLogs.filter(log => {
+      if (logFilter === 'all') return true;
+      return log.type === logFilter;
+    }).map(log => ({
+      id: log.id,
+      type: log.type,
+      description: log.description,
+      time: log.time,
+      calories: undefined,
+      duration: undefined
+    })) : 
+    // Combine local storage logs and database logs for real users
+    (() => {
+      const localLogs = logs.filter(log => {
+        if (logFilter === 'all') return true;
+        return log.type === logFilter;
+      }).map(log => ({
+        id: log.id,
+        type: log.type,
+        description: log.description,
+        time: log.time,
+        calories: undefined,
+        duration: undefined
+      }));
+      
+      const dbLogs = filteredDatabaseLogs;
+      
+      // Combine and sort by time (most recent first)
+      const combined = [...localLogs, ...dbLogs];
+      return combined.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    })();
   return <>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" style={{
       paddingTop: 'max(3rem, env(safe-area-inset-top))',
@@ -357,7 +417,10 @@ const Logs = () => {
           </Card>
 
           {/* 📄 Recent Logs */}
-          <Card className="bg-white rounded-2xl shadow-md">
+          <Card className="bg-white rounded-2xl shadow-md relative">
+            {/* Sample Data Watermark */}
+            {shouldShowSampleData([], logs) && <SampleDataWatermark size="sm" opacity={0.1} />}
+            
             <CardHeader className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">Recent Logs</CardTitle>
@@ -381,7 +444,7 @@ const Logs = () => {
               <div className="space-y-3">
                 {isLoadingDatabase ? <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-                  </div> : filteredDatabaseLogs.length > 0 ? filteredDatabaseLogs.map(log => <div key={log.id} onClick={() => handleLogClick(log)} className="bg-white shadow-sm rounded-lg p-3 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+                  </div> : finalFilteredLogs.length > 0 ? finalFilteredLogs.map(log => <div key={log.id} onClick={() => handleLogClick(log)} className="bg-white shadow-sm rounded-lg p-3 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-center gap-3">
                         {getLogIcon(log.type)}
                         <div className="flex-1 min-w-0">

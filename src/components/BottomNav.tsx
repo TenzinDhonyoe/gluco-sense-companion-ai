@@ -15,8 +15,11 @@ const BottomNav = ({ onInsightsClick }: { onInsightsClick?: () => void }) => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-lg"
+      style={{ 
+        paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)',
+        zIndex: 9999
+      }}
       aria-label="Main navigation"
       role="navigation"
     >
@@ -28,6 +31,11 @@ const BottomNav = ({ onInsightsClick }: { onInsightsClick?: () => void }) => {
               key={path}
               onClick={() => {
                 navigate(path);
+                // Reset scroll position to top after navigation
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 0);
+                
                 // Trigger refresh for insights tab
                 if (path === "/insights" && onInsightsClick) {
                   onInsightsClick();
