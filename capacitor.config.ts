@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.glucosense.companionai',
-  appName: 'GlucoSense',
+  appName: 'G-Track',
   webDir: 'dist',
   bundledWebRuntime: false
 };

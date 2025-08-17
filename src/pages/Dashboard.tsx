@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [stabilityScore, setStabilityScore] = useState<StabilityScore | null>(null);
   const [realLogs, setRealLogs] = useState<LogEntry[]>([]);
   const [displayLogs, setDisplayLogs] = useState<LogEntry[]>([]);
+  const [userName, setUserName] = useState<string>("User");
   const [todaysProgress, setTodaysProgress] = useState({
     steps: 0,
     stepsGoal: 10000,
@@ -54,6 +55,28 @@ const Dashboard = () => {
   useEffect(() => {
     const preferences = loadUserPreferences();
     setPreferredUnit(preferences.preferredUnit);
+  }, []);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.name) {
+          const firstName = profile.name.split(' ')[0];
+          setUserName(firstName);
+        }
+      }
+    };
+
+    fetchUserProfile();
   }, []);
 
   // Scroll to top when component mounts
@@ -311,8 +334,10 @@ const Dashboard = () => {
       <div className="px-4 space-y-6">
         {/* Header - Apple HIG compliant */}
         <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
-            <img src="/lovable-uploads/f14763b5-4ed6-4cf3-a397-11d1095ce3e2.png" alt="Logo" className="w-10 h-10" />
+          <div className="flex items-center pl-2">
+            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+              Hi <span className="text-blue-600">{userName}</span>
+            </h1>
           </div>
           <div className="flex items-center">
             <DynamicAvatar onClick={() => {
