@@ -81,6 +81,8 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
           value={formData.exercise_name}
           onChange={(e) => setFormData(prev => ({ ...prev, exercise_name: e.target.value }))}
           placeholder="e.g., Morning jog"
+          className="h-12 text-base"
+          style={{ fontSize: '16px' }}
           required
         />
       </div>
@@ -91,7 +93,7 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
           value={formData.exercise_type}
           onValueChange={(value) => setFormData(prev => ({ ...prev, exercise_type: value }))}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-12 text-base" style={{ fontSize: '16px' }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -117,6 +119,8 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
               duration_minutes: parseInt(e.target.value) || 0 
             }))}
             placeholder="30"
+            className="h-12 text-base"
+            style={{ fontSize: '16px' }}
             required
           />
         </div>
@@ -127,7 +131,7 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
             value={formData.intensity}
             onValueChange={(value) => setFormData(prev => ({ ...prev, intensity: value as any }))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-12 text-base" style={{ fontSize: '16px' }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -154,6 +158,8 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
               calories_burned: e.target.value ? parseInt(e.target.value) : undefined 
             }))}
             placeholder="Optional"
+            className="h-12 text-base"
+            style={{ fontSize: '16px' }}
           />
         </div>
         
@@ -170,6 +176,8 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
               average_heart_rate: e.target.value ? parseInt(e.target.value) : undefined 
             }))}
             placeholder="Optional"
+            className="h-12 text-base"
+            style={{ fontSize: '16px' }}
           />
         </div>
       </div>
@@ -182,6 +190,8 @@ const ExerciseEntryForm = ({ onSuccess, onCancel }: ExerciseEntryFormProps) => {
           onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
           placeholder="Any additional details..."
           rows={3}
+          className="text-base min-h-20"
+          style={{ fontSize: '16px' }}
         />
       </div>
 

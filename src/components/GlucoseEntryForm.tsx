@@ -177,11 +177,12 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                           type="number"
                           step="0.1"
                           placeholder="e.g., 110"
-                          className={`rounded-lg shadow-sm border focus:ring-1 h-9 text-sm ${
+                          className={`rounded-lg shadow-sm border focus:ring-1 h-12 text-base ${
                             category === 'low' ? 'border-yellow-500 focus:ring-yellow-200' :
                             category === 'high' ? 'border-red-500 focus:ring-red-200' :
                             'border-green-500 focus:ring-green-200'
                           }`}
+                          style={{ fontSize: '16px' }}
                         />
                         {!isNaN(valueNum) && (
                           <div className={`absolute -bottom-4 left-0 text-xs font-medium ${
@@ -207,7 +208,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                     <FormLabel className="text-xs font-medium h-5 flex items-center">Unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-9 text-sm">
+                        <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-12 text-base" style={{ fontSize: '16px' }}>
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -237,7 +238,8 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                       <Input 
                         {...field} 
                         type="date" 
-                        className="rounded-lg shadow-sm border-gray-200 h-9 text-sm focus:ring-1 focus:ring-blue-200"
+                        className="rounded-lg shadow-sm border-gray-200 h-12 text-base focus:ring-1 focus:ring-blue-200"
+                        style={{ fontSize: '16px' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -258,7 +260,8 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                       <Input 
                         {...field} 
                         type="time" 
-                        className="rounded-lg shadow-sm border-gray-200 h-9 text-sm focus:ring-1 focus:ring-blue-200"
+                        className="rounded-lg shadow-sm border-gray-200 h-12 text-base focus:ring-1 focus:ring-blue-200"
+                        style={{ fontSize: '16px' }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -296,7 +299,7 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                   
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-9 text-sm">
+                      <SelectTrigger className="rounded-lg shadow-sm border-gray-200 h-12 text-base" style={{ fontSize: '16px' }}>
                         <SelectValue placeholder="Select a tag" />
                       </SelectTrigger>
                     </FormControl>
@@ -327,7 +330,8 @@ const GlucoseEntryForm = ({ onSuccess, onCancel, initialData }: GlucoseEntryForm
                     <Textarea
                       {...field}
                       placeholder="e.g., Ate pasta before reading..."
-                      className="resize-none h-16 rounded-lg shadow-sm border-gray-200 focus:ring-1 focus:ring-blue-200 text-sm"
+                      className="resize-none h-20 rounded-lg shadow-sm border-gray-200 focus:ring-1 focus:ring-blue-200 text-base"
+                      style={{ fontSize: '16px' }}
                     />
                   </FormControl>
                   <FormMessage />

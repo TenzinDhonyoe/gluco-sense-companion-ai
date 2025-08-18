@@ -69,7 +69,7 @@ const MealEntryForm = ({ onSuccess, onCancel }: MealEntryFormProps) => {
           value={formData.meal_type}
           onValueChange={(value) => setFormData(prev => ({ ...prev, meal_type: value as any }))}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-12 text-base" style={{ fontSize: '16px' }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -89,6 +89,8 @@ const MealEntryForm = ({ onSuccess, onCancel }: MealEntryFormProps) => {
           value={formData.meal_name}
           onChange={(e) => setFormData(prev => ({ ...prev, meal_name: e.target.value }))}
           placeholder="e.g., Grilled chicken salad"
+          className="h-12 text-base"
+          style={{ fontSize: '16px' }}
           required
         />
       </div>
@@ -107,6 +109,8 @@ const MealEntryForm = ({ onSuccess, onCancel }: MealEntryFormProps) => {
               total_carbs: e.target.value ? parseFloat(e.target.value) : undefined 
             }))}
             placeholder="Optional"
+            className="h-12 text-base"
+            style={{ fontSize: '16px' }}
           />
         </div>
         
@@ -122,6 +126,8 @@ const MealEntryForm = ({ onSuccess, onCancel }: MealEntryFormProps) => {
               total_calories: e.target.value ? parseInt(e.target.value) : undefined 
             }))}
             placeholder="Optional"
+            className="h-12 text-base"
+            style={{ fontSize: '16px' }}
           />
         </div>
       </div>
@@ -134,6 +140,8 @@ const MealEntryForm = ({ onSuccess, onCancel }: MealEntryFormProps) => {
           onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
           placeholder="Any additional details..."
           rows={3}
+          className="text-base min-h-20"
+          style={{ fontSize: '16px' }}
         />
       </div>
 
